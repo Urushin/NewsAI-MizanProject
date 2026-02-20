@@ -1,0 +1,98 @@
+{
+    "system_settings": {
+        "version": "1.0",
+        "user_language": "fr",
+        "ai_strictness": "high",
+        "max_items_per_category": 5
+    },
+    "ui_categories": [
+        "Politique & Monde",
+        "Investissement & Crypto",
+        "Tech & IA",
+        "Culture & Manga",
+        "Sport & Combat",
+        "Niche"
+    ],
+    "interests": [
+        {
+            "id": "topic_crypto_major",
+            "active": true,
+            "type": "topic",
+            "query": "Bitcoin OR Ethereum price analysis OR Blockchain regulation -memecoin -doge",
+            "category": "Investissement & Crypto",
+            "language": "en"
+        },
+        {
+            "id": "topic_tech_ai",
+            "active": true,
+            "type": "topic",
+            "query": "OpenAI OR LLM model release OR NVIDIA GPU hardware OR Python updates",
+            "category": "Tech & IA",
+            "language": "en"
+        },
+        {
+            "id": "topic_manga_big3",
+            "active": true,
+            "type": "topic",
+            "query": "One Piece Chapter 1* OR Jujutsu Kaisen Chapter OR Chainsaw Man Manga release",
+            "category": "Culture & Manga",
+            "language": "en"
+        },
+        {
+            "id": "topic_gaming_souls",
+            "active": true,
+            "type": "topic",
+            "query": "Elden Ring DLC OR FromSoftware announcement OR Nintendo Direct summary",
+            "category": "Culture & Manga",
+            "language": "en"
+        },
+        {
+            "id": "topic_grappling",
+            "active": true,
+            "type": "topic",
+            "query": "ADCC Grappling results OR Gordon Ryan news OR IBJJF major tournament",
+            "category": "Sport & Combat",
+            "language": "en"
+        },
+        {
+            "id": "topic_geo_pol",
+            "active": true,
+            "type": "topic",
+            "query": "Géopolitique Moyen-Orient OR Loi France Assemblée OR Tensions Internationales -opinion",
+            "category": "Politique & Monde",
+            "language": "fr"
+        },
+        {
+            "id": "topic_ecology_climate",
+            "active": true,
+            "type": "topic",
+            "query": "Climate Change Report OR Renewable Energy Breakthrough OR Biodiversity Loss OR Reforestation projects",
+            "category": "Science & Écologie",
+            "language": "en"
+        },
+        {
+            "id": "topic_space_science",
+            "active": true,
+            "type": "topic",
+            "query": "NASA Artemis Mission OR SpaceX Starship Launch OR James Webb Telescope discovery OR Quantum Computing breakthrough",
+            "category": "Science & Écologie",
+            "language": "en"
+        },
+        {
+            "id": "topic_startups_vc",
+            "active": true,
+            "type": "topic",
+            "query": "Y Combinator batch OR Techcrunch Disrupt winner OR Unicorn startup valuation OR SaaS trends 2026",
+            "category": "Business & Tech",
+            "language": "en"
+        },
+        {
+            "id": "topic_cinema_series",
+            "active": true,
+            "type": "topic",
+            "query": "Netflix new series release OR HBO Max upcoming shows OR Movie box office records OR Cannes Film Festival winners",
+            "category": "Culture & Manga",
+            "language": "en"
+        }
+    ]
+}

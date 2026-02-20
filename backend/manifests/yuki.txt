@@ -1,0 +1,10 @@
+I am Yuki, a fan of Japanese culture and entertainment.
+I want updates on:
+- Manga & Anime releases (One Piece, JJK, Chainsaw Man)
+- Video Games (Nintendo, FromSoftware, Indie gems)
+- Cinema & Series (Netflix, HBO, Cannes winners)
+- Tech gadgets (new consoles, VR)
+
+Tone: Enthusiastic but informative.
+Language: Japanese
+Exclude: Heavy politics, depressing news, financial reports.

@@ -1,0 +1,57 @@
+{
+  "date": "2026-02-18",
+  "generated_at": "2026-02-18T16:18:29.869612",
+  "total_collected": 42,
+  "total_kept": 6,
+  "duration_seconds": 217.39,
+  "content": [
+    {
+      "title": "OpenAI déploie des puces Cerebras pour une génération de code 'quasi instantanée'",
+      "category": "Tech & IA",
+      "score": 85,
+      "summary": "OpenAI utilise des puces Cerebras pour une génération de code rapide, marquant son premier mouvement majeur en dehors de Nvidia.",
+      "keep": true,
+      "link": "https://news.google.com/rss/articles/CBMirwFBVV95cUxQSTVNUjVwY01qT2t4SlZkOThxdTVkTi13eklyWW1qeUNZVnFMMzcxZm5pbFBhUE90Qy1fUFZra2tEMHRqeXc4bkRXa0dKaEh0dTZqdlA4dnUxeHRUU3VSRHZzVEVnZXh1OGtJdnRzcGFKVXZOU2x4RnJpa2o5WkNhVkhaa0tybi13ekhfN04zM0VrLUtIeHVnUmJPb01xNFQtZ2J6OU5pNnN2UDRiTUlF?oc=5"
+    },
+    {
+      "title": "OpenAI et NVIDIA annoncent un partenariat stratégique pour déployer 10 gigawatts de systèmes NVIDIA",
+      "category": "Tech & IA",
+      "score": 90,
+      "summary": "OpenAI et NVIDIA collaborent pour déployer 10 gigawatts de systèmes NVIDIA, renforçant leur partenariat stratégique.",
+      "keep": true,
+      "link": "https://news.google.com/rss/articles/CBMia0FVX3lxTFA4cnE1cFg0NmVZcWNqcEZ2OGZmWWlIZDl6clI4ODdkOWc2c2F1dWVEWEZUaDlZYnZtZkFrZ0txNVR0OHdFRWJSOHVJWDdlT2E2RUpQQ0Y0bnpVVURCV2loVmp3a1JtN2hoVkJV?oc=5"
+    },
+    {
+      "title": "Foxconn avance avec un cluster de GPU NVIDIA de 1,4 milliard de dollars, approfondit son partenariat matériel avec OpenAI",
+      "category": "Tech & IA",
+      "score": 80,
+      "summary": "Foxconn investit 1,4 milliard de dollars dans un cluster de GPU NVIDIA, renforçant son partenariat avec OpenAI.",
+      "keep": true,
+      "link": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNRWFCNmRybThkakdkZ0RXT3A2R29pcEdJMTVXaWxMeHdtNXBfWldSWVYzWmxYYW9QNTNPTVcybHg3VnlYeEtBMTJBX2c5dnc1dngzZmx1OW1KRWF0UTYzQy02bzRYWllJNFZaV0tRSUNQZWVKNGtoUzRnNXU2MDhmZjB6SC1HdkNjZWp6QzlWMlVLTjJaZngyUWRsZmt2QnExZTNTdlFZLTFJdHJuSUpTZmw0YUNoNWs0UHhpV9IBwgFBVV95cUxNNWlOUHE0WFEteEtHcFZGRm1obUhNRnFxclhzS2hPRHZfREQ0SDByQmdjclI3YmNwRGYzbTdlTEprYzZWTTRUU3VlTzRBa1FTdTJPeGNudzc3cThINldWLTIwT3dNQUlWZFZCN29lYllCYUNMM2RFRDN2QzI3cElXc3lUOHdVaGt1RTVqeVJQdHgweDFielI4SmREUmhqcXNJNzJPNTN2bDR0T0NsQWh5WnYtaHBLaHpEbVRfdk1wSTlUUQ?oc=5"
+    },
+    {
+      "title": "L'application manga de Crunchyroll arrive ce mois d'octobre",
+      "category": "Culture & Manga",
+      "score": 70,
+      "summary": "Crunchyroll lance son application manga en octobre, avec un abonnement supplémentaire de 4$ pour accéder à des séries comme One Piece et Jujutsu Kaisen.",
+      "keep": true,
+      "link": "https://news.google.com/rss/articles/CBMipgJBVV95cUxOTWZYQk5jR1lLRFZHZ29ORFhEQXNsVVRMWXJYSTFiMWFvX1RXeXJfQlZaZElTdmEtLXdqZjZwbzlZcUNtTkFmNGNUVThrVzZSTjBYWjBqWjY0cldfOElCRjY3Zm1rMlI0bGpWM0h0VlpvbTZkS0QyNUVKQ1NkTlBSRHQwYUlPX2h4RHJ4RzNleUxvMjhFeEE2TVZUdkRDdFljNjJJN0RDbjJITEg4Q0stUW9mUDFVbXJPNFV3SDliM2ZTblY0Q2twYXhyZjBFNlVqSDFUaUlKaFhWT3JkVkJRWGowcW5NR2tvQm00bVN0ZEpmYWhDZFFkMGcxbmpFOTJ4VTM4VzhwMjU3dVo5UkphVlZVeTVGUmVSRlR1bE9QdmNaUzM1Rmc?oc=5"
+    },
+    {
+      "title": "Air France reprend ses vols vers Dubaï après suspension",
+      "category": "Politique & Monde",
+      "score": 65,
+      "summary": "Air France reprend ses vols vers Dubaï après une suspension due aux tensions au Moyen-Orient. Pas de date précise mentionnée.",
+      "keep": true,
+      "link": "https://news.google.com/rss/articles/CBMi5wFBVV95cUxOdGFmVUtHNVIzb0puX3Q5dmtkRzNaMFJZeTJYVDk0Z0dsMTVRc2ZiZ2YyS3BrUnRackNSeWtWUVJKQ2djdndwOHdCQkNjZ1dSa211bFhndTR4U2JJcm1ZbU1nSXNtdy1ZZGFjR1NzcUNKN2F4aFEybWdwLU5hT0RaM29tbmNDNm5MOExLd0ZzMUw2TnpTNzNCcVN3a0EyVVNudy1HSG9nclRWdWp2dlZHOXV5dnZuRVVrODVObDBkQ0pZLWdpOVl0dTk0dXMzMEF4U0JJcTZrZ0pOZ0V5MHF4MndhaTVzMkE?oc=5"
+    },
+    {
+      "title": "Air France reprend ses vols vers Dubaï, suspendus à cause \"de la situation actuelle au Moyen-Orient\"",
+      "category": "Politique & Monde",
+      "score": 65,
+      "summary": "Air France reprend ses vols vers Dubaï après une suspension due aux tensions au Moyen-Orient. Pas de date précise mentionnée.",
+      "keep": true,
+      "link": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxQZkgwSDhZNEJwV2hORGlIS0NMcTZEYWdvcXB0djJvYWs1T0RLdkZBSkJqdlJ3RE4wYU5VNTQtNGRPcldmTDl4XzB1V2Y1Q1FZN1JBenVlNmxpS1RGT2Z5ekNLOUxLcGp4aXNJWXR5c3RaaFRnRXhUVGZhY05OZmpNclViY1dreWZETFRza0V3dlJuc1lwLVBHbWlhU3RTYkl2d1VocENmY3IwWFV5V0NTTFg2VThPM2tQMkV4N1BuQndsYmlXTHVqdm12OW14OV9HWGc?oc=5"
+    }
+  ]
+}

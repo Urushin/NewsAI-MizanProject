@@ -1,0 +1,9 @@
+Je suis l'administrateur du système.
+Je veux une vue d'ensemble équilibrée comprenant :
+- Les tensions géopolitiques majeures
+- Les grosses annonces Tech (Google, Apple, OpenAI)
+- L'essentiel de l'économie mondiale
+- Les faits marquants du sport (MMA, Football)
+
+Filtre : Garder uniquement les informations vérifiées et importantes.
+Format : Synthétique et neutre.
