@@ -102,32 +102,44 @@ PROJET_NEWSAI/
 
 ---
 
-## ⚙️ Installation & Configuration
+## ⚙️ Installation & Lancement Manuel
 
-### 1. Cloner le projet
-```bash
-git clone <url-du-repo>
-cd Projet_newsAI
-```
-
-### 2. Configuration Backend (Python)
+### 1. Préparation de l'environnement (Une seule fois)
+À la racine du projet, créez un environnement virtuel unique et installez les dépendances :
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+*Assurez-vous d'avoir configuré votre fichier `.env` à la racine.*
 
-Crée un fichier `.env` à la racine en t'inspirant des variables nécessaires (Mistral, Firecrawl, Supabase).
+### 2. Lancement du Backend (API)
+Dans un premier terminal, depuis la racine :
+```bash
+source .venv/bin/activate
+# On exclut le dossier web pour éviter que le reloader ne sature à cause des node_modules
+uvicorn backend.app:app --reload --port 8000 --reload-exclude "web/*"
+```
+*L'API sera accessible sur `http://localhost:8000`.*
 
-### 3. Configuration Frontend (Next.js)
+### 3. Lancement du Worker (Traitement IA)
+Dans un deuxième terminal, depuis la racine :
+```bash
+source .venv/bin/activate
+python3 backend/job_queue.py
+```
+*Ce service gère le scraping et les appels Mistral AI en arrière-plan.*
+
+### 4. Lancement du Frontend (Next.js)
+Dans un troisième terminal, allez dans le dossier `web/` :
 ```bash
 cd web
-npm install
+npm install  # Si nécessaire
 npm run dev
 ```
-
-### 4. Configuration Base de Données
-Exécuter les scripts dans `supabase/supabase_rls_security.sql` directement dans l'éditeur SQL de Supabase pour configurer les tables et la sécurité.
+> [!TIP]
+> **Pourquoi `--reload-exclude "web/*"` ?**
+> Par défaut, Uvicorn tente de surveiller tous les fichiers du projet pour redémarrer en cas de modification. Comme le dossier `web/node_modules` contient des dizaines de milliers de fichiers, cela peut saturer le système et provoquer des erreurs `FileNotFoundError`. Cette option permet de garder un reloader fluide sur le code Backend uniquement.
 
 ---
 

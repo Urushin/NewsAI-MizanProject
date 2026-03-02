@@ -41,6 +41,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const savedToken = localStorage.getItem("mizan_token");
         const savedUser = localStorage.getItem("mizan_user");
+
+        // DX Mode Bypass
+        if (!savedToken && process.env.NEXT_PUBLIC_APP_STAGE === "development") {
+            console.log("🛠️ DX Mode: Auto-login enabled via NEXT_PUBLIC_APP_STAGE");
+            const mockUser = {
+                id: "00000000-0000-0000-0000-000000000000",
+                username: "DevUser",
+                email: "dev@mizan.ai",
+                language: "fr",
+                score_threshold: 70
+            };
+            setUser(mockUser);
+            setToken("dev_token_bypass");
+            setLoading(false);
+            return;
+        }
+
         if (savedToken && savedUser) {
             setToken(savedToken);
             setUser(JSON.parse(savedUser));

@@ -20,6 +20,15 @@ def get_current_user(request: Request) -> dict:
     Returns dict with 'user_id' (UUID) and 'email'.
     """
     auth = request.headers.get("Authorization", "")
+    
+    # DEV MOCK: Bypass Auth in local development for faster iteration
+    if os.getenv("APP_STAGE") == "development" and not auth:
+        return {
+            "user_id": "00000000-0000-0000-0000-000000000000",
+            "email": "dev@mizan.ai",
+            "username": "DevUser"
+        }
+
     if not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Non authentifié")
 

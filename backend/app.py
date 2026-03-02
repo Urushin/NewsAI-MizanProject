@@ -103,7 +103,7 @@ _rate_limit_db: dict = defaultdict(list)
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    if request.url.path in ("/api/health", "/api/billing/webhook"):
+    if request.url.path in ("/api/health", "/api/billing/webhook") or os.getenv("APP_STAGE") == "development":
         return await call_next(request)
 
     client_ip = request.client.host if request.client else "unknown"
