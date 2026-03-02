@@ -1,12 +1,12 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, Zap, X } from "lucide-react";
+import { ChevronRight, X, Shield, Flame, Zap, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const API = "http://localhost:8000";
+import { API } from "../context/AuthContext";
 
-interface NewsItem {
+export interface NewsItem {
     title: string;
     category: string;
     summary: string;
@@ -14,22 +14,27 @@ interface NewsItem {
     link: string;
     gate_passed?: string;
     reason?: string;
+    credibility_score?: number;
 }
 
-const categoryConfig: Record<string, { color: string; icon: string }> = {
-    "Tech & Science": { color: "var(--cat-tech, #007AFF)", icon: "⚡" },
-    "Finance & Business": { color: "var(--cat-crypto, #FF9500)", icon: "₿" },
-    "Politique & Monde": { color: "var(--cat-politique, #FF3B30)", icon: "🌍" },
-    "Culture & Divertissement": { color: "var(--cat-manga, #AF52DE)", icon: "🎮" },
-    "Lifestyle & Sport": { color: "var(--cat-sport, #34C759)", icon: "🥊" },
-    "Société & Environnement": { color: "var(--cat-niche, #5AC8FA)", icon: "🌿" },
-};
+function getCredibilityColor(score: number): string {
+    if (score >= 8) return "#22c55e";
+    if (score >= 6) return "#fbbf24";
+    if (score >= 4) return "#f97316";
+    return "#ef4444";
+}
 
-function getScoreColor(score: number): string {
-    if (score >= 90) return "#34C759";
-    if (score >= 80) return "#007AFF";
-    if (score >= 70) return "#FF9500";
-    return "#8E8E93";
+function getCredibilityLabel(score: number): string {
+    if (score >= 8) return "Très fiable";
+    if (score >= 6) return "Fiable";
+    if (score >= 4) return "Modéré";
+    return "À vérifier";
+}
+
+function getScoreGradient(score: number): string {
+    if (score >= 80) return "linear-gradient(90deg, #22c55e, #16a34a)";
+    if (score >= 60) return "linear-gradient(90deg, #fbbf24, #f59e0b)";
+    return "linear-gradient(90deg, #f97316, #ea580c)";
 }
 
 function sendFeedback(token: string | null, title: string, summary: string, action: "read" | "rejected") {
@@ -59,9 +64,8 @@ export default function NewsCard({
     const [isDismissed, setIsDismissed] = useState(false);
     const readTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hasSentReadRef = useRef(false);
-    const catConfig = categoryConfig[item.category] || { color: "var(--cat-niche, #8E8E93)", icon: "◆" };
-    const scoreColor = getScoreColor(item.score);
-    const isImpact = item.gate_passed === "impact";
+
+    const isImpact = item.category === "Impact" || item.gate_passed === "impact";
 
     // ── Read Timer: 8s while expanded ──
     useEffect(() => {
@@ -91,151 +95,216 @@ export default function NewsCard({
 
     if (isDismissed) return null;
 
+    const credScore = item.credibility_score ?? 0;
+    const credColor = getCredibilityColor(credScore);
+    const credLabel = getCredibilityLabel(credScore);
+    const credPercent = (credScore / 10) * 100;
+
     return (
         <motion.article
-            layout
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -80, scale: 0.95 }}
+            layout="position"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{
-                duration: 0.5,
-                delay: index * 0.08,
+                duration: 0.4,
+                delay: index * 0.06,
                 ease: [0.25, 0.46, 0.45, 0.94],
             }}
-            whileTap={{ scale: 0.98 }}
-            className="rounded-2xl p-5 mb-3 cursor-pointer select-none relative"
-            style={{
-                backgroundColor: "var(--card)",
-                boxShadow: "var(--shadow-card)",
-                minHeight: "44px",
-                WebkitTapHighlightColor: "transparent",
-                borderLeft: isImpact ? "3px solid #FF3B30" : "none",
-            }}
+            className="group block relative cursor-pointer"
             onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+                background: "var(--bg-card)",
+                border: `1px solid ${isExpanded ? "var(--border-glow)" : "var(--border-subtle)"}`,
+                borderRadius: "16px",
+                padding: "24px",
+                marginBottom: "16px",
+                boxShadow: isExpanded ? "var(--shadow-card-hover)" : "var(--shadow-card)",
+                transition: "border-color 0.3s, box-shadow 0.3s, transform 0.2s",
+            }}
+            whileHover={{
+                y: -2,
+                transition: { duration: 0.2 },
+            }}
         >
-            {/* Category + Score Badge */}
-            <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-1.5">
-                    <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: catConfig.color }}
-                    />
-                    <span
-                        className="text-[10px] uppercase tracking-[0.12em] font-semibold"
-                        style={{ color: "var(--text-secondary)" }}
-                    >
-                        {item.category}
-                    </span>
-                </div>
+            {/* ── Top: Category Pill + Credibility ── */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                {/* Category Pill */}
+                <span
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "4px 12px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        letterSpacing: "0.03em",
+                        textTransform: "uppercase",
+                        background: isImpact ? "var(--accent-red-muted)" : "var(--accent-blue-glow)",
+                        color: isImpact ? "var(--accent-red)" : "var(--accent-blue)",
+                        border: `1px solid ${isImpact ? "rgba(239,68,68,0.2)" : "rgba(59,130,246,0.2)"}`,
+                    }}
+                >
+                    {isImpact ? <Zap size={12} /> : <TrendingUp size={12} />}
+                    {isImpact ? "Impact Direct" : "Passion"}
+                </span>
 
-                <div className="flex items-center gap-2">
-                    {isImpact && (
-                        <motion.span
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: "#FF3B3020", color: "#FF3B30" }}
-                        >
-                            ⚠️ IMPACT
-                        </motion.span>
-                    )}
-                    {item.score >= 90 && !isImpact && (
-                        <motion.span
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 15, delay: index * 0.08 + 0.3 }}
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
-                            style={{
-                                backgroundColor: "var(--accent-soft)",
-                                color: "var(--accent)",
-                            }}
-                        >
-                            <Zap size={9} /> ESSENTIEL
-                        </motion.span>
-                    )}
-                </div>
+                {/* Credibility Badge */}
+                {item.credibility_score !== undefined && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Shield size={14} style={{ color: credColor, opacity: 0.8 }} />
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
+                            <span style={{
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                color: credColor,
+                                letterSpacing: "0.02em",
+                            }}>
+                                {credLabel} {credScore}/10
+                            </span>
+                            {/* Progress bar */}
+                            <div style={{
+                                width: "80px",
+                                height: "3px",
+                                borderRadius: "2px",
+                                background: "rgba(255,255,255,0.06)",
+                                overflow: "hidden",
+                            }}>
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${credPercent}%` }}
+                                    transition={{ duration: 0.8, delay: index * 0.06 + 0.3, ease: "easeOut" }}
+                                    style={{
+                                        height: "100%",
+                                        borderRadius: "2px",
+                                        background: credColor,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Title */}
+            {/* ── Title ── */}
             <h3
-                className="text-[17px] font-semibold leading-snug mb-2 tracking-[-0.01em]"
-                style={{ color: "var(--text-primary)" }}
+                style={{
+                    fontFamily: "var(--font-serif)",
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    lineHeight: 1.35,
+                    color: "var(--text-primary)",
+                    marginBottom: "10px",
+                    letterSpacing: "-0.01em",
+                }}
             >
                 {item.title}
             </h3>
 
-            {/* Summary */}
+            {/* ── Summary ── */}
             <p
-                className="text-[15px] leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
+                style={{
+                    fontSize: "14.5px",
+                    lineHeight: 1.7,
+                    color: "var(--text-secondary)",
+                    maxWidth: "600px",
+                }}
             >
                 {item.summary}
             </p>
 
-            {/* Score Bar */}
-            <div className="mt-3">
-                <div className="score-bar">
-                    <motion.div
-                        className="score-bar-fill"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${item.score}%` }}
-                        transition={{ duration: 0.8, delay: index * 0.08 + 0.2, ease: [0.16, 1, 0.3, 1] }}
-                        style={{ backgroundColor: scoreColor }}
-                    />
-                </div>
-            </div>
-
-            {/* Expanded Footer */}
+            {/* ── Expanded Content ── */}
             <AnimatePresence>
                 {isExpanded && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="overflow-hidden"
+                        transition={{ duration: 0.25 }}
+                        style={{ overflow: "hidden" }}
                     >
-                        <div
-                            className="pt-3 mt-3 flex justify-between items-center"
-                            style={{ borderTop: "1px solid var(--separator)" }}
-                        >
-                            {/* Reject Button */}
-                            <button
-                                onClick={handleReject}
-                                className="text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-full transition-colors"
-                                style={{
-                                    backgroundColor: "var(--bg-secondary, #f5f5f5)",
-                                    color: "var(--text-secondary)",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    minHeight: "32px",
-                                }}
-                            >
-                                <X size={12} /> Pas intéressé
-                            </button>
-
-                            <div className="flex items-center gap-3">
-                                <span
-                                    className="text-xs font-medium tabular-nums"
-                                    style={{ color: scoreColor }}
-                                >
-                                    Score {item.score}/100
+                        <div style={{
+                            marginTop: "16px",
+                            paddingTop: "16px",
+                            borderTop: "1px solid var(--border-subtle)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}>
+                            {/* Relevance score pill */}
+                            <div style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                            }}>
+                                <Flame size={14} style={{ color: "var(--accent-amber)", opacity: 0.7 }} />
+                                <span style={{
+                                    fontSize: "12px",
+                                    color: "var(--text-muted)",
+                                    fontWeight: 500,
+                                }}>
+                                    Pertinence : {item.score}
                                 </span>
+                                <div style={{
+                                    width: "60px",
+                                    height: "3px",
+                                    borderRadius: "2px",
+                                    background: "rgba(255,255,255,0.06)",
+                                    overflow: "hidden",
+                                }}>
+                                    <div style={{
+                                        height: "100%",
+                                        width: `${item.score}%`,
+                                        borderRadius: "2px",
+                                        background: getScoreGradient(item.score),
+                                    }} />
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                                 <a
                                     href={item.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm font-medium flex items-center gap-1 no-underline"
+                                    onClick={(e) => e.stopPropagation()}
                                     style={{
-                                        color: "var(--accent)",
-                                        minHeight: "44px",
+                                        fontSize: "13px",
+                                        fontWeight: 500,
+                                        color: "var(--accent-amber)",
+                                        textDecoration: "none",
                                         display: "flex",
                                         alignItems: "center",
+                                        gap: "4px",
+                                        transition: "opacity 0.2s",
                                     }}
-                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
+                                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
                                 >
-                                    Source <ChevronRight size={14} />
+                                    Lire la source <ChevronRight size={14} />
                                 </a>
+                                <button
+                                    onClick={handleReject}
+                                    style={{
+                                        fontSize: "13px",
+                                        fontWeight: 500,
+                                        color: "var(--text-muted)",
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "4px",
+                                        padding: 0,
+                                        fontFamily: "var(--font-body)",
+                                        transition: "color 0.2s",
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
+                                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                                >
+                                    <X size={14} /> Ignorer
+                                </button>
                             </div>
                         </div>
                     </motion.div>

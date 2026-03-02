@@ -1,210 +1,194 @@
 """
-Mizan.ai — Database (SQLite)
+Mizan.ai — Database (Supabase / Postgres)
 """
-import sqlite3
 import os
 from datetime import datetime, timedelta
-from typing import Optional, List
-import bcrypt
+from typing import Optional, List, Dict, Any
+from loguru import logger
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "mizan.db")
+# Load environment variables
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+_client: Optional[Client] = None
+
+def get_supabase() -> Client:
+    global _client
+    if _client is None:
+        supabase_url = os.getenv("SUPABASE_URL", "https://jekshjfyxvnmbqyuaosu.supabase.co")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impla3NoamZ5eHZubWJxeXVhb3N1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjEzNzgwNiwiZXhwIjoyMDg3NzEzODA2fQ.X8G0oIxITZxh0YLorMAioeyobdGsQAfplTfYEOp0vGU"
+        if not supabase_url or not supabase_key:
+            logger.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/ANON_KEY missing in .env")
+            raise ValueError("Supabase credentials missing")
+        _client = create_client(supabase_url, supabase_key)
+    return _client
 
 def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = get_db()
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS users (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            username        TEXT UNIQUE NOT NULL,
-            password_hash   TEXT NOT NULL,
-            language        TEXT DEFAULT 'fr',
-            score_threshold INTEGER DEFAULT 70,
-            created_at      TEXT DEFAULT CURRENT_TIMESTAMP
-        );
+    """Supabase tables should be initialized via the SQL Editor."""
+    logger.info("📡 Connecté à Supabase.")
 
-        CREATE TABLE IF NOT EXISTS dismissed_articles (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id         INTEGER REFERENCES users(id),
-            article_title   TEXT NOT NULL,
-            reason          TEXT DEFAULT '',
-            dismissed_at    TEXT DEFAULT CURRENT_TIMESTAMP
-        );
+# --- Content Cache (Firecrawl) ---
 
-        CREATE TABLE IF NOT EXISTS processed_articles (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id         INTEGER REFERENCES users(id),
-            url             TEXT NOT NULL,
-            processed_at    TEXT DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_processed_url
-            ON processed_articles(user_id, url);
-
-        CREATE TABLE IF NOT EXISTS url_cache (
-            url             TEXT PRIMARY KEY,
-            content         TEXT,
-            fetched_at      TEXT DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
-    conn.commit()
-    conn.close()
-    print("✅ Base de données initialisée.")
-
-# ... (hash/verify password functions remain)
-
-def get_cached_content(url: str) -> str:
-    """Returns cached content for a URL if it exists (valid forever/until purged)."""
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT content FROM url_cache WHERE url = ?", (url,))
-    row = cur.fetchone()
-    conn.close()
-    return row[0] if row else None
+def get_cached_content(url: str) -> Optional[str]:
+    """Returns cached content from Supabase url_cache table."""
+    try:
+        sb = get_supabase()
+        res = sb.table("url_cache").select("content").eq("url", url).execute()
+        return res.data[0]["content"] if res.data else None
+    except Exception as e:
+        logger.error(f"Supabase cache error: {e}")
+        return None
 
 def cache_content(url: str, content: str):
-    """Saves extracted content to cache."""
-    conn = get_db()
+    """Saves extracted content to Supabase cache."""
     try:
-        conn.execute("INSERT OR REPLACE INTO url_cache (url, content) VALUES (?, ?)", (url, content))
-        conn.commit()
-    except Exception:
-        pass
-    finally:
-        conn.close()
+        sb = get_supabase()
+        sb.table("url_cache").upsert({"url": url, "content": content, "fetched_at": datetime.utcnow().isoformat()}).execute()
+    except Exception as e:
+        logger.error(f"Supabase cache insert error: {e}")
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode(), hashed.encode())
-
-def create_user(username: str, password: str, language: str = "fr", score_threshold: int = 70) -> int:
-    conn = get_db()
-    try:
-        cursor = conn.execute(
-            "INSERT INTO users (username, password_hash, language, score_threshold) VALUES (?, ?, ?, ?)",
-            (username, hash_password(password), language, score_threshold)
-        )
-        conn.commit()
-        user_id = cursor.lastrowid
-        return user_id
-    except sqlite3.IntegrityError:
-        return -1  # Username already exists
-    finally:
-        conn.close()
+# --- User & Profile Management ---
 
 def get_user_by_username(username: str) -> Optional[dict]:
-    conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
-
-def get_user_by_id(user_id: int) -> Optional[dict]:
-    conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
-
-def update_user(user_id: int, **kwargs):
-    conn = get_db()
-    allowed = {"language", "score_threshold"}
-    updates = {k: v for k, v in kwargs.items() if k in allowed}
-    if not updates:
-        conn.close()
-        return
-    set_clause = ", ".join(f"{k} = ?" for k in updates)
-    values = list(updates.values()) + [user_id]
-    conn.execute(f"UPDATE users SET {set_clause} WHERE id = ?", values)
-    conn.commit()
-    conn.close()
-
-def update_password(user_id: int, new_password: str):
-    conn = get_db()
-    conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(new_password), user_id))
-    conn.commit()
-    conn.close()
-
-def dismiss_article(user_id: int, article_title: str, reason: str = ""):
-    conn = get_db()
-    conn.execute(
-        "INSERT INTO dismissed_articles (user_id, article_title, reason) VALUES (?, ?, ?)",
-        (user_id, article_title, reason)
-    )
-    conn.commit()
-    conn.close()
-
-def get_dismissed_titles(user_id: int) -> List[str]:
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT article_title FROM dismissed_articles WHERE user_id = ?", (user_id,)
-    ).fetchall()
-    conn.close()
-    return [r["article_title"] for r in rows]
-
-
-# ── Processed Articles (Anti-Doublon) ────────────────────
-
-def record_processed_urls(user_id: int, urls: List[str]):
-    """Record a batch of article URLs as processed for this user."""
-    if not urls:
-        return
-    conn = get_db()
-    now = datetime.utcnow().isoformat()
-    conn.executemany(
-        "INSERT INTO processed_articles (user_id, url, processed_at) VALUES (?, ?, ?)",
-        [(user_id, url, now) for url in urls],
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_recent_processed_urls(user_id: int, days: int = 7) -> set:
-    """Return the set of article URLs processed in the last `days` days."""
-    conn = get_db()
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
-    rows = conn.execute(
-        "SELECT url FROM processed_articles WHERE user_id = ? AND processed_at >= ?",
-        (user_id, cutoff),
-    ).fetchall()
-    conn.close()
-    return {r["url"] for r in rows}
-
-
-def purge_old_processed(days: int = 7):
-    """Delete processed_articles entries older than `days` days."""
-    conn = get_db()
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
-    conn.execute("DELETE FROM processed_articles WHERE processed_at < ?", (cutoff,))
-    conn.commit()
-    conn.close()
-
-def seed_users():
-    """Create default users if they don't exist."""
-    print("🌱 Vérification des utilisateurs par défaut...")
+    """Fetch user profile by username."""
     try:
-        users = [
-            ("admin", "admin123", "fr", 60),
-            ("john", "john123", "en", 75),
-            ("yuki", "yuki123", "ja", 70),
-            ("sarah", "sarah123", "fr", 65)
-        ]
-
-        for username, password, lang, threshold in users:
-            if not get_user_by_username(username):
-                create_user(username, password, language=lang, score_threshold=threshold)
-                print(f"   👤 Utilisateur '{username}' créé ({lang})")
-            else:
-                print(f"   ✓ Utilisateur '{username}' existe déjà")
-
+        sb = get_supabase()
+        res = sb.table("profiles").select("*").eq("username", username).execute()
+        return res.data[0] if res.data else None
     except Exception as e:
-        print(f"⚠️ Erreur création users par défaut: {e}")
+        logger.error(f"Supabase user error: {e}")
+        return None
+
+def update_user_profile(user_id: str, updates: Dict[str, Any]):
+    """Update user profile fields (JSONB)."""
+    try:
+        sb = get_supabase()
+        sb.table("profiles").update(updates).eq("id", user_id).execute()
+        logger.info(f"✅ Profil mis à jour pour {user_id}")
+    except Exception as e:
+        logger.error(f"Supabase profile update error: {e}")
+
+# --- Embedding Vectors (pgvector) ---
+
+def store_manifesto_embedding(user_id: str, embedding: List[float]):
+    """Save the user's manifesto embedding vector."""
+    try:
+        sb = get_supabase()
+        sb.table("manifesto_embeddings").upsert({
+            "user_id": user_id, 
+            "embedding": embedding
+        }).execute()
+        logger.info(f"✅ Manifesto vector saved for {user_id}")
+    except Exception as e:
+        logger.error(f"Supabase manifesto vector update error: {e}")
+
+def store_article_embeddings(article_data: List[dict]):
+    """Save batch of scraped articles and their vectors."""
+    if not article_data: return
+    try:
+        sb = get_supabase()
+        # article_data should contain: url, title, content, source_interest, embedding
+        sb.table("article_embeddings").upsert(article_data, on_conflict="url").execute()
+    except Exception as e:
+        logger.error(f"Supabase article vector insert error: {e}")
+
+def match_articles(query_embedding: List[float], match_count: int = 5) -> List[dict]:
+    """Perform Cosine Similarity match against pgvector in Postgres via RPC."""
+    try:
+        sb = get_supabase()
+        res = sb.rpc("match_articles", {"query_embedding": query_embedding, "match_count": match_count}).execute()
+        return res.data or []
+    except Exception as e:
+        logger.error(f"Supabase RPC match_articles error: {e}")
+        return []
+
+def get_manifesto_embedding(user_id: str) -> Optional[List[float]]:
+    try:
+        sb = get_supabase()
+        res = sb.table("manifesto_embeddings").select("embedding").eq("user_id", user_id).execute()
+        return res.data[0]["embedding"] if res.data else None
+    except Exception:
+        return None
+
+# --- Processed Articles (Anti-Doublon) ---
+
+def record_processed_urls(user_id: str, urls: List[str]):
+    """Record a batch of article URLs as processed in Supabase."""
+    if not urls: return
+    try:
+        sb = get_supabase()
+        data = [{"user_id": user_id, "url": url} for url in urls]
+        sb.table("processed_articles").insert(data).execute()
+    except Exception as e:
+        logger.error(f"Supabase record error: {e}")
+
+def get_recent_processed_urls(user_id: str, days: int = 7) -> set:
+    """Return the set of article URLs processed recently from Supabase."""
+    try:
+        sb = get_supabase()
+        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        res = sb.table("processed_articles").select("url").eq("user_id", user_id).gte("processed_at", cutoff).execute()
+        return {r["url"] for r in res.data}
+    except Exception as e:
+        logger.error(f"Supabase processed fetch error: {e}")
+        return set()
+
+# --- Daily Brief Persistence ---
+
+def store_daily_brief(user_id: str, brief_data: dict):
+    """Save the final brief to Supabase instead of JSON."""
+    try:
+        sb = get_supabase()
+        sb.table("daily_briefs").upsert({
+            "user_id": user_id,
+            "global_digest": brief_data.get("global_digest"),
+            "content": brief_data.get("content", []),
+            "date": datetime.now().date().isoformat()
+        }, on_conflict="user_id,date").execute()
+        logger.info("✅ Brief enregistré dans Supabase.")
+    except Exception as e:
+        logger.error(f"Supabase brief store error: {e}")
+
+# --- Status / Realtime ---
+
+def store_feedback(user_id: str, article_title: str, action: str, summary: str = ""):
+    """Save user interaction feedback to Supabase."""
+    try:
+        sb = get_supabase()
+        sb.table("feedbacks").insert({
+            "user_id": user_id,
+            "article_title": article_title,
+            "article_summary": summary,
+            "action": action,
+            "created_at": datetime.utcnow().isoformat()
+        }).execute()
+    except Exception as e:
+        logger.error(f"Supabase feedback error: {e}")
+
+def set_generation_status(username: str, status: str, step: str, percent: int):
+    """
+    Note: Supabase doesn't have a direct equivalent to SQLite's INSERT OR REPLACE for this.
+    We'll use an 'upsert' pattern.
+    """
+    try:
+        sb = get_supabase()
+        sb.table("generation_status").upsert({
+            "username": username,
+            "status": status,
+            "step": step,
+            "percent": percent,
+            "updated_at": datetime.utcnow().isoformat()
+        }).execute()
+    except Exception:
+        pass
+
+def get_generation_status(username: str) -> dict:
+    try:
+        sb = get_supabase()
+        res = sb.table("generation_status").select("*").eq("username", username).execute()
+        if res.data:
+            return res.data[0]
+    except Exception:
+        pass
+    return {"status": "idle", "percent": 0, "step": ""}

@@ -6,12 +6,26 @@
         "max_items_per_category": 5
     },
     "ui_categories": [
+        "Tech & Science",
+        "Finance & Business",
         "Politique & Monde",
-        "Investissement & Crypto",
-        "Tech & IA",
-        "Culture & Manga",
-        "Sport & Combat",
-        "Niche"
+        "Culture & Divertissement",
+        "Lifestyle & Sport",
+        "Société & Environnement"
+    ],
+    "rss_sources": [
+        {
+            "url": "https://techcrunch.com/feed/",
+            "category": "Tech & Science"
+        },
+        {
+            "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+            "category": "Finance & Business"
+        },
+        {
+            "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+            "category": "Politique & Monde"
+        }
     ],
     "interests": [
         {
@@ -19,7 +33,7 @@
             "active": true,
             "type": "topic",
             "query": "Bitcoin OR Ethereum price analysis OR Blockchain regulation -memecoin -doge",
-            "category": "Investissement & Crypto",
+            "category": "Finance & Business",
             "language": "en"
         },
         {
@@ -27,7 +41,7 @@
             "active": true,
             "type": "topic",
             "query": "OpenAI OR LLM model release OR NVIDIA GPU hardware OR Python updates",
-            "category": "Tech & IA",
+            "category": "Tech & Science",
             "language": "en"
         },
         {
@@ -35,7 +49,7 @@
             "active": true,
             "type": "topic",
             "query": "One Piece Chapter 1* OR Jujutsu Kaisen Chapter OR Chainsaw Man Manga release",
-            "category": "Culture & Manga",
+            "category": "Culture & Divertissement",
             "language": "en"
         },
         {
@@ -43,7 +57,7 @@
             "active": true,
             "type": "topic",
             "query": "Elden Ring DLC OR FromSoftware announcement OR Nintendo Direct summary",
-            "category": "Culture & Manga",
+            "category": "Culture & Divertissement",
             "language": "en"
         },
         {
@@ -51,7 +65,7 @@
             "active": true,
             "type": "topic",
             "query": "ADCC Grappling results OR Gordon Ryan news OR IBJJF major tournament",
-            "category": "Sport & Combat",
+            "category": "Lifestyle & Sport",
             "language": "en"
         },
         {
@@ -67,7 +81,7 @@
             "active": true,
             "type": "topic",
             "query": "Climate Change Report OR Renewable Energy Breakthrough OR Biodiversity Loss OR Reforestation projects",
-            "category": "Science & Écologie",
+            "category": "Société & Environnement",
             "language": "en"
         },
         {
@@ -75,7 +89,7 @@
             "active": true,
             "type": "topic",
             "query": "NASA Artemis Mission OR SpaceX Starship Launch OR James Webb Telescope discovery OR Quantum Computing breakthrough",
-            "category": "Science & Écologie",
+            "category": "Tech & Science",
             "language": "en"
         },
         {
@@ -83,7 +97,7 @@
             "active": true,
             "type": "topic",
             "query": "Y Combinator batch OR Techcrunch Disrupt winner OR Unicorn startup valuation OR SaaS trends 2026",
-            "category": "Business & Tech",
+            "category": "Finance & Business",
             "language": "en"
         },
         {
@@ -91,7 +105,7 @@
             "active": true,
             "type": "topic",
             "query": "Netflix new series release OR HBO Max upcoming shows OR Movie box office records OR Cannes Film Festival winners",
-            "category": "Culture & Manga",
+            "category": "Culture & Divertissement",
             "language": "en"
         }
     ]

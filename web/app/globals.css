@@ -1,17 +1,45 @@
-/* ── Mizan.ai — Design System ─────────────────────────── */
+@import "tailwindcss";
+
+/* ── Mizan.ai — Premium Dark Design System ──────────── */
 
 :root {
-  --font-serif: "Newsreader", Georgia, serif;
+  /* ─ Fonts ─ */
+  --font-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
   --font-body: var(--font-inter), -apple-system, sans-serif;
 
-  --text: #1a1a1a;
-  --text-light: #666666;
-  --text-lighter: #999999;
-  --separator: #e5e5e5;
-  --bg: #ffffff;
-  --bg-hover: #fafafa;
-  --accent: #1a1a1a;
-  --accent-light: #f0f0f0;
+  /* ─ Dark Theme Palette ─ */
+  --bg-base: #0b0f15;
+  --bg-surface: #111826;
+  --bg-card: #161f2e;
+  --bg-card-hover: #1c2740;
+  --bg-elevated: #1e293b;
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(251, 191, 36, 0.2);
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-accent: #fbbf24;
+
+  /* ─ Accent Colors ─ */
+  --accent-amber: #fbbf24;
+  --accent-amber-glow: rgba(251, 191, 36, 0.15);
+  --accent-orange: #f97316;
+  --accent-blue: #3b82f6;
+  --accent-blue-glow: rgba(59, 130, 246, 0.15);
+  --accent-cyan: #22d3ee;
+  --accent-green: #22c55e;
+  --accent-green-muted: rgba(34, 197, 94, 0.15);
+  --accent-red: #ef4444;
+  --accent-red-muted: rgba(239, 68, 68, 0.15);
+
+  /* ─ Shadows ─ */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-glow-amber: 0 0 30px rgba(251, 191, 36, 0.08);
+  --shadow-glow-blue: 0 0 30px rgba(59, 130, 246, 0.08);
 }
 
 /* ── Reset ───────────────────────────────────────────── */
@@ -30,9 +58,9 @@ html {
 
 body {
   font-family: var(--font-body);
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.7;
 }
 
 /* ── Auth Pages ──────────────────────────────────────── */
@@ -43,7 +71,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   padding: 24px;
-  background: var(--bg);
+  background: var(--bg-base);
 }
 
 .auth-container {
@@ -60,7 +88,7 @@ body {
   font-family: var(--font-serif);
   font-size: 56px;
   font-weight: 400;
-  color: var(--text);
+  color: var(--text-primary);
   letter-spacing: -0.02em;
   line-height: 1;
   margin-bottom: 4px;
@@ -70,7 +98,7 @@ body {
   font-size: 14px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-lighter);
+  color: var(--text-muted);
 }
 
 .auth-form h2 {
@@ -78,7 +106,7 @@ body {
   font-size: 22px;
   font-weight: 400;
   margin-bottom: 24px;
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .auth-field {
@@ -88,7 +116,7 @@ body {
 .auth-field label {
   display: block;
   font-size: 13px;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin-bottom: 6px;
   letter-spacing: 0.02em;
 }
@@ -99,17 +127,18 @@ body {
   padding: 10px 14px;
   font-size: 15px;
   font-family: var(--font-body);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   outline: none;
   transition: border-color 0.2s;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .auth-field input:focus,
 .auth-field select:focus {
-  border-color: var(--text-light);
+  border-color: var(--accent-amber);
+  box-shadow: 0 0 0 3px var(--accent-amber-glow);
 }
 
 .auth-btn {
@@ -118,42 +147,45 @@ body {
   font-size: 15px;
   font-family: var(--font-body);
   font-weight: 500;
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-amber), var(--accent-orange));
+  color: #0b0f15;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   margin-top: 8px;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.15s;
 }
 
 .auth-btn:hover {
-  opacity: 0.85;
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .auth-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .auth-error {
-  background: #fff0f0;
-  color: #cc3333;
+  background: var(--accent-red-muted);
+  color: var(--accent-red);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
   margin-bottom: 16px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .auth-link {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
-  color: var(--text-light);
+  color: var(--text-secondary);
 }
 
 .auth-link a {
-  color: var(--text);
+  color: var(--accent-amber);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -161,14 +193,14 @@ body {
 /* ── Profile Avatar ──────────────────────────────────── */
 
 .profile-avatar {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-amber), var(--accent-orange));
+  color: #0b0f15;
   border: none;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-body);
   cursor: pointer;
   display: flex;
@@ -179,7 +211,7 @@ body {
 
 .profile-avatar:hover {
   transform: scale(1.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px rgba(251, 191, 36, 0.3);
 }
 
 /* ── Profile Overlay ─────────────────────────────────── */
@@ -190,7 +222,8 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   z-index: 999;
   display: flex;
   justify-content: flex-start;
@@ -201,9 +234,10 @@ body {
   width: 360px;
   max-height: 90vh;
   overflow-y: auto;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
   padding: 28px;
   margin: 70px 0 0 24px;
   animation: panelIn 0.2s ease-out;
@@ -214,7 +248,6 @@ body {
     opacity: 0;
     transform: translateY(-8px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -227,15 +260,15 @@ body {
   gap: 14px;
   margin-bottom: 28px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--separator);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .profile-avatar-large {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-amber), var(--accent-orange));
+  color: #0b0f15;
   font-size: 18px;
   font-weight: 600;
   display: flex;
@@ -247,17 +280,17 @@ body {
 .profile-username {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .profile-meta {
   font-size: 13px;
-  color: var(--text-lighter);
+  color: var(--text-muted);
 }
 
 .profile-note {
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-amber);
   margin-top: 6px;
   font-style: italic;
 }
@@ -271,7 +304,7 @@ body {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin-bottom: 6px;
   font-weight: 500;
 }
@@ -283,16 +316,16 @@ body {
   padding: 8px 12px;
   font-size: 14px;
   font-family: var(--font-body);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   outline: none;
-  background: white;
-  color: var(--text);
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .profile-field input[type="range"] {
   width: 100%;
-  accent-color: var(--accent);
+  accent-color: var(--accent-amber);
 }
 
 .profile-field textarea {
@@ -300,19 +333,20 @@ body {
   padding: 10px 12px;
   font-size: 13px;
   font-family: var(--font-body);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   outline: none;
   resize: vertical;
   line-height: 1.6;
-  color: var(--text);
-  background: var(--bg-hover);
+  color: var(--text-primary);
+  background: var(--bg-surface);
 }
 
 .profile-field textarea:focus,
 .profile-field select:focus,
 .profile-field input:focus {
-  border-color: var(--text-light);
+  border-color: var(--accent-amber);
+  box-shadow: 0 0 0 3px var(--accent-amber-glow);
 }
 
 .profile-generate {
@@ -322,8 +356,8 @@ body {
   font-family: var(--font-body);
   font-weight: 500;
   background: none;
-  color: var(--accent);
-  border: 1px dashed var(--accent);
+  color: var(--accent-amber);
+  border: 1px dashed var(--accent-amber);
   border-radius: 6px;
   cursor: pointer;
   margin-bottom: 18px;
@@ -331,7 +365,7 @@ body {
 }
 
 .profile-generate:hover {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--accent-amber-glow);
   border-style: solid;
 }
 
@@ -345,7 +379,7 @@ body {
   gap: 10px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid var(--separator);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .profile-save {
@@ -354,8 +388,8 @@ body {
   font-size: 14px;
   font-family: var(--font-body);
   font-weight: 500;
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-amber), var(--accent-orange));
+  color: #0b0f15;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -375,16 +409,16 @@ body {
   font-size: 14px;
   font-family: var(--font-body);
   background: none;
-  color: var(--text-light);
-  border: 1px solid var(--separator);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .profile-logout:hover {
-  border-color: #cc3333;
-  color: #cc3333;
+  border-color: var(--accent-red);
+  color: var(--accent-red);
 }
 
 /* ── Not Interested Button ───────────────────────────── */
@@ -408,7 +442,7 @@ body {
   border: none;
   font-size: 12px;
   font-family: var(--font-body);
-  color: var(--text-lighter);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px 0;
   letter-spacing: 0.02em;
@@ -416,7 +450,7 @@ body {
 }
 
 .not-interested-btn:hover {
-  color: var(--text-light);
+  color: var(--accent-red);
 }
 
 /* ── History Panel ────────────────────────────────────── */
@@ -424,30 +458,28 @@ body {
 .history-wrapper {
   position: relative;
   margin-top: 12px;
-  /* Space between profile and history if stacked */
 }
 
 .history-toggle {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--accent);
-  /* Match profile style */
-  color: white;
-  border: none;
-  /* Remove border to match profile */
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease, opacity 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, border-color 0.2s, color 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .history-toggle:hover {
   transform: scale(1.05);
-  opacity: 0.9;
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
 }
 
 .history-icon {
@@ -459,14 +491,14 @@ body {
   top: 100%;
   left: 0;
   margin-top: 8px;
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
   border-radius: 12px;
   padding: 12px;
   min-width: 280px;
   max-height: 400px;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   z-index: 1001;
 }
 
@@ -477,7 +509,7 @@ body {
   background: none;
   border: none;
   font-size: 13px;
-  color: var(--accent, #555);
+  color: var(--accent-amber);
   cursor: pointer;
   padding: 6px 4px;
   margin-bottom: 8px;
@@ -486,13 +518,13 @@ body {
 }
 
 .history-back:hover {
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .history-empty,
 .history-loading {
   font-size: 13px;
-  color: var(--text-lighter);
+  color: var(--text-muted);
   text-align: center;
   padding: 16px 4px;
   font-family: var(--font-body);
@@ -520,32 +552,33 @@ body {
   transition: all 0.15s ease;
   font-family: var(--font-body);
   text-align: left;
+  color: var(--text-primary);
 }
 
 .history-date-btn:hover {
-  border-color: var(--border);
-  background: rgba(0, 0, 0, 0.015);
+  border-color: var(--border-medium);
+  background: var(--bg-card-hover);
 }
 
 .history-date-btn:active {
   transform: scale(0.98);
-  border-color: var(--text-lighter);
+  border-color: var(--text-muted);
 }
 
 .history-date-btn.selected {
-  border-color: var(--text-lighter);
-  background: rgba(0, 0, 0, 0.03);
+  border-color: var(--accent-amber);
+  background: var(--accent-amber-glow);
 }
 
 .history-date-label {
   font-size: 14px;
-  color: var(--text);
+  color: var(--text-primary);
   text-transform: capitalize;
 }
 
 .history-date-count {
   font-size: 12px;
-  color: var(--text-lighter);
+  color: var(--text-muted);
   white-space: nowrap;
   margin-left: 12px;
 }

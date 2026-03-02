@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 
 interface User {
-    id: number;
+    id: string;
     username: string;
+    email: string;
     language: string;
     score_threshold: number;
 }
@@ -12,19 +13,19 @@ interface User {
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (username: string, password: string) => Promise<void>;
-    signup: (username: string, password: string, language: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
+    signup: (email: string, password: string, username: string, language?: string) => Promise<void>;
     logout: () => void;
     updateProfile: (data: Partial<User>) => Promise<void>;
     loading: boolean;
-    /** Increment to force page.tsx to re-fetch the brief */
     refreshKey: number;
     triggerRefresh: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const API = "http://localhost:8000";
+// Use environment variable for API URL, fallback to localhost in dev
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -43,13 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (savedToken && savedUser) {
             setToken(savedToken);
             setUser(JSON.parse(savedUser));
-            // Re-fetch profile from server to ensure data is fresh
             fetch(`${API}/api/me`, {
                 headers: { Authorization: `Bearer ${savedToken}` },
             })
                 .then((res) => {
                     if (!res.ok) {
-                        // Token expired or invalid — force logout
                         localStorage.removeItem("mizan_token");
                         localStorage.removeItem("mizan_user");
                         setToken(null);
@@ -71,38 +70,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const login = async (username: string, password: string) => {
+    const login = async (email: string, password: string) => {
         const res = await fetch(`${API}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ email, password }),
         });
         if (!res.ok) {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({ detail: "Erreur réseau" }));
             throw new Error(err.detail || "Erreur de connexion");
         }
         const data = await res.json();
-        setToken(data.token);
+        setToken(data.access_token);
         setUser(data.user);
-        localStorage.setItem("mizan_token", data.token);
+        localStorage.setItem("mizan_token", data.access_token);
         localStorage.setItem("mizan_user", JSON.stringify(data.user));
     };
 
-    const signup = async (username: string, password: string, language: string) => {
+    const signup = async (email: string, password: string, username: string, language: string = "fr") => {
         const res = await fetch(`${API}/api/auth/signup`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password, language }),
+            body: JSON.stringify({ email, password, username }),
         });
         if (!res.ok) {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({ detail: "Erreur réseau" }));
             throw new Error(err.detail || "Erreur de création");
         }
         const data = await res.json();
-        setToken(data.token);
-        setUser(data.user);
-        localStorage.setItem("mizan_token", data.token);
-        localStorage.setItem("mizan_user", JSON.stringify(data.user));
+        if (data.access_token) {
+            setToken(data.access_token);
+            localStorage.setItem("mizan_token", data.access_token);
+        }
+        // Fetch full profile after signup
+        if (data.access_token) {
+            const profileRes = await fetch(`${API}/api/me`, {
+                headers: { Authorization: `Bearer ${data.access_token}` },
+            });
+            if (profileRes.ok) {
+                const profile = await profileRes.json();
+                setUser(profile);
+                localStorage.setItem("mizan_user", JSON.stringify(profile));
+            }
+        }
     };
 
     const logout = () => {
@@ -114,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const updateProfile = async (data: Partial<User>) => {
         if (!token) return;
-        const res = await fetch(`${API}/api/me`, {
+        const res = await fetch(`${API}/api/me/profile`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -123,15 +133,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify(data),
         });
         if (res.ok) {
-            const body = await res.json();
-            // Use the server-returned user object for consistency
-            if (body.user) {
-                setUser(body.user);
-                localStorage.setItem("mizan_user", JSON.stringify(body.user));
-            } else if (user) {
-                const updated = { ...user, ...data };
-                setUser(updated);
-                localStorage.setItem("mizan_user", JSON.stringify(updated));
+            // Re-fetch profile to get accurate state
+            const profileRes = await fetch(`${API}/api/me`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (profileRes.ok) {
+                const profile = await profileRes.json();
+                setUser(profile);
+                localStorage.setItem("mizan_user", JSON.stringify(profile));
             }
         }
     };

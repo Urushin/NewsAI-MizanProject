@@ -72,6 +72,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
     const [manifesto, setManifesto] = useState("");
     const [language, setLanguage] = useState(user?.language || "fr");
     const [threshold, setThreshold] = useState(user?.score_threshold || 70);
+    const [summaryLength, setSummaryLength] = useState(2);
     const [newPassword, setNewPassword] = useState("");
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState("");
@@ -98,7 +99,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
         }
     }, [user]);
 
-    // Load manifesto when popup opens
+    // Load manifesto and preferences when popup opens
     useEffect(() => {
         if (open && token) {
             fetch(`${API}/api/me/manifesto`, {
@@ -106,6 +107,17 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
             })
                 .then((r) => r.json())
                 .then((d) => setManifesto(d.content || ""))
+                .catch(() => { });
+
+            fetch(`${API}/api/me/profile`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+                .then((r) => r.json())
+                .then((d) => {
+                    if (d.preferences && d.preferences.summary_length) {
+                        setSummaryLength(d.preferences.summary_length);
+                    }
+                })
                 .catch(() => { });
         }
     }, [open, token]);
@@ -140,6 +152,16 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ content: manifesto }),
+            });
+
+            // Update summary length preferences
+            await fetch(`${API}/api/me/profile/preferences`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ summary_length: summaryLength }),
             });
 
             // Update password if provided
@@ -207,7 +229,10 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            if (!res.ok) throw new Error("Erreur lancement");
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || `Erreur lancement HTTP ${res.status}`);
+            }
 
             if (mode === "test") {
                 // Synchronous return
@@ -230,9 +255,9 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                 // Polling loop above handles completion
             }
 
-        } catch (e) {
+        } catch (e: any) {
             clearInterval(interval);
-            setGenState({ loading: false, success: false, error: "Erreur connexion", step: "", percent: 0 });
+            setGenState({ loading: false, success: false, error: e.message || "Erreur connexion", step: "", percent: 0 });
         }
     };
 
@@ -288,6 +313,25 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                                 value={threshold}
                                 onChange={(e) => setThreshold(parseInt(e.target.value))}
                             />
+                        </div>
+
+                        {/* Summary Length Preference */}
+                        <div className="profile-field">
+                            <label>Taille des résumés ciblée (1-4)</label>
+                            <input
+                                type="range"
+                                min={1}
+                                max={4}
+                                step={1}
+                                value={summaryLength}
+                                onChange={(e) => setSummaryLength(parseInt(e.target.value))}
+                            />
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-light)", marginTop: "4px" }}>
+                                <span>Puces</span>
+                                <span>Phrase</span>
+                                <span>1 Para</span>
+                                <span>Analyse</span>
+                            </div>
                         </div>
 
                         {/* Manifesto */}

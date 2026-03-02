@@ -1,407 +1,394 @@
 """
-Mizan.ai — Pipeline (Multi-User)
-Runs the ETL pipeline for a specific user.
+Mizan.ai — Pipeline (Real LLM Calls)
+Two-pass cognitive filtering + global digest.
 """
 import json
 import os
 import sys
 import time
 from datetime import datetime
-from typing import List, Dict, Optional
-from pydantic import ValidationError
+import pathlib
+from dotenv import load_dotenv
 
-from models import RawArticle, AnalyzedArticle, DailyBrief
-from collector import collect_articles
-from llm_wrapper import get_providers
+# Roots setup
+root_dir = pathlib.Path(__file__).parent.parent.resolve()
+load_dotenv(str(root_dir / '.env'))
+from typing import List, Tuple
+
+from models import RawArticle, ArticleVerdict
+from loguru import logger
+from collector import collect_articles, fetch_article_content
+from llm_wrapper import get_providers, parse_llm_json, strip_markdown_fences
 from database import (
     get_recent_processed_urls, record_processed_urls,
-    purge_old_processed, get_user_by_username,
+    get_user_by_username,
+    store_daily_brief, set_generation_status,
+    store_article_embeddings, get_manifesto_embedding, match_articles
 )
 
-MAX_RETRIES = 2
-BASE_WAIT = 2
-MANIFESTS_DIR = os.path.join(os.path.dirname(__file__), "manifests")
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-FRONTEND_PUBLIC = os.path.join(os.path.dirname(os.path.dirname(__file__)), "daily-brief-ui", "public")
 
+# ── Helpers ──
 
-def load_manifesto(username: str) -> str:
-    path = os.path.join(MANIFESTS_DIR, f"{username}.txt")
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "Strict filter. Keep only major verifiable facts."
-
-
-def build_prompt(articles: list, manifesto: str, language: str, score_threshold: int) -> str:
-    """
-    Build the AI prompt. Language instruction is injected HERE, not in the manifesto.
-    Articles now include content_preview for informed analysis.
-    """
-    lang_instructions = {
-        "fr": "Traduis TOUJOURS les titres et résumés en FRANÇAIS, même si la source est anglaise.",
-        "en": "ALL titles and summaries MUST be in ENGLISH, regardless of original language.",
-        "ja": "すべてのタイトルと要約は必ず日本語で書いてください。元の言語に関係なく。",
+def load_user_profile(username: str) -> dict:
+    """Loads profile from Supabase."""
+    user = get_user_by_username(username)
+    if not user:
+        return {"identity": {}, "interests": {}, "rejection_rules": []}
+    return {
+        "identity": user.get("identity") or {},
+        "interests": user.get("interests") or {},
+        "rejection_rules": user.get("rejection_rules") or [],
+        "preferences": user.get("preferences") or {}
     }
-    lang_line = lang_instructions.get(language, lang_instructions["en"])
-
-    lang_names = {"fr": "français", "en": "English", "ja": "日本語"}
-    lang_name = lang_names.get(language, "English")
-
-    return f"""Tu es un FILTRE D'INTELLIGENCE. Pas un assistant. Un analyste froid.
-
-═══ MANIFESTO DE L'UTILISATEUR ═══
-{manifesto}
-
-═══ GRILLE DE SCORING (STRICTE) ═══
-90-100 : Fait majeur, chiffres précis, impact direct (loi votée, crash >5%, sortie officielle)
-70-89  : Info intéressante avec données concrètes, mais pas urgente
-50-69  : Pertinent au profil mais manque de substance factuelle
-0-49   : Bruit, opinion, rumeur, hors-profil → REJETER
-
-═══ RÈGLES ═══
-1. Score < {score_threshold} → "keep": false. Pas de négociation.
-2. Résumé : 2-3 lignes MAX. Chiffres obligatoires si disponibles.
-3. Catégorie : Utilise EXACTEMENT une de ces valeurs → "Politique & Monde", "Investissement & Crypto", "Tech & IA", "Culture & Manga", "Sport & Combat", "Niche"
-4. Conserve le lien (link) original de chaque article.
-5. LANGUE DE SORTIE ({lang_name}) : {lang_line}
-6. UTILISE LE CONTENU (content_preview) pour scorer et résumer — ne te base PAS uniquement sur le titre.
-   Si content_preview est vide, juge sur le titre seul et baisse le score de 10 points.
-
-═══ ARTICLES À ANALYSER ═══
-{json.dumps(articles, ensure_ascii=False)}
-
-═══ FORMAT DE SORTIE ═══
-Renvoie UNIQUEMENT un tableau JSON valide, sans texte autour, sans markdown :
-[
-  {{
-    "title": "Titre en {lang_name}",
-    "category": "Catégorie",
-    "score": 85,
-    "summary": "Résumé en {lang_name} basé sur le contenu réel...",
-    "keep": true,
-    "link": "https://..."
-  }}
-]"""
 
 
-def analyze_batch(articles: list, manifesto: str, language: str, score_threshold: int) -> list:
-    """Analyze a batch of RawArticles with the LLM, including content previews."""
-    payload = []
-    for a in articles:
-        preview = a.content[:500] + "..." if len(a.content) > 500 else a.content
-        if not preview:
-            preview = "(Contenu inaccessible, juger sur le titre uniquement)"
-        payload.append({
-            "title": a.title,
-            "link": a.link,
-            "source_interest": a.source_interest,
-            "content_preview": preview,
+def _status(username: str, step: str, percent: int):
+    """Update progress status in Supabase."""
+    set_generation_status(username, "processing", step, percent)
+
+
+def _profile_context(profile: dict) -> str:
+    """Build a compact profile context string for LLM prompts."""
+    identity = json.dumps(profile.get("identity", {}), ensure_ascii=False)
+    interests = json.dumps(profile.get("interests", {}), ensure_ascii=False)
+    rules = json.dumps(profile.get("rejection_rules", []), ensure_ascii=False)
+    return f"User identity: {identity}\nInterests: {interests}\nBlock rules: {rules}"
+
+
+def _build_user_interest_sources(profile: dict) -> list:
+    """Convert user profile interests into collector-compatible source dicts.
+    
+    If user has interests stored as a dict like {"crypto": 0.8, "AI": 0.9},
+    convert them into Google News search sources.
+    If interests is already a list of source dicts, return as-is.
+    """
+    interests = profile.get("interests", {})
+    if not interests:
+        return []
+    
+    # Already in list format (configured sources)
+    if isinstance(interests, list):
+        return interests
+    
+    # Dict format {"topic": weight} → convert to search sources
+    sources = []
+    for topic, weight in interests.items():
+        if isinstance(weight, (int, float)) and weight < 0.3:
+            continue  # Skip low-interest topics
+        sources.append({
+            "id": f"user_topic_{topic}",
+            "active": True,
+            "type": "topic",
+            "query": topic,
+            "category": "User Interest",
+            "language": profile.get("preferences", {}).get("language", "en"),
         })
-    prompt = build_prompt(payload, manifesto, language, score_threshold)
+    return sources
 
+
+def _verdict_to_dict(v: ArticleVerdict) -> dict:
+    return {
+        "title": v.localized_title,
+        "link": v.link,
+        "category": v.category,
+        "score": v.score,
+        "reason": v.reason,
+        "credibility": v.credibility_score,
+        "summary": v.summary,
+    }
+
+
+def cluster_articles(articles: List[RawArticle]) -> List[List[RawArticle]]:
+    """Group near-duplicate articles by title prefix (simple dedup)."""
+    clusters: List[List[RawArticle]] = []
+    for a in articles:
+        found = False
+        for c in clusters:
+            if a.title[:30].lower() == c[0].title[:30].lower():
+                c.append(a)
+                found = True
+                break
+        if not found:
+            clusters.append([a])
+    return clusters
+
+
+# ── LLM Calls (Real) ──
+
+BATCH_SIZE = 10  # Articles per LLM call
+
+SYSTEM_PROMPT_FINAL_PASS = """You are a news relevance AI for a personalized news app.
+You evaluate the user's daily TOP matches that were found via vector search.
+Output ONLY valid JSON. No markdown, no explanation.
+For each article, return a JSON object with these exact fields:
+- "localized_title": string (article title, translated to user's language if needed)
+- "summary": string (2-3 sentence summary)
+- "score": int 0-100 (relevance to the user, should usually be high)
+- "keep": bool (true unless completely irrelevant)
+- "category": "Impact" or "Passion"
+- "reason": string (1 sentence explaining WHY this article matters to this user)
+- "credibility_score": int 0-10 (source reliability)
+- "link": string (the article URL, unchanged)
+Return a JSON array of objects."""
+
+SYSTEM_PROMPT_DIGEST = """You are a news synthesis AI. Given a list of filtered articles, write a concise 3-sentence executive summary of the user's day in news. Write in the user's language. Output only the summary text, no JSON."""
+
+
+def _build_batch_prompt(articles: List[dict], profile: dict, lang: str) -> str:
+    """Build a prompt for batched article evaluation."""
+    profile_ctx = _profile_context(profile)
+    article_list = []
+    for i, a in enumerate(articles):
+        content_snippet = a.get("content", "")[:500]
+        article_list.append(f'{i+1}. Title: "{a.get("title")}"\n   URL: {a.get("url")}\n   Source: {a.get("source_interest")}\n   Content: {content_snippet}')
+
+    articles_text = "\n\n".join(article_list)
+
+    return f"""{profile_ctx}
+
+Language: {lang}
+
+Evaluate these {len(articles)} top matched articles:
+
+{articles_text}
+
+Return a JSON array with one object per article. Each object must have: localized_title, summary, score, keep, category, reason, credibility_score, link."""
+
+
+def _call_llm(prompt: str, system_prompt: str) -> str:
+    """Call the first available LLM provider."""
     providers = get_providers()
     if not providers:
-        print("❌ CRITIQUE : Aucune API Key configurée.")
+        raise RuntimeError("No LLM provider available. Check MISTRAL_API_KEY.")
+
+    last_error = None
+    for provider in providers:
+        try:
+            return provider.generate(prompt, system_prompt)
+        except Exception as e:
+            logger.warning(f"LLM error ({provider.name}): {e}")
+            last_error = e
+
+    raise RuntimeError(f"All LLM providers failed. Last error: {last_error}")
+
+
+def _parse_verdicts(raw_text: str, urls: List[str], titles: List[str]) -> List[ArticleVerdict]:
+    """Parse LLM JSON output into ArticleVerdict objects."""
+    try:
+        data = parse_llm_json(raw_text)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse LLM JSON: {e}\nRaw: {raw_text[:500]}")
         return []
 
-    for attempt in range(MAX_RETRIES):
-        for provider in providers:
-            try:
-                print(f"      👉 Tentative avec {provider.name}...")
-                text = provider.generate(prompt)
+    if not isinstance(data, list):
+        data = [data]
 
-                # Clean markdown wrappers
-                text = text.strip()
-                if text.startswith("```"):
-                    text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-                if text.endswith("```"):
-                    text = text[:-3]
-                text = text.strip()
+    verdicts = []
+    for i, item in enumerate(data):
+        try:
+            # Ensure link is present (fallback to original article)
+            if not item.get("link") and i < len(urls):
+                item["link"] = urls[i]
+            # Ensure required fields
+            if "localized_title" not in item:
+                item["localized_title"] = titles[i] if i < len(titles) else "Unknown"
 
-                raw = json.loads(text)
+            v = ArticleVerdict(**item)
+            verdicts.append(v)
+        except Exception as e:
+            logger.warning(f"Skipping invalid verdict #{i}: {e}")
 
-                # Handle both array and object-wrapped formats
-                if isinstance(raw, dict):
-                    raw_list = None
-                    for v in raw.values():
-                        if isinstance(v, list):
-                            raw_list = v
-                            break
-                    if raw_list is None:
-                        raise ValueError(f"JSON object sans tableau: {list(raw.keys())}")
-                elif isinstance(raw, list):
-                    raw_list = raw
-                else:
-                    raise ValueError(f"Format JSON inattendu: {type(raw)}")
-
-                validated = []
-                for item in raw_list:
-                    try:
-                        validated.append(AnalyzedArticle(**item))
-                    except (ValidationError, TypeError):
-                        pass
-                return validated
-
-            except Exception as e:
-                print(f"         ⚠️ Échec {provider.name} : {e}")
-                continue
-
-        wait = BASE_WAIT * (2 ** attempt)
-        print(f"   ⏳ Tous les providers ont échoué. Pause {wait}s...")
-        time.sleep(wait)
-
-    print("   ❌ Abandon du batch.")
-    return []
+    return verdicts
 
 
-def generate_daily_brief(articles: list, manifesto: str, language: str) -> str:
-    """Generate the final HTML brief from selected articles."""
+def generate_global_digest(articles: List[ArticleVerdict], profile: dict, lang: str) -> str:
+    """Generate a 3-sentence executive summary of all kept articles."""
     if not articles:
-        return "<p>Aucun article pertinent aujourd'hui.</p>"
+        return ""
 
-    lang_names = {"fr": "Français", "en": "English", "ja": "Japanese"}
-    lang_name = lang_names.get(language, "English")
+    profile_ctx = _profile_context(profile)
+    titles = "\n".join(f"- {v.localized_title} ({v.category}, score {v.score})" for v in articles[:20])
 
-    articles_json = json.dumps([a.model_dump() for a in articles], ensure_ascii=False)
+    prompt = f"""{profile_ctx}
 
-    prompt = f"""
-RÔLE : Rédacteur en chef d'un média d'élite.
-TON : Synthétique, percutant, factuel. Pas de bla-bla.
-LANGUE : {lang_name}
+Language: {lang}
 
-TACHE : Rédige une "Daily Brief" HTML à partir des articles suivants.
+Today's filtered articles:
+{titles}
 
-CONTRAINTES HTML :
-- Utilise des balises <h2> pour les catégories.
-- Utilise <ul> et <li> pour les articles.
-- Pour chaque article :
-  - Titre en <strong> avec un lien <a href="...">.
-  - Résumé court juste après.
-  - Score de pertinence entre parenthèses (ex: "Score: 85").
-- Ajoute une section "💡 L'Insight du Jour" à la fin (synthèse globale en 2 phrases).
-- CSS minimaliste inline autorisé (ex: style="color: #333").
+Write a concise 3-sentence executive summary of today's news for this user. Focus on the most impactful trends. Write in {lang}."""
 
-MANIFESTO UTILISATEUR :
-{manifesto}
+    try:
+        return _call_llm(prompt, SYSTEM_PROMPT_DIGEST).strip()
+    except Exception as e:
+        logger.error(f"Digest generation failed: {e}")
+        return ""
 
-ARTICLES :
-{articles_json}
 
-FORMAT DE SORTIE :
-Uniquement le code HTML (pas de ```html, pas de préambule).
-"""
-
-    providers = get_providers()
-    if not providers:
-        return "<p>Erreur: Aucun provider IA disponible.</p>"
-
-    for attempt in range(MAX_RETRIES):
-        for provider in providers:
-            try:
-                print(f"      👉 Génération du brief avec {provider.name}...")
-                html = provider.generate(prompt)
-                
-                # Cleanup
-                if html.startswith("```"):
-                    html = html.split("\n", 1)[1] if "\n" in html else html[3:]
-                if html.endswith("```"):
-                    html = html[:-3]
-                
-                return html.strip()
-            except Exception as e:
-                print(f"         ⚠️ Échec génération : {e}")
-                continue
-        time.sleep(2)
-
-    return "<p>Erreur lors de la génération du brief.</p>"
-
-# Global status tracker: { "username": { "status": "running", "step": "Initialisation...", "percent": 0 } }
-GENERATION_STATUS = {}
-
-def update_status(username: str, step: str, percent: int):
-    """Updates the generation status for a user."""
-    GENERATION_STATUS[username] = {
-        "status": "running",
-        "step": step,
-        "percent": percent,
-        "updated_at": time.time()
-    }
+# ── Main Pipeline ──
 
 def run_pipeline_for_user(username: str, language: str = "fr", score_threshold: int = 70, mode: str = "prod") -> dict:
-    """
-    Run the full ETL pipeline for a specific user with progress tracking.
-    mode: "prod" (default, full scrape, save DB) or "test" (quick scrape, no DB).
-    """
-    start = time.time()
-    update_status(username, f"[{mode.upper()}] Chargement du profil...", 0)
-    
+    t0 = time.time()
+    is_test = mode == "test"
+    _status(username, "Loading profile from Supabase...", 0)
+
     try:
-        manifesto = load_manifesto(username)
-        
-        # Test Mode settings
-        is_test = (mode == "test")
-        batch_size = 20 if not is_test else 5
-
-        # Callback for collector
-        def collect_progress(msg, pct):
-            update_status(username, msg, pct)
-
-        # Resolve user_id for dedup
         user = get_user_by_username(username)
-        user_id = user["id"] if user else None
+        if not user:
+            logger.error(f"User {username} not found in Supabase")
+            return {"status": "error", "message": "User not found"}
 
-        # Anti-doublon (History) - Only in PROD
+        profile = load_user_profile(username)
+        user_id = user["id"]
+
         exclude_urls = set()
-        if not is_test and user_id:
+        if not is_test:
             exclude_urls = get_recent_processed_urls(user_id, days=7)
-            if exclude_urls:
-                print(f"   🔁 [{username}] {len(exclude_urls)} URLs déjà vues (7j)")
 
-        # Collect
-        update_status(username, "Collecte des sources...", 5)
-        print(f"\n📡 [{username}] Collecte des sources (Mode: {mode})...")
+        _status(username, "Collecting articles...", 5)
         
-        # In Test Mode, use quick_mode=True
-        raw_articles = collect_articles(
-            exclude_urls=exclude_urls, 
-            progress_callback=collect_progress,
-            quick_mode=is_test
+        # Build user-specific interest sources from profile
+        user_interests = _build_user_interest_sources(profile)
+        
+        raw = collect_articles(
+            exclude_urls=exclude_urls,
+            progress_callback=lambda msg, pct: _status(username, msg, pct),
+            quick_mode=is_test,
+            skip_scraping=is_test,
+            user_interests=user_interests if user_interests else None,
         )
-        print(f"   ✅ {len(raw_articles)} articles uniques récupérés.\n")
+        logger.info(f"📡 [{username}] {len(raw)} articles")
 
-        if not raw_articles:
-            print("❌ Aucun article trouvé.")
-            update_status(username, "Aucun article trouvé", 100)
-            return {"status": "empty", "total_collected": 0, "total_kept": 0}
+        if not raw:
+            _status(username, "No articles", 100)
+            set_generation_status(username, "done", "No articles", 100)
+            return {"status": "empty", "total_collected": 0, "total_kept": 0, "global_digest": "", "content": []}
 
-        # ── DEDUPLICATION (Content Similarity) ──
-        # Simple Jaccard similarity to remove near-duplicates
-        def get_tokens(text):
-            return set(w.lower() for w in text.split() if len(w) > 3)
+        _status(username, "Clustering...", 15)
+        clusters = cluster_articles(raw)
+        representatives = [c[0] for c in clusters]
+        logger.info(f"   🧩 {len(raw)} → {len(clusters)} clusters")
 
-        def jaccard_similarity(t1, t2):
-            s1 = get_tokens(t1)
-            s2 = get_tokens(t2)
-            if not s1 or not s2: return 0.0
-            return len(s1.intersection(s2)) / len(s1.union(s2))
-
-        unique_articles = []
-        if raw_articles:
-            update_status(username, "Dé-duplication intelligente...", 20)
-            
-            # Sort by length desc (keep longest)
-            sorted_arts = sorted(raw_articles, key=lambda x: len(x.content or ""), reverse=True)
-            
-            for art in sorted_arts:
-                is_dup = False
-                for seen in unique_articles:
-                    # Title check
-                    if art.title == seen.title: 
-                        is_dup = True
-                        break
-                    # Content check (skip if too short or empty)
-                    if art.content and seen.content:
-                        sim = jaccard_similarity(art.content, seen.content)
-                        if sim > 0.5: 
-                            is_dup = True
-                            break
-                if not is_dup:
-                    unique_articles.append(art)
-            
-        raw_articles = unique_articles # Continue with unique
-
-        # Analyze
-        update_status(username, "Analyse IA en cours...", 30)
-        print(f"🧠 [{username}] Analyse de {len(raw_articles)} articles avec Mistral...")
+        # Fallback list of articles to keep if vector search completely fails
+        kept = []
         
-        kept_articles = []
-        total_batches = (len(raw_articles) + batch_size - 1) // batch_size
-        if total_batches < 1: total_batches = 1
+        # ── Vector Search Pipeline (Replaces LLM Passes) ──
+        user_vector = get_manifesto_embedding(user_id)
+        if user_vector and not is_test:
+            _status(username, f"Generating Embeddings for {len(representatives)} articles...", 25)
+            from llm_wrapper import get_embedding_provider
+            embed_provider = get_embedding_provider()
+            
+            if embed_provider:
+                # Prepare text points
+                texts_to_embed = [
+                    f"{a.title}\n{a.content[:1000] if a.content else ''}" 
+                    for a in representatives
+                ]
+                try:
+                    embeddings = embed_provider.embed(texts_to_embed)
+                    
+                    # Package and save
+                    db_articles = []
+                    for i, a in enumerate(representatives):
+                        if i < len(embeddings):
+                            db_articles.append({
+                                "url": a.link,
+                                "title": a.title,
+                                "content": a.content or "",
+                                "source_interest": a.source_interest,
+                                "embedding": embeddings[i]
+                            })
+                    
+                    store_article_embeddings(db_articles)
+                    
+                    _status(username, "Semantic Search...", 40)
+                    top_matches = match_articles(user_vector, match_count=8)
+                    logger.info(f"   🎯 Found {len(top_matches)} matches via Vector Search")
+                    
+                    if top_matches:
+                        _status(username, "Final validation...", 50)
+                        # Filter low similarity if needed (closer to 0 is better)
+                        good_matches = [m for m in top_matches if m.get("similarity", 1.0) < 0.8]
+                        if not good_matches:
+                            good_matches = top_matches[:3]
+                            
+                        # Send the top matches to LLM to get proper formatting, summary, reasoning
+                        prompt = _build_batch_prompt(good_matches, profile, language)
+                        raw_response = _call_llm(prompt, SYSTEM_PROMPT_FINAL_PASS)
+                        
+                        urls = [m.get("url") for m in good_matches]
+                        titles = [m.get("title") for m in good_matches]
+                        verdicts = _parse_verdicts(raw_response, urls, titles)
+                        
+                        kept = [v for v in verdicts if v.keep]
+                except Exception as e:
+                    logger.error(f"Embedding/Vector Search failed: {e}")
         
-        for i in range(0, len(raw_articles), batch_size):
-            batch_num = (i // batch_size) + 1
-            percent = 30 + int((batch_num / total_batches) * 50) # 30% to 80%
-            update_status(username, f"Analyse par l'IA (lot {batch_num}/{total_batches})...", percent)
-            
-            batch = raw_articles[i:i + batch_size]
-            
-            analyzed_batch = analyze_batch(batch, manifesto, language, score_threshold)
-            kept_articles.extend(analyzed_batch)
-            
-            if i + batch_size < len(raw_articles):
-                time.sleep(0.5)
+        # ── Fallback if Vector Search failed or missing manifesto ──
+        if not kept:
+            logger.warning("Vector search yielded 0 results or failed. Fallback to basic mode.")
+            kept_dummy = []
+            for a in representatives[:5]:
+                kept_dummy.append(ArticleVerdict(
+                    localized_title=a.title,
+                    summary=a.content[:200] if a.content else "No summary",
+                    score=75,
+                    keep=True,
+                    category="General",
+                    reason="Matched core subject",
+                    credibility_score=5,
+                    link=a.link
+                ))
+            kept = kept_dummy
 
-        print(f"   ✅ {len(kept_articles)} articles sélectionnés par l'IA.")
+        logger.info(f"   ✅ Total kept: {len(kept)}")
 
-        # Save processed URLs - Only in PROD
-        if not is_test and user_id and kept_articles:
-            urls_to_save = [a.link for a in kept_articles]
-            record_processed_urls(user_id, urls_to_save)
-            purge_old_processed(days=7)
+        if not is_test and kept:
+            record_processed_urls(user_id, [v.link for v in kept])
 
-        # Generate Brief
-        update_status(username, "Rédaction du journal...", 85)
-        brief_html = generate_daily_brief(kept_articles, manifesto, language)
-        brief_data = {
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "content": [a.model_dump() for a in kept_articles], # Frontend expects Array here
-            "html": brief_html,
-            "stats": {
-                "total_scanned": len(raw_articles),
-                "kept": len(kept_articles),
-                "duration": round(time.time() - start, 2),
-                "mode": mode
-            }
+        _status(username, "Generating global digest...", 90)
+        digest = generate_global_digest(kept, profile, language) if not is_test else ""
+
+        now = datetime.now()
+        brief = {
+            "date": now.strftime("%Y-%m-%d"),
+            "generated_at": now.isoformat(),
+            "total_collected": len(raw),
+            "total_kept": len(kept),
+            "duration_seconds": round(time.time() - t0, 2),
+            "global_digest": digest,
+            "content": [_verdict_to_dict(v) for v in kept],
         }
 
-        # Save - Only in PROD
         if not is_test:
-            update_status(username, "Sauvegarde et archivage...", 95)
-            brief_json = json.dumps(brief_data, ensure_ascii=False, indent=2)
-            
-            # 1. Main file
-            brief_path = os.path.join(DATA_DIR, "briefs", f"{username}.json")
-            os.makedirs(os.path.dirname(brief_path), exist_ok=True)
-            with open(brief_path, "w", encoding="utf-8") as f:
-                f.write(brief_json)
-            
-            # 2. Archive
-            timestamp = datetime.now().strftime("%H-%M-%S")
-            date_str = datetime.now().strftime("%Y-%m-%d")
-            archive_dir = os.path.join(DATA_DIR, "briefs", username)
-            os.makedirs(archive_dir, exist_ok=True)
-            archive_path = os.path.join(archive_dir, f"brief_{date_str}_{timestamp}.json")
-            with open(archive_path, "w", encoding="utf-8") as f:
-                f.write(brief_json)
-            
-            # 3. Public
-            public_dir = os.path.join(os.path.dirname(__file__), "../daily-brief-ui/public/data")
-            os.makedirs(public_dir, exist_ok=True)
-            public_path = os.path.join(public_dir, "brief.json")
-            if username == "admin": 
-                with open(public_path, "w", encoding="utf-8") as f:
-                    f.write(brief_json)
+            _status(username, "Saving to Supabase...", 95)
+            store_daily_brief(user_id, brief)
 
-        update_status(username, "Terminé !", 100)
-        GENERATION_STATUS[username]["status"] = "done"
+        _status(username, "Done!", 100)
+        set_generation_status(username, "done", "Done!", 100)
+        logger.info(f"⏱️  {time.time() - t0:.2f}s")
         
-        print(f"⏱️  Durée totale : {time.time() - start:.2f}s")
-        return brief_data
+        # Log token usage summary
+        from llm_wrapper import token_tracker
+        logger.info(f"   {token_tracker.summary()}")
+        
+        return brief
 
     except Exception as e:
-        print(f"❌ Erreur pipeline: {e}")
-        update_status(username, f"Erreur: {str(e)}", 0)
-        if username in GENERATION_STATUS:
-            GENERATION_STATUS[username]["status"] = "error"
-        return {}
+        logger.error(f"❌ Pipeline error: {e}")
+        _status(username, f"Error: {e}", 0)
+        set_generation_status(username, "error", f"Error: {e}", 0)
+        return {"status": "error", "content": []}
 
+
+# Keep old name for app.py import
+update_status = _status
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
-
-    username = sys.argv[1] if len(sys.argv) > 1 else "admin"
-    lang = sys.argv[2] if len(sys.argv) > 2 else "fr"
-    threshold = int(sys.argv[3]) if len(sys.argv) > 3 else 70
-    run_pipeline_for_user(username, lang, threshold)
+    u = sys.argv[1] if len(sys.argv) > 1 else "admin"
+    l = sys.argv[2] if len(sys.argv) > 2 else "fr"
+    t = int(sys.argv[3]) if len(sys.argv) > 3 else 70
+    run_pipeline_for_user(u, l, t)

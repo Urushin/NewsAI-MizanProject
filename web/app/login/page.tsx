@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
     const { login } = useAuth();
     const router = useRouter();
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -17,7 +17,7 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
         try {
-            await login(username, password);
+            await login(email, password);
             router.push("/");
         } catch (err: any) {
             setError(err.message);
@@ -40,13 +40,13 @@ export default function LoginPage() {
                     {error && <p className="auth-error">{error}</p>}
 
                     <div className="auth-field">
-                        <label htmlFor="username">Nom d'utilisateur</label>
+                        <label htmlFor="email">Email</label>
                         <input
-                            id="username"
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="admin"
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="vous@email.com"
                             autoFocus
                             required
                         />

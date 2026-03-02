@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 export default function SignupPage() {
     const { signup } = useAuth();
     const router = useRouter();
+    const [email, setEmail] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [language, setLanguage] = useState("fr");
@@ -18,7 +19,7 @@ export default function SignupPage() {
         setError("");
         setLoading(true);
         try {
-            await signup(username, password, language);
+            await signup(email, password, username, language);
             router.push("/");
         } catch (err: any) {
             setError(err.message);
@@ -41,14 +42,26 @@ export default function SignupPage() {
                     {error && <p className="auth-error">{error}</p>}
 
                     <div className="auth-field">
-                        <label htmlFor="username">Nom d'utilisateur</label>
+                        <label htmlFor="email">Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="vous@email.com"
+                            autoFocus
+                            required
+                        />
+                    </div>
+
+                    <div className="auth-field">
+                        <label htmlFor="username">Nom d&apos;utilisateur</label>
                         <input
                             id="username"
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="Choisissez un nom"
-                            autoFocus
                             required
                         />
                     </div>
@@ -60,7 +73,8 @@ export default function SignupPage() {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••"
+                            placeholder="6 caractères minimum"
+                            minLength={6}
                             required
                         />
                     </div>

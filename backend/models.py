@@ -1,36 +1,39 @@
 """
-Daily Brief — Data Models (Pydantic V2)
-Validation stricte des données entrantes (RSS) et sortantes (LLM).
+Mizan.ai — Data Models (Pydantic V2)
 """
-from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional
-from datetime import datetime
+from pydantic import BaseModel, Field
+from typing import List, Literal
 
 
 class RawArticle(BaseModel):
-    """Article brut récupéré depuis un flux RSS."""
     title: str
     link: str
     published: str = "Date inconnue"
-    source_interest: str = ""  # La catégorie d'intérêt qui a généré cet article
-    content: str = ""  # Texte extrait de l'article (trafilatura)
+    source_interest: str = ""
+    content: str = ""
 
 
-class AnalyzedArticle(BaseModel):
-    """Article analysé et scoré par l'IA."""
-    title: str
-    category: str
+class ArticleVerdict(BaseModel):
+    """Two-stage cognitive filter output."""
+    localized_title: str
+    summary: str = ""
     score: int = Field(ge=0, le=100)
-    summary: str
-    keep: bool
+    keep: bool = True
+    category: Literal["Impact", "Passion"] = "Passion"
+    reason: str = ""
+    credibility_score: int = Field(ge=0, le=10, default=5)
     link: str = ""
 
 
+# Backward compat alias
+AnalyzedArticle = ArticleVerdict
+
+
 class DailyBrief(BaseModel):
-    """Structure finale du briefing quotidien."""
     date: str
     generated_at: str = ""
     total_collected: int = 0
     total_kept: int = 0
     duration_seconds: float = 0.0
-    content: list[AnalyzedArticle] = []
+    global_digest: str = ""
+    content: List[dict] = []

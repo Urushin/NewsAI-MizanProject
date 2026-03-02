@@ -1,0 +1,11 @@
+# Mizan.ai Robots.txt
+# https://www.robotstxt.org/
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+
+# Sitemaps
+Sitemap: https://mizan.ai/sitemap.xml

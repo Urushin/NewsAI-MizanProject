@@ -1,0 +1,16 @@
+supabase
+pydantic-ai
+loguru
+feedparser
+python-dotenv
+firecrawl-py
+anyio
+httpx
+requests
+pydantic
+mistralai
+PyJWT
+langfuse
+uvicorn
+fastapi
+stripe

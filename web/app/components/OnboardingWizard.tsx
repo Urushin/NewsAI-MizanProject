@@ -23,7 +23,12 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
         fetch(`${API}/api/taxonomy`)
             .then((r) => r.json())
             .then((data) => {
-                setTaxonomy(data);
+                // Ensure every value is an array to prevent .map() crashes
+                const safeTaxonomy: Record<string, string[]> = {};
+                for (const [key, value] of Object.entries(data)) {
+                    safeTaxonomy[key] = Array.isArray(value) ? value : [];
+                }
+                setTaxonomy(safeTaxonomy);
                 setLoading(false);
             })
             .catch(() => setLoading(false));

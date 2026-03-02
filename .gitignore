@@ -1,0 +1,46 @@
+# ═══════════════════════════════════════
+# Mizan.ai — .gitignore
+# ═══════════════════════════════════════
+
+# Secrets
+.env
+.env.local
+.env.production
+
+# Python
+venv/
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Data (local dev only, DB is in Supabase now)
+data/mizan.db
+data/brief_*.json
+data/briefs/
+data/feedback/
+backend/profiles/
+backend/manifests/
+
+# Logs
+*.log
+uvicorn.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
