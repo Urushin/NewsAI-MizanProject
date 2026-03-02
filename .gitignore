@@ -17,7 +17,8 @@ __pycache__/
 .eggs/
 dist/
 build/
-
+/.venv/
+/venv/
 # Node / Next.js
 node_modules/
 .next/
