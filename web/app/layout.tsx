@@ -1,13 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const playfair = Playfair_Display({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-playfair",
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mizan.ai";
@@ -23,11 +21,11 @@ export const metadata: Metadata = {
   keywords: [
     "AI news",
     "personalized news",
-    "news briefing",
-    "AI filter",
-    "actualité IA",
-    "briefing quotidien",
-    "news aggregator",
+    "curation",
+    "intelligence artificielle",
+    "productivité",
+    "veille technologique",
+    "actualités intelligentes",
   ],
   authors: [{ name: "Mizan.ai" }],
   creator: "Mizan.ai",
@@ -37,7 +35,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
     languages: {
-      "fr-FR": "/",
+      "fr-FR": "/fr",
       "en-US": "/en",
       "ja-JP": "/ja",
     },
@@ -58,7 +56,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Mizan.ai — AI News Briefing",
+        alt: "Mizan.ai Open Graph Image",
       },
     ],
   },
@@ -94,7 +92,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0f15",
+  themeColor: "#F9F9F9",
   width: "device-width",
   initialScale: 1,
 };
@@ -117,8 +115,7 @@ function WebsiteJsonLd() {
     },
     creator: {
       "@type": "Organization",
-      name: "Mizan.ai",
-      url: SITE_URL,
+      name: "Mizan.ai Team",
     },
   };
 
@@ -132,19 +129,15 @@ function WebsiteJsonLd() {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap"
-          rel="stylesheet"
-        />
         <WebsiteJsonLd />
       </head>
-      <body className={`${inter.variable} ${playfair.variable}`}>
+      <body className={`${inter.variable} ${inter.className} antialiased selection:bg-indigo-100`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
