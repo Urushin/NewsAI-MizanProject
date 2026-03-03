@@ -220,7 +220,7 @@ def fetch_article_content(url: str) -> str:
 
 
 # ── Main Collection Function (Async) ──
-async def _collect_articles_async(
+async def collect_articles(
     max_per_topic: int = 3,
     exclude_urls: set = None,
     progress_callback: Optional[Callable] = None,
@@ -322,45 +322,10 @@ async def _collect_articles_async(
     return articles
 
 
-# ── Public API (sync wrapper for backward compatibility) ──
-def collect_articles(
-    max_per_topic: int = 3,
-    exclude_urls: set = None,
-    progress_callback=None,
-    quick_mode: bool = False,
-    skip_scraping: bool = False,
-    user_interests: list = None,
-) -> list:
-    """Collect articles from configured sources + user-specific interests.
-    
-    Sync wrapper around async implementation. Safe to call from sync contexts
-    (pipeline CLI) — and from async contexts (FastAPI) via background tasks.
-    """
-    try:
-        loop = asyncio.get_running_loop()
-        # Already in an async context — run in a new thread to avoid nested loop issues
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            future = pool.submit(
-                asyncio.run,
-                _collect_articles_async(
-                    max_per_topic, exclude_urls, progress_callback,
-                    quick_mode, skip_scraping, user_interests,
-                )
-            )
-            return future.result()
-    except RuntimeError:
-        # No event loop — safe to run directly
-        return asyncio.run(
-            _collect_articles_async(
-                max_per_topic, exclude_urls, progress_callback,
-                quick_mode, skip_scraping, user_interests,
-            )
-        )
-
-
 if __name__ == "__main__":
     def log_prog(msg, pct):
         logger.info(f"[{pct}%] {msg}")
-    results = collect_articles(progress_callback=log_prog)
+    
+    # Run async collector test
+    results = asyncio.run(collect_articles(progress_callback=log_prog))
     logger.info(f"✅ {len(results)} articles collected.")

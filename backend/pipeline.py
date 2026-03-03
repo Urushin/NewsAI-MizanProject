@@ -228,6 +228,13 @@ Write a concise 3-sentence executive summary of today's news for this user. Focu
 # ── Main Pipeline ──
 
 def run_pipeline_for_user(username: str, language: str = "fr", score_threshold: int = 70, mode: str = "prod") -> dict:
+    """Wrapper that runs the async pipeline synchronously.
+    (This keeps the existing API footprint compatible for any external direct calls,
+    while internally managing the event loop)."""
+    import asyncio
+    return asyncio.run(_run_pipeline_for_user_async(username, language, score_threshold, mode))
+
+async def _run_pipeline_for_user_async(username: str, language: str = "fr", score_threshold: int = 70, mode: str = "prod") -> dict:
     t0 = time.time()
     is_test = mode == "test"
     _status(username, "Loading profile from Supabase...", 0)
@@ -250,7 +257,7 @@ def run_pipeline_for_user(username: str, language: str = "fr", score_threshold: 
         # Build user-specific interest sources from profile
         user_interests = _build_user_interest_sources(profile)
         
-        raw = collect_articles(
+        raw = await collect_articles(
             exclude_urls=exclude_urls,
             progress_callback=lambda msg, pct: _status(username, msg, pct),
             quick_mode=is_test,
