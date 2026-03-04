@@ -29,7 +29,7 @@ def get_profile(request: Request):
 @router.put("/me/profile")
 def update_full_profile(request: Request, body: UpdateProfileRequest):
     payload = get_current_user(request)
-    updates = {k: v for k, v in body.dict().items() if v is not None}
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if updates:
         update_user_profile(payload["user_id"], updates)
     return {"status": "ok"}
@@ -64,7 +64,7 @@ class ManifestoUpdate(BaseModel):
     content: str = Field(..., max_length=10000)
 
 @router.put("/me/manifesto")
-def update_manifesto(request: Request, body: ManifestoUpdate):
+async def update_manifesto(request: Request, body: ManifestoUpdate):
     payload = get_current_user(request)
     user = get_user_by_id(payload["user_id"]) or {}
     username = user.get("username", "")
@@ -116,7 +116,7 @@ def update_manifesto(request: Request, body: ManifestoUpdate):
     embed_provider = get_embedding_provider()
     if embed_provider and body.content.strip():
         try:
-            vectors = embed_provider.embed([body.content])
+            vectors = await embed_provider.embed([body.content])
             if vectors:
                 store_manifesto_embedding(payload["user_id"], vectors[0])
         except Exception as e:
@@ -160,7 +160,7 @@ class OnboardingRequest(BaseModel):
     custom: str = ""
 
 @router.post("/onboarding/manifesto")
-def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
+async def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
     payload = get_current_user(request)
     user = get_user_by_id(payload["user_id"]) or {}
     username = user.get("username", "")
@@ -197,7 +197,7 @@ def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
     embed_provider = get_embedding_provider()
     if embed_provider and manifesto_text.strip():
         try:
-            vectors = embed_provider.embed([manifesto_text])
+            vectors = await embed_provider.embed([manifesto_text])
             if vectors:
                 store_manifesto_embedding(payload["user_id"], vectors[0])
         except Exception as e:

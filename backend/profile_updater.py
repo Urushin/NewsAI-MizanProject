@@ -6,8 +6,9 @@ Usage: python profile_updater.py [username]
 import os
 import sys
 import json
+import asyncio
 import pathlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -23,7 +24,7 @@ from database import get_supabase
 def load_interactions(user_id: str) -> list:
     """Load recent rejected feedbacks from Supabase (last 24h)."""
     sb = get_supabase()
-    cutoff = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
     try:
         res = (
             sb.table("feedbacks")
@@ -93,7 +94,7 @@ Analyze patterns. Return JSON only:
 Delta range: -0.3 to +0.1. Only adjust existing topics. Only add rules for clear patterns."""
 
 
-def run_nightly_update(user_id: str, username: str):
+async def run_nightly_update(user_id: str, username: str):
     logger.info(f"🌙 [{username}] Reading interactions from Supabase...")
 
     interactions = load_interactions(user_id)
@@ -121,7 +122,7 @@ def run_nightly_update(user_id: str, username: str):
     result = None
     for provider in providers:
         try:
-            text = provider.generate(prompt)
+            text = await provider.generate(prompt)
             result = json.loads(strip_markdown_fences(text))
             break
         except Exception as e:
@@ -159,7 +160,7 @@ def run_nightly_update(user_id: str, username: str):
     logger.info(f"   ✅ Profile updated.")
 
 
-def run_all_users():
+async def run_all_users():
     """Run nightly update for all users in Supabase."""
     sb = get_supabase()
     try:
@@ -168,7 +169,7 @@ def run_all_users():
             logger.info("No users found.")
             return
         for user in res.data:
-            run_nightly_update(user["id"], user["username"])
+            await run_nightly_update(user["id"], user["username"])
     except Exception as e:
         logger.error(f"Failed to list users: {e}")
 
@@ -180,8 +181,8 @@ if __name__ == "__main__":
         sb = get_supabase()
         res = sb.table("profiles").select("id, username").eq("username", username).execute()
         if res.data:
-            run_nightly_update(res.data[0]["id"], username)
+            asyncio.run(run_nightly_update(res.data[0]["id"], username))
         else:
             logger.error(f"User '{username}' not found in Supabase.")
     else:
-        run_all_users()
+        asyncio.run(run_all_users())

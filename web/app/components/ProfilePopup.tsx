@@ -87,6 +87,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
         percent: 0,
     });
     const ref = useRef<HTMLDivElement>(null);
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Use current user language for labels
     const t = labels[user?.language || "fr"] || labels.en;
@@ -132,6 +133,13 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
         if (open) document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
     }, [open]);
+
+    // Clean up polling interval on unmount
+    useEffect(() => {
+        return () => {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        };
+    }, []);
 
     if (!user) return null;
 
@@ -194,7 +202,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
         setGenState({ loading: true, success: false, error: "", step: mode === "test" ? "Démarrage Test..." : "Démarrage Production...", percent: 0 });
 
         // Start polling for progress
-        const interval = setInterval(async () => {
+        pollIntervalRef.current = setInterval(async () => {
             try {
                 const res = await fetch(`${API}/api/brief/status`, {
                     headers: { Authorization: `Bearer ${token}` },
@@ -202,7 +210,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                 const status = await res.json();
 
                 if (status.status === "done") {
-                    clearInterval(interval);
+                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
                     setGenState({ loading: false, success: true, error: "", step: "Terminé !", percent: 100 });
 
                     if (mode === "prod") {
@@ -211,7 +219,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                         setTimeout(() => setOpen(false), 2000);
                     }
                 } else if (status.status === "error") {
-                    clearInterval(interval);
+                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
                     setGenState({ loading: false, success: false, error: "Erreur (" + status.step + ")", step: "", percent: 0 });
                 } else {
                     setGenState((prev) => ({
@@ -238,7 +246,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
             if (mode === "test") {
                 // Synchronous return
                 const data = await res.json();
-                clearInterval(interval); // Stop polling (already handled by sync return)
+                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); // Stop polling (already handled by sync return)
 
                 if (data.status === "empty") {
                     setGenState({ loading: false, success: false, error: "Aucun article trouvé", step: "", percent: 0 });
@@ -257,7 +265,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
 
                 if (data.content && Array.isArray(data.content) && data.content.length > 0) {
                     // Synchronous return (dev mode): the brief data is right here
-                    clearInterval(interval);
+                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
                     setGenState({ loading: false, success: true, error: "", step: "Terminé !", percent: 100 });
                     if (onPreview) {
                         onPreview(data);
@@ -271,7 +279,7 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
             }
 
         } catch (e: any) {
-            clearInterval(interval);
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
             setGenState({ loading: false, success: false, error: e.message || "Erreur connexion", step: "", percent: 0 });
         }
     };
@@ -339,13 +347,21 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                                 max={4}
                                 step={1}
                                 value={summaryLength}
-                                onChange={(e) => setSummaryLength(parseInt(e.target.value))}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (val === 4) {
+                                        alert("Premium ⭐ : Le niveau 4 (Analyse Profonde) sera bientôt disponible pour les utilisateurs premium.");
+                                        setSummaryLength(3);
+                                    } else {
+                                        setSummaryLength(val);
+                                    }
+                                }}
                             />
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-light)", marginTop: "4px" }}>
                                 <span>Puces</span>
                                 <span>Phrase</span>
                                 <span>1 Para</span>
-                                <span>Analyse</span>
+                                <span style={{ color: "var(--separator)" }}>Analyse 🔒</span>
                             </div>
                         </div>
 

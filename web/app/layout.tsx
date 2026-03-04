@@ -134,10 +134,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <head>
-        <WebsiteJsonLd />
-      </head>
       <body className={`${inter.variable} ${inter.className} antialiased selection:bg-indigo-100`}>
+        <WebsiteJsonLd />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

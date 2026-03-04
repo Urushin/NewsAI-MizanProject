@@ -6,12 +6,14 @@ from pydantic import BaseModel
 from auth import get_current_user
 from database import store_feedback
 
+from typing import Literal
+
 router = APIRouter()
 
 class FeedbackRequest(BaseModel):
     article_title: str
     article_summary: str = ""
-    action: str # "read", "rejected", etc.
+    action: Literal["read", "rejected"] # Strict validation
 
 @router.post("/api/feedback")
 def post_feedback(req: FeedbackRequest, request: Request):

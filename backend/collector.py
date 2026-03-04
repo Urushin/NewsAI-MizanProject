@@ -24,6 +24,8 @@ import httpx
 from firecrawl import FirecrawlApp
 from loguru import logger
 from dotenv import load_dotenv
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone
 
 from models import RawArticle
 from database import get_cached_content, cache_content
@@ -135,14 +137,34 @@ async def fetch_feed_async(source: dict, max_per_topic: int, semaphore: asyncio.
                 feed = feedparser.parse(resp.text)
 
             entries = []
-            for entry in feed.entries[:max_per_topic]:
-                entries.append({
-                    "title": entry.title.strip(),
-                    "link": entry.link,
-                    "published": entry.get("published", "Date inconnue"),
-                    "source_interest": source.get("category", "General"),
-                    "summary": entry.get("summary") or entry.get("description") or "",
-                })
+            today = datetime.now(timezone.utc).date()
+            
+            for entry in feed.entries:
+                # Try to parse the publication date
+                pub_date_str = entry.get("published") or entry.get("updated")
+                is_today = False
+                
+                if pub_date_str:
+                    try:
+                        # Parse standard RSS/Atom date format
+                        dt = parsedate_to_datetime(pub_date_str)
+                        if dt.date() == today:
+                            is_today = True
+                    except Exception:
+                        # Fallback for unparseable dates: consider it valid to not miss content
+                        is_today = True
+                else:
+                    # No date provided, assume it's fresh
+                    is_today = True
+
+                if is_today:
+                    entries.append({
+                        "title": entry.title.strip(),
+                        "link": entry.link,
+                        "published": pub_date_str or "Date inconnue",
+                        "source_interest": source.get("category", "General"),
+                        "summary": entry.get("summary") or entry.get("description") or "",
+                    })
             return entries
 
         result = await _retry_async(_do_fetch, label=f"Feed:{source.get('id', url[:40])}")

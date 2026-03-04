@@ -11,10 +11,10 @@ Improvements:
 import os
 import re
 import json
-import time
+import asyncio
 import hashlib
 import pathlib
-import requests
+import httpx
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union, Type, TypeVar
 from loguru import logger
@@ -185,7 +185,7 @@ def get_pydantic_ai_agent(result_type: Type[T], system_prompt: str = "You are a 
 # ══════════════════════════════════════════
 class LLMProvider(ABC):
     @abstractmethod
-    def generate(self, prompt: str, system_prompt: str = None) -> str:
+    async def generate(self, prompt: str, system_prompt: str = None) -> str:
         pass
 
     @property
@@ -206,14 +206,18 @@ class MistralProvider(LLMProvider):
         return self._name
 
     @langfuse.observe(as_type="generation")
-    def generate(self, prompt: str, system_prompt: str = None) -> str:
+    async def generate(self, prompt: str, system_prompt: str = None, max_tokens: int = 4000) -> str:
         if system_prompt is None:
             system_prompt = "Output only valid JSON. No markdown."
 
         # ── Check cache ──
-        cached = _cache_get(prompt, system_prompt)
+        # Include max_tokens in cache key to avoid hitting old truncated results
+        cache_content = f"{system_prompt}|||{prompt}|||{max_tokens}"
+        cache_key = hashlib.sha256(cache_content.encode()).hexdigest()[:16]
+        
+        cached = _response_cache.get(cache_key)
         if cached:
-            logger.debug(f"🗂️ Cache hit for prompt hash {_cache_key(prompt, system_prompt)}")
+            logger.debug(f"🗂️ Cache hit for prompt hash {cache_key}")
             return cached
 
         # ── Langfuse input tracking ──
@@ -229,28 +233,29 @@ class MistralProvider(LLMProvider):
         last_error = None
         for attempt in range(MAX_RETRIES):
             try:
-                resp = requests.post(
-                    self.base_url,
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": self.model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt},
-                        ],
-                        "temperature": 0.1,
-                    },
-                    timeout=LLM_TIMEOUT,
-                )
+                async with httpx.AsyncClient(timeout=LLM_TIMEOUT) as client:
+                    resp = await client.post(
+                        self.base_url,
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": self.model,
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": prompt},
+                            ],
+                            "temperature": 0.1,
+                            "max_tokens": max_tokens,
+                        },
+                    )
 
                 if resp.status_code == 429:
                     # Rate limited — wait and retry
                     retry_after = int(resp.headers.get("Retry-After", 5))
                     logger.warning(f"⏳ Rate limited. Waiting {retry_after}s...")
-                    time.sleep(retry_after)
+                    await asyncio.sleep(retry_after)
                     continue
 
                 if resp.status_code != 200:
@@ -273,20 +278,25 @@ class MistralProvider(LLMProvider):
                         }
                     )
 
-                # ── Cache response ──
-                _cache_set(prompt, system_prompt, content)
+                # ── Cache response only if it looks complete ──
+                if content.strip().endswith(('}', ']')):
+                    _cache_set(prompt, system_prompt, content)
+                else:
+                    logger.warning("⚠️ LLM response looks truncated. Skipping cache.")
 
                 return content
 
-            except requests.exceptions.Timeout:
+            except httpx.TimeoutException:
                 last_error = TimeoutError(f"Mistral API timed out after {LLM_TIMEOUT}s")
                 logger.warning(f"⏱️ Timeout attempt {attempt+1}/{MAX_RETRIES}")
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(RETRY_BASE_DELAY * (2 ** attempt))
             except Exception as e:
                 last_error = e
                 if attempt < MAX_RETRIES - 1:
                     delay = RETRY_BASE_DELAY * (2 ** attempt)
                     logger.warning(f"🔄 Mistral error, retry {attempt+1}/{MAX_RETRIES} in {delay}s: {e}")
-                    time.sleep(delay)
+                    await asyncio.sleep(delay)
 
         raise RuntimeError(f"Mistral failed after {MAX_RETRIES} attempts: {last_error}")
 
@@ -297,7 +307,7 @@ class MistralEmbeddingProvider:
         self.model = "mistral-embed"
         self.base_url = "https://api.mistral.ai/v1/embeddings"
 
-    def embed(self, texts: List[str]) -> List[List[float]]:
+    async def embed(self, texts: List[str]) -> List[List[float]]:
         if not texts:
             return []
 
@@ -305,22 +315,22 @@ class MistralEmbeddingProvider:
         last_error = None
         for attempt in range(MAX_RETRIES):
             try:
-                resp = requests.post(
-                    self.base_url,
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": self.model,
-                        "inputs": texts,
-                    },
-                    timeout=LLM_TIMEOUT,
-                )
+                async with httpx.AsyncClient(timeout=LLM_TIMEOUT) as client:
+                    resp = await client.post(
+                        self.base_url,
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": self.model,
+                            "inputs": texts,
+                        },
+                    )
 
                 if resp.status_code == 429:
                     retry_after = int(resp.headers.get("Retry-After", 5))
-                    time.sleep(retry_after)
+                    await asyncio.sleep(retry_after)
                     continue
 
                 if resp.status_code != 200:
@@ -341,7 +351,7 @@ class MistralEmbeddingProvider:
             except Exception as e:
                 last_error = e
                 if attempt < MAX_RETRIES - 1:
-                    time.sleep(RETRY_BASE_DELAY * (2 ** attempt))
+                    await asyncio.sleep(RETRY_BASE_DELAY * (2 ** attempt))
 
         raise RuntimeError(f"Mistral Embed failed: {last_error}")
 

@@ -29,9 +29,8 @@ from database import (
 
 # ── Helpers ──
 
-def load_user_profile(username: str) -> dict:
-    """Loads profile from Supabase."""
-    user = get_user_by_username(username)
+def load_user_profile(user: dict) -> dict:
+    """Formats the profile data from the raw Supabase user object."""
     if not user:
         return {"identity": {}, "interests": {}, "rejection_rules": []}
     return {
@@ -111,32 +110,41 @@ def _verdict_to_dict(v: ArticleVerdict) -> dict:
 
 def cluster_articles(articles: List[RawArticle]) -> List[List[RawArticle]]:
     """Group near-duplicate articles by title prefix (simple dedup)."""
-    clusters: List[List[RawArticle]] = []
+    clusters_dict = {}
     for a in articles:
-        found = False
-        for c in clusters:
-            if a.title[:30].lower() == c[0].title[:30].lower():
-                c.append(a)
-                found = True
-                break
-        if not found:
-            clusters.append([a])
-    return clusters
+        # Group by the first 30 characters of the title, case-insensitive
+        prefix = a.title[:30].lower()
+        if prefix not in clusters_dict:
+            clusters_dict[prefix] = []
+        clusters_dict[prefix].append(a)
+    return list(clusters_dict.values())
 
 
 # ── LLM Calls (Real) ──
 
-BATCH_SIZE = 10  # Articles per LLM call
+BATCH_SIZE = 5  # Reduced from 10: Prevents OOM/Lost-In-The-Middle and optimizes token usage
 
-SYSTEM_PROMPT_FINAL_PASS = """You are a news relevance AI for a personalized news app.
+def get_system_prompt_final_pass(profile: dict) -> str:
+    level = profile.get("preferences", {}).get("summary_length", 1)
+    
+    if level == 1:
+        summary_instruction = "- \"summary\": array of strings (exactly 3 very short bullet points, max 100 characters each)"
+    elif level == 2:
+        summary_instruction = "- \"summary\": array of strings (one single string inside the array containing a medium concatenation of 3 sentences)"
+    elif level == 3:
+        summary_instruction = "- \"summary\": array of strings (one single string inside the array containing a structured paragraph of about 250 words)"
+    else:
+        summary_instruction = "- \"summary\": array of strings (one single string inside the array containing a deep analytical summary with context and implications of 400+ words)"
+
+    return f"""You are a news relevance AI for a personalized news app.
 You evaluate the user's daily TOP matches that were found via vector search.
 Output ONLY valid JSON. No markdown, no explanation.
 For each article, return a JSON object with these exact fields:
-- "localized_title": string (article title, translated to user's language if needed)
-- "summary": array of strings (exactly 3 short sentences/points summarizing the article)
+- "localized_title": string (Mandatory: Translate and rewrite as a punchy journalistic title in the user's language)
+{summary_instruction}
 - "score": int 0-100 (relevance to the user, should usually be high)
 - "keep": bool (true unless completely irrelevant)
-- "category": "Impact" or "Passion"
+- "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
 - "reason": string (1 sentence explaining WHY this article matters to this user)
 - "credibility_score": int 0-10 (source reliability)
 - "link": string (the article URL, unchanged)
@@ -145,12 +153,29 @@ Return a JSON array of objects."""
 SYSTEM_PROMPT_DIGEST = """You are a news synthesis AI. Given a list of filtered articles, write a concise 3-sentence executive summary of the user's day in news. Write in the user's language. Output only the summary text, no JSON."""
 
 
+import re
+
 def _build_batch_prompt(articles: List[dict], profile: dict, lang: str) -> str:
-    """Build a prompt for batched article evaluation."""
+    """Build a prompt for batched article evaluation with Head-Tail Truncation."""
     profile_ctx = _profile_context(profile)
     article_list = []
+    
+    # Regex to strip simple markdown hyperlinks [text](url) to just text, saving chunks of tokens
+    md_link_pattern = re.compile(r'\[([^\]]+)\]\([^\)]+\)')
+    
     for i, a in enumerate(articles):
-        content_snippet = a.get("content", "")[:500]
+        raw_content = a.get("content", "")
+        # Clean obvious markdown links that consume useless tokens
+        cleaned_content = md_link_pattern.sub(r'\1', raw_content)
+        
+        # Head-Tail Clipping: Keep first 800 chars (Lead) and last 400 chars (Conclusion)
+        if len(cleaned_content) > 1300:
+            head = cleaned_content[:800]
+            tail = cleaned_content[-400:]
+            content_snippet = f"{head}\n\n...[TRUNCATED TO SAVE CONTEXT]...\n\n{tail}"
+        else:
+            content_snippet = cleaned_content
+            
         article_list.append(f'{i+1}. Title: "{a.get("title")}"\n   URL: {a.get("url")}\n   Source: {a.get("source_interest")}\n   Content: {content_snippet}')
 
     articles_text = "\n\n".join(article_list)
@@ -166,7 +191,7 @@ Evaluate these {len(articles)} top matched articles:
 Return a JSON array with one object per article. Each object must have: localized_title, summary, score, keep, category, reason, credibility_score, link."""
 
 
-def _call_llm(prompt: str, system_prompt: str) -> str:
+async def _call_llm(prompt: str, system_prompt: str) -> str:
     """Call the first available LLM provider."""
     providers = get_providers()
     if not providers:
@@ -175,12 +200,36 @@ def _call_llm(prompt: str, system_prompt: str) -> str:
     last_error = None
     for provider in providers:
         try:
-            return provider.generate(prompt, system_prompt)
+            return await provider.generate(prompt, system_prompt)
         except Exception as e:
             logger.warning(f"LLM error ({provider.name}): {e}")
             last_error = e
 
     raise RuntimeError(f"All LLM providers failed. Last error: {last_error}")
+
+
+async def _process_articles_in_batches(articles: List[dict], profile: dict, lang: str) -> List[ArticleVerdict]:
+    """Helper to split articles into batches and process them through the LLM."""
+    all_verdicts = []
+    
+    # Split into batches
+    for i in range(0, len(articles), BATCH_SIZE):
+        batch = articles[i : i + BATCH_SIZE]
+        logger.info(f"   ⚙️ Processing LLM batch {i // BATCH_SIZE + 1} ({len(batch)} articles)")
+        
+        try:
+            prompt = _build_batch_prompt(batch, profile, lang)
+            raw_response = await _call_llm(prompt, get_system_prompt_final_pass(profile))
+            
+            urls = [a.get("url") for a in batch]
+            titles = [a.get("title") for a in batch]
+            verdicts = _parse_verdicts(raw_response, urls, titles)
+            
+            all_verdicts.extend(verdicts)
+        except Exception as e:
+            logger.error(f"   ❌ Batch {i // BATCH_SIZE + 1} failed: {e}")
+            
+    return all_verdicts
 
 
 class LLMOutputValidationError(Exception):
@@ -222,7 +271,7 @@ def _parse_verdicts(raw_text: str, urls: List[str], titles: List[str]) -> List[A
     return verdicts
 
 
-def generate_global_digest(articles: List[ArticleVerdict], profile: dict, lang: str) -> str:
+async def generate_global_digest(articles: List[ArticleVerdict], profile: dict, lang: str) -> str:
     """Generate a 3-sentence executive summary of all kept articles."""
     if not articles:
         return ""
@@ -240,7 +289,7 @@ Today's filtered articles:
 Write a concise 3-sentence executive summary of today's news for this user. Focus on the most impactful trends. Write in {lang}."""
 
     try:
-        return _call_llm(prompt, SYSTEM_PROMPT_DIGEST).strip()
+        return (await _call_llm(prompt, SYSTEM_PROMPT_DIGEST)).strip()
     except Exception as e:
         logger.error(f"Digest generation failed: {e}")
         return ""
@@ -267,7 +316,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
             set_generation_status(username, "error", "User profile not found", 0)
             return {"status": "error", "message": "User not found"}
 
-        profile = load_user_profile(username)
+        profile = load_user_profile(user)
         user_id = user["id"]
 
         exclude_urls = set()
@@ -315,7 +364,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                     for a in representatives
                 ]
                 try:
-                    embeddings = embed_provider.embed(texts_to_embed)
+                    embeddings = await embed_provider.embed(texts_to_embed)
                     
                     # Package and save
                     db_articles = []
@@ -332,25 +381,20 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                     store_article_embeddings(db_articles)
                     
                     _status(username, "Semantic Search...", 40)
-                    top_matches = match_articles(user_vector, match_count=8)
+                    top_matches = match_articles(user_vector, match_count=15)
                     logger.info(f"   🎯 Found {len(top_matches)} matches via Vector Search")
                     
                     if top_matches:
                         _status(username, "Final validation...", 50)
-                        # Filter low similarity if needed (closer to 0 is better)
-                        good_matches = [m for m in top_matches if m.get("similarity", 1.0) < 0.8]
+                        # Filter similarity (closer to 1.0 is better in newer Supabase RPCs, 
+                        # but we check if it's high enough)
+                        good_matches = [m for m in top_matches if m.get("similarity", 0) > 0.1]
                         if not good_matches:
-                            good_matches = top_matches[:3]
+                            good_matches = top_matches[:5]
                             
-                        # Send the top matches to LLM to get proper formatting, summary, reasoning
-                        prompt = _build_batch_prompt(good_matches, profile, language)
-                        raw_response = _call_llm(prompt, SYSTEM_PROMPT_FINAL_PASS)
-                        
-                        urls = [m.get("url") for m in good_matches]
-                        titles = [m.get("title") for m in good_matches]
-                        verdicts = _parse_verdicts(raw_response, urls, titles)
-                        
-                        kept = [v for v in verdicts if v.keep]
+                        # Process in batches of 5 (defined by BATCH_SIZE)
+                        kept = await _process_articles_in_batches(good_matches, profile, language)
+                        kept = [v for v in kept if v.keep]
                 except Exception as e:
                     logger.error(f"Embedding/Vector Search failed: {e}")
         
@@ -359,8 +403,8 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
             logger.warning("Vector search yielded 0 results or failed. Fallback: sending articles to LLM directly.")
             _status(username, "Analyzing articles with AI...", 50)
             
-            # Take the top representative articles and send them to the LLM
-            fallback_articles = representatives[:8]
+            # Take more articles for fallback (up to 15) and process in batches
+            fallback_articles = representatives[:15]
             fallback_dicts = [
                 {
                     "title": a.title,
@@ -372,15 +416,10 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
             ]
             
             try:
-                prompt = _build_batch_prompt(fallback_dicts, profile, language)
-                raw_response = _call_llm(prompt, SYSTEM_PROMPT_FINAL_PASS)
-                
-                urls = [a.link for a in fallback_articles]
-                titles = [a.title for a in fallback_articles]
-                verdicts = _parse_verdicts(raw_response, urls, titles)
-                
-                kept = [v for v in verdicts if v.keep]
-                logger.info(f"   📝 LLM fallback produced {len(kept)} articles")
+                # Use the new batched helper
+                kept = await _process_articles_in_batches(fallback_dicts, profile, language)
+                kept = [v for v in kept if v.keep]
+                logger.info(f"   📝 LLM fallback (batched) produced {len(kept)} articles")
             except Exception as llm_err:
                 logger.error(f"LLM fallback also failed: {llm_err}")
             
@@ -405,7 +444,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
             record_processed_urls(user_id, [v.link for v in kept])
 
         _status(username, "Generating global digest...", 90)
-        digest = generate_global_digest(kept, profile, language)
+        digest = await generate_global_digest(kept, profile, language)
 
         now = datetime.now()
         brief = {

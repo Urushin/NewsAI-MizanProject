@@ -2,7 +2,7 @@
 Mizan.ai — Database (Supabase / Postgres)
 """
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from loguru import logger
 from supabase import create_client, Client
@@ -44,11 +44,23 @@ def cache_content(url: str, content: str):
     """Saves extracted content to Supabase cache."""
     try:
         sb = get_supabase()
-        sb.table("url_cache").upsert({"url": url, "content": content, "fetched_at": datetime.utcnow().isoformat()}).execute()
+        sb.table("url_cache").upsert({"url": url, "content": content, "fetched_at": datetime.now(timezone.utc).isoformat()}).execute()
     except Exception as e:
         logger.error(f"Supabase cache insert error: {e}")
 
 # --- User & Profile Management ---
+
+def _get_mock_profile(user_id: str = "00000000-0000-0000-0000-000000000000", username: str = "DevUser") -> dict:
+    """Centralized mock profile for local development (DX)."""
+    return {
+        "id": user_id,
+        "username": username or "DevUser",
+        "language": "fr",
+        "score_threshold": 70,
+        "identity": {"name": "Dev User", "role": "Journaliste"},
+        "interests": {},
+        "rejection_rules": []
+    }
 
 def get_user_by_username(username: str) -> Optional[dict]:
     """Fetch user profile by username. In development, returns a mock if missing."""
@@ -61,15 +73,7 @@ def get_user_by_username(username: str) -> Optional[dict]:
         # DEV MOCK: Enable local development without manual Supabase entries
         if os.getenv("APP_STAGE") == "development":
             logger.info(f"🛠️  [DEV] Mocking user profile for username '{username}'")
-            return {
-                "id": "00000000-0000-0000-0000-000000000000",
-                "username": username or "DevUser",
-                "language": "fr",
-                "score_threshold": 70,
-                "identity": {"name": "Dev User", "role": "Journaliste"},
-                "interests": {}, # Removed hardcoded AI/Tech tags to allow manifesto override
-                "rejection_rules": []
-            }
+            return _get_mock_profile(username=username)
         return None
     except Exception as e:
         logger.error(f"Supabase user error: {e}")
@@ -86,15 +90,7 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
         # DEV MOCK
         if os.getenv("APP_STAGE") == "development":
             logger.info(f"🛠️  [DEV] Mocking user profile for ID '{user_id}'")
-            return {
-                "id": user_id,
-                "username": "DevUser",
-                "language": "fr",
-                "score_threshold": 70,
-                "identity": {"name": "Dev User", "role": "Journaliste"},
-                "interests": {},
-                "rejection_rules": []
-            }
+            return _get_mock_profile(user_id=user_id)
         return None
     except Exception as e:
         logger.error(f"Supabase status error: {e}")
@@ -109,7 +105,13 @@ def update_user_profile(user_id: str, updates: Dict[str, Any]):
         sb.table("profiles").upsert(data).execute()
         logger.info(f"✅ Profil mis à jour/créé pour {user_id}")
     except Exception as e:
+        # DX MODE: Handle foreign key violation for the mock user ID gracefully
+        if os.getenv("APP_STAGE") == "development" and user_id == "00000000-0000-0000-0000-000000000000":
+            if "23503" in str(e) or "violations foreign key":
+                logger.warning(f"🛠️ [DX MODE] Could not save profile to Supabase due to foreign key (expected for mock user). Profile updates will be kept in memory/local file if applicable.")
+                return
         logger.error(f"Supabase profile update error: {e}")
+        raise e
 
 # --- Embedding Vectors (pgvector) ---
 
@@ -169,7 +171,7 @@ def get_recent_processed_urls(user_id: str, days: int = 7) -> set:
     """Return the set of article URLs processed recently from Supabase."""
     try:
         sb = get_supabase()
-        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         res = sb.table("processed_articles").select("url").eq("user_id", user_id).gte("processed_at", cutoff).execute()
         return {r["url"] for r in res.data}
     except Exception as e:
@@ -203,7 +205,7 @@ def store_feedback(user_id: str, article_title: str, action: str, summary: str =
             "article_title": article_title,
             "article_summary": summary,
             "action": action,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
     except Exception as e:
         logger.error(f"Supabase feedback error: {e}")
@@ -220,7 +222,7 @@ def set_generation_status(username: str, status: str, step: str, percent: int):
             "status": status,
             "step": step,
             "percent": percent,
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }).execute()
     except Exception:
         pass

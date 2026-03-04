@@ -18,6 +18,8 @@ import {
   Briefcase,
   Newspaper,
   Coffee,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────── */
@@ -138,6 +140,33 @@ function groupByCategory(articles: NewsItem[]): { category: string; items: NewsI
   return groups;
 }
 
+/* ── Error State Component ────────────────────────── */
+
+const ErrorEmptyState = ({ message, onRetry }: { message: string, onRetry: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="flex flex-col items-center justify-center py-20 px-6 text-center"
+  >
+    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-red-100">
+      <AlertCircle size={32} />
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-2">Oups, une petite interférence !</h3>
+    <p className="text-gray-500 max-w-sm mb-8 leading-relaxed">
+      {message.includes("401") || message.includes("403")
+        ? "Votre session a peut-être expiré. Essayez de vous reconnecter."
+        : "Nous n'avons pas pu récupérer votre briefing. Cela arrive parfois quand les serveurs prennent un café."}
+    </p>
+    <button
+      onClick={onRetry}
+      className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold shadow-xl shadow-indigo-100/50 hover:bg-indigo-700 active:scale-95 transition-all"
+    >
+      <RotateCcw size={18} />
+      Réessayer maintenant
+    </button>
+  </motion.div>
+);
+
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
@@ -147,6 +176,8 @@ export default function Home() {
   const router = useRouter();
   const [data, setData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const lang = user?.language || "fr";
@@ -163,29 +194,57 @@ export default function Home() {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`${API}/api/brief`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
-      .then((json: BriefData) => {
+    setError(null);
+
+    const fetchBriefData = async () => {
+      try {
+        const res = await fetch(`${API}/api/brief`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        let json: BriefData = await res.json();
+
         const cur = dataRef.current;
-        if (json.content && json.content.length > 0) {
-          setData(json); setDismissed(new Set());
-        } else if (!cur || !cur.content || cur.content.length === 0) {
-          setData(json); setDismissed(new Set());
+        if ((json.content && json.content.length > 0) || !cur?.content || cur.content.length === 0) {
+          setData(json);
+          setDismissed(new Set());
         }
+
         setLoading(false);
+
+        // Auto-generate if first login and empty brief
         if (!hasTriedGenerate.current && (!json.content || json.content.length === 0) && !json.generated_at) {
           hasTriedGenerate.current = true;
           setLoading(true);
-          fetch(`${API}/api/brief/generate`, { method: "POST", headers: { Authorization: `Bearer ${token}` } })
-            .then((r) => r.json())
-            .then(() => fetch(`${API}/api/brief`, { headers: { Authorization: `Bearer ${token}` } }))
-            .then((r) => r.json())
-            .then((fresh: BriefData) => { setData(fresh); setLoading(false); })
-            .catch(() => setLoading(false));
+
+          const genRes = await fetch(`${API}/api/brief/generate`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (!genRes.ok) throw new Error(`Generation failed: ${genRes.status}`);
+
+          const freshRes = await fetch(`${API}/api/brief`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (freshRes.ok) {
+            json = await freshRes.json();
+            setData(json);
+          } else {
+            throw new Error(`Failed to fetch fresh brief: ${freshRes.status}`);
+          }
         }
-      })
-      .catch(() => setLoading(false));
-  }, [token, refreshKey]);
+      } catch (e: any) {
+        console.error("Failed to fetch briefing:", e);
+        setError(e.message || "An unexpected error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBriefData();
+  }, [token, refreshKey, retryKey]);
 
   const handleDismiss = useCallback((title: string) => {
     setDismissed((prev) => new Set(prev).add(title));
@@ -197,7 +256,44 @@ export default function Home() {
   );
   const groupedContent = useMemo(() => groupByCategory(visibleContent), [visibleContent]);
 
-  if (authLoading || !user) return null;
+  if (loading || authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="w-full max-w-2xl flex flex-col gap-6"
+        >
+          <div className="flex justify-between items-end mb-4">
+            <div className="h-10 w-48 bg-gray-200 rounded-lg animate-pulse" />
+            <div className="h-6 w-32 bg-gray-100 rounded-md animate-pulse" />
+          </div>
+          <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
+          <div className="h-4 w-5/6 bg-gray-100 rounded animate-pulse" />
+          <div className="space-y-4 mt-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 w-full bg-white border border-gray-100 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-6">
+        <ErrorEmptyState
+          message={error}
+          onRetry={() => {
+            setLoading(true);
+            setError(null);
+            setRetryKey(k => k + 1);
+          }}
+        />
+      </div>
+    );
+  }
 
   const dateTitle = formatDateTitle(data?.date, lang);
 
@@ -211,132 +307,119 @@ export default function Home() {
 
       {/* ── MAIN ───────────────────────────────────────── */}
       <main className="w-full max-w-[720px] px-6 sm:px-8 pt-10 sm:pt-12 pb-16 sm:pb-20">
+        <>
+          {/* ── DATE TITLE ──────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center pt-3 pb-6 sm:pt-4 sm:pb-8"
+          >
+            <h1 className="text-[clamp(1.5rem,4vw,2rem)] font-extrabold tracking-tight text-gray-900 leading-tight">
+              {dateTitle}
+            </h1>
+            {data && data.total_kept !== undefined && (
+              <p className="mt-3 text-[13px] text-gray-400 font-medium">
+                {data.total_kept} {t.articles} · {data.total_collected || "—"} {t.scanned}
+              </p>
+            )}
+          </motion.div>
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-32 text-gray-400 text-sm font-medium">
-            <Sparkles size={20} className="text-indigo-500 animate-pulse" />
-            {t.loading}
-          </div>
-        ) : (
-          <>
-            {/* ── DATE TITLE ──────────────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
+          {/* ── EDITORIAL DIGEST ────────────────────── */}
+          {data && data.global_digest && (
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center pt-3 pb-6 sm:pt-4 sm:pb-8"
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="mb-7 sm:mb-8 p-4 sm:p-5 rounded-xl bg-white border border-black/[0.04] shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
             >
-              <h1 className="text-[clamp(1.5rem,4vw,2rem)] font-extrabold tracking-tight text-gray-900 leading-tight">
-                {dateTitle}
-              </h1>
-              {data && data.total_kept !== undefined && (
-                <p className="mt-3 text-[13px] text-gray-400 font-medium">
-                  {data.total_kept} {t.articles} · {data.total_collected || "—"} {t.scanned}
-                </p>
-              )}
-            </motion.div>
-
-            {/* ── EDITORIAL DIGEST ────────────────────── */}
-            {data && data.global_digest && (
-              <motion.section
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="mb-7 sm:mb-8 p-4 sm:p-5 rounded-xl bg-white border border-black/[0.04] shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={14} className="text-indigo-500 opacity-70" />
-                  <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
-                    {t.briefTitle}
-                  </h2>
-                </div>
-                <p className="text-[14px] text-gray-600 font-[450] leading-[1.75]">
-                  {data.global_digest}
-                </p>
-              </motion.section>
-            )}
-
-            {/* ── ARTICLES GROUPED BY CATEGORY ────────── */}
-            {groupedContent.length > 0 ? (
-              <div className="flex flex-col">
-                {groupedContent.map((group, gIdx) => {
-                  const meta = getCategoryMeta(group.category);
-                  const Ico = meta.icon;
-                  return (
-                    <motion.section
-                      key={group.category}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.12 + gIdx * 0.08 }}
-                    >
-                      {/* Category separator — thin subtle line + label */}
-                      <div className={`flex items-center gap-3 pb-5 ${gIdx === 0 ? 'pt-0' : 'pt-8 mt-2 border-t border-gray-200/60'}`}>
-                        <Ico size={14} className={`${meta.color} opacity-60`} />
-                        <span className={`text-[11px] font-bold uppercase tracking-[0.1em] ${meta.color} opacity-70`}>
-                          {meta.label}
-                        </span>
-                        <span className="text-[11px] text-gray-300 font-medium">
-                          {group.items.length}
-                        </span>
-                      </div>
-
-                      {/* Articles — flowing like a journal */}
-                      <div className="flex flex-col gap-1">
-                        <AnimatePresence>
-                          {group.items.map((article, idx) => (
-                            <NewsCard
-                              key={`${article.link}-${idx}`}
-                              item={article}
-                              index={idx}
-                              token={token}
-                              onDismiss={handleDismiss}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                    </motion.section>
-                  );
-                })}
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={14} className="text-indigo-500 opacity-70" />
+                <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
+                  {t.briefTitle}
+                </h2>
               </div>
-            ) : (
-              /* ── EMPTY STATE ─────────────────────────── */
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-24 sm:py-32"
-              >
-                <Coffee size={32} className="mx-auto mb-6 text-gray-300" />
-                <p className="text-lg font-bold text-gray-500 mb-2">
-                  {data?.total_kept === 0 ? t.nothingToday : t.noData}
-                </p>
-                <p className="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">
-                  {data?.total_kept === 0 ? t.nothingSub : t.noDataSub}
-                </p>
-              </motion.div>
-            )}
+              <p className="text-[14px] text-gray-600 font-[450] leading-[1.75]">
+                {data.global_digest}
+              </p>
+            </motion.section>
+          )}
 
-            {/* ── END-OF-BRIEF FOOTER ─────────────────── */}
-            {visibleContent.length > 0 && (
-              <motion.footer
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="mt-16 sm:mt-20 pt-8 pb-4"
-              >
-                <div className="w-10 h-px bg-gray-200 mx-auto mb-8" />
-                <div className="text-center flex flex-col items-center gap-2">
-                  <div className="w-4 h-4 rounded-[3px] bg-gray-900 opacity-15 mb-1" />
-                  <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-gray-400">
-                    {t.endOfBrief}
-                  </p>
-                  <p className="text-[13px] text-gray-400 opacity-60 max-w-[280px]">
-                    {t.endSub}
-                  </p>
-                </div>
-              </motion.footer>
-            )}
-          </>
-        )}
+          {/* ── ARTICLES GROUPED BY CATEGORY ────────── */}
+          {groupedContent.length > 0 ? (
+            <div className="flex flex-col">
+              {groupedContent.map((group, gIdx) => {
+                const meta = getCategoryMeta(group.category);
+                const Ico = meta.icon;
+                return (
+                  <motion.section
+                    key={group.category}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.12 + gIdx * 0.08 }}
+                  >
+                    <div className={`flex items-center gap-3 pb-5 ${gIdx === 0 ? 'pt-0' : 'pt-8 mt-2 border-t border-gray-200/60'}`}>
+                      <Ico size={14} className={`${meta.color} opacity-60`} />
+                      <span className={`text-[11px] font-bold uppercase tracking-[0.1em] ${meta.color} opacity-70`}>
+                        {meta.label}
+                      </span>
+                      <span className="text-[11px] text-gray-300 font-medium">
+                        {group.items.length}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <AnimatePresence>
+                        {group.items.map((article, idx) => (
+                          <NewsCard
+                            key={`${article.link}-${idx}`}
+                            item={article}
+                            index={idx}
+                            token={token}
+                            onDismiss={handleDismiss}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </motion.section>
+                );
+              })}
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-24 sm:py-32"
+            >
+              <Coffee size={32} className="mx-auto mb-6 text-gray-300" />
+              <p className="text-lg font-bold text-gray-500 mb-2">
+                {data?.total_kept === 0 ? t.nothingToday : t.noData}
+              </p>
+              <p className="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">
+                {data?.total_kept === 0 ? t.nothingSub : t.noDataSub}
+              </p>
+            </motion.div>
+          )}
+
+          {/* ── FOOTER ────────── */}
+          {visibleContent.length > 0 && (
+            <motion.footer
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-16 sm:mt-20 pt-8 pb-4 text-center flex flex-col items-center gap-2"
+            >
+              <div className="w-10 h-px bg-gray-200 mx-auto mb-8" />
+              <div className="w-4 h-4 rounded-[3px] bg-gray-900 opacity-15 mb-1" />
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-gray-400">
+                {t.endOfBrief}
+              </p>
+              <p className="text-[13px] text-gray-400 opacity-60 max-w-[280px]">
+                {t.endSub}
+              </p>
+            </motion.footer>
+          )}
+        </>
       </main>
     </div>
   );

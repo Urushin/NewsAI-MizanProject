@@ -2,7 +2,7 @@
 Mizan.ai — Data Models (Pydantic V2)
 """
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
-from typing import List, Literal, Annotated
+from typing import List, Annotated
 import re
 
 # Strict String defs
