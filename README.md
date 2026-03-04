@@ -14,24 +14,13 @@ Dans un monde saturé d'informations, Mizan.ai agit comme un curateur cognitif. 
 
 ## ✨ Fonctionnalités Clés
 
-- **Briefing Quotidien Personnalisé** : Un résumé exécutif de ta journée en 3 phrases, suivi des articles les plus pertinents.
-- **Filtrage Cognitif par IA** : Double passage de validation (Embeddings + LLM) pour éliminer le bruit et ne garder que l'essentiel.
-- **Classification "Impact vs Passion"** : Distinction claire entre ce qui change le monde et ce qui nourrit tes centres d'intérêt.
-- **Recherche Sémantique (Vector Search)** : Utilisation de `pgvector` pour faire correspondre les articles à ton profil de manière conceptuelle, pas seulement par mots-clés.
-- **Dashboard Moderne** : Interface fluide construite avec Next.js 14, Framer Motion et Tailwind CSS.
-- **Gestion SaaS Complète** : Authentification Supabase, politiques de sécurité RLS, et intégration Stripe pour les abonnements.
-- **Analyses de Crédibilité** : Score de confiance sur 10 visualisable directement sur chaque carte via une barre de progression dynamique.
-- **Historique Interactif** : Accès aux briefings des jours précédents via un panneau latéral dédié.
-- **Feedback Loop** : Système d'apprentissage intégré permettant d'affiner le filtrage selon vos rejets et lectures.
-- **Clustering Sémantique (SentenceTransformers)** : Utilisation d'embeddings (`all-MiniLM-L6-v2`) pour regrouper intelligemment les articles traitant du même sujet et éliminer les doublons conceptuels.
-- **Synthèse de Groupe Multi-Sources** : L'IA fusionne les informations de plusieurs articles pour créer un résumé unique, balancé et synthétique.
-- **Contrôle de Densité du Contenu** : Un slider "Taille des résumés" (1 à 4) permet de choisir entre puces, phrases condensées, paragraphes ou analyses détaillées.
-- **Double Personnalisation Hybride** : Le moteur combine désormais ton profil structuré (JSON) et tes instructions libres (Manifeste .txt) pour une précision de filtrage inégalée.
-- **Auto-Ajustement du Profil (Nightly Update)** : Système apprenant qui affine tes intérêts en fonction de tes feedbacks quotidiens (clics, rejets).
-- **Taxonomie Thématique Riche** : Classification précise sur 6 piliers majeurs (Tech, Finance, Politique, Culture, Lifestyle, Société).
-- **Monitoring & APM Natif** : Suivi en temps réel des performances, taux d'erreurs et latences via un middleware dédié.
-- **Système de Quotas Dynamique** : Limites de génération et d'articles adaptées à ton plan pour une infrastructure optimisée.
-- **Gestion d'Abonnement Stripe** : Intégration complète pour le passage aux plans Pro et Enterprise en quelques clics.
+- **Filtrage Cognitif par IA** : Double passage de validation (Embeddings + LLM) avec un système de **Batched Processing** (5 articles par lot) pour une précision maximale et zéro erreur de dépassement de contexte.
+- **Optimisation de Contexte (Head-Tail Truncation)** : Algorithme intelligent qui conserve le *Chapô* (800 chars) et la *Conclusion* (400 chars) des articles longs, éliminant le superflu pour réduire les coûts et améliorer la synthèse.
+- **Classification par IA (8 Catégories)** : Rangement automatique parmi : *Impact, Passion, Tech, Politik, Business, World, Security, Trending*.
+- **Contrôle de Densité du Contenu** : Réglage dynamique (Puces -> Paragraphe). Le niveau 4 (Analyse Profonde) est techniquement prêt mais réservé aux profils Premium via un verrouillage UI.
+- **Robustesse Frontend** : Gestion d'erreurs proactive avec composants de maintenance visuels et Skeleton Loaders premium pour une expérience fluide même en cas d'interférence réseau.
+- **Scraping Quotidien Exhaustif** : Extraction complète basée sur la date du jour (via Firecrawl), sans limite arbitraire de quantité, pour ne rien rater du cycle de l'information.
+- **Feedback & Auto-Ajustement** : Système apprenant qui affine tes intérêts en fonction de tes feedbacks (clics, rejets) et met à jour ton Manifesto dynamiquement.
 
 ---
 
@@ -41,9 +30,10 @@ Dans un monde saturé d'informations, Mizan.ai agit comme un curateur cognitif. 
 - **Framework** : FastAPI (Python 3.9+)
 - **Scraping** : Firecrawl SDK & Feedparser (Asynchrone avec `httpx`)
 - **Intelligence Artificielle** : 
-    - LLM : Mistral AI (modèles Large/Small)
-    - Embeddings : Mistral/OpenAI
-- **Traitement** : Pipeline de filtrage cognitif, Job Queue pour le traitement asynchrone.
+    - LLM : Mistral AI (modèle `mistral-small-latest`) avec traitement par lots.
+    - Embeddings : Mistral Embed (`mistral-embed`) pour la vectorisation.
+- **Traitement** : Pipeline de filtrage cognitif asynchrone, Job Queue personnalisée.
+- **Optimisation Tokens** : Troncature intelligente Head-Tail et nettoyage Regex des URLs pour maximiser la fenêtre de contexte.
 - **Base de données Locale** : SQLite (`mizan.db`) pour la persistence des statuts de génération et du cache.
 - **Monitoring** : Middleware APM custom pour le tracking des percentiles (p50, p95, p99).
 - **Billing/SaaS** : Stripe SDK pour la gestion des abonnements et webhooks.
@@ -163,10 +153,10 @@ Le projet intègre un mode **DX (Developer Experience)** piloté par la variable
 ---
 
 ## 🗺️ Roadmap Prochaine Étape
-1.  **Refactor Server Components** : Migration de la page principale vers RSC pour un chargement instantané.
-2.  **Moteur de Recommandation** : Amélioration de la pondération des vecteurs basée sur le feedback utilisateur.
-3.  **Application Mobile** : Export PWA ou React Native via le dossier `ios/` (futur).
-4.  **Multi-Langue Temps Réel** : Support natif du FR, EN et JA avec détection automatique sur l'interface.
+1.  **Synthèse Multi-Source Réelle** : Fusionner plusieurs articles traitant du même sujet en un seul "super-article" synthétique.
+2.  **Moteur de Recommandation V2** : Amélioration de la pondération des vecteurs basée sur le scoring de similarité (Cosine Similarity).
+3.  **Abonnement Premium Actif** : Déverrouillage des analyses de niveau 4 et stockage longue durée.
+4.  **Multi-Langue Temps Réel** : Support natif et traduction impérative FR/EN/JA.
 5.  **Mode Podcast** : Intégration prévue d'un résumé audio quotidien via TTS (Text-to-Speech).
 
 ---
