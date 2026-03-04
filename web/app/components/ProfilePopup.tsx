@@ -206,8 +206,9 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                     setGenState({ loading: false, success: true, error: "", step: "Terminé !", percent: 100 });
 
                     if (mode === "prod") {
-                        triggerRefresh(); // Reload main page
-                        setTimeout(() => setOpen(false), 1500);
+                        // Delay refresh slightly to let DB write settle
+                        setTimeout(() => triggerRefresh(), 1000);
+                        setTimeout(() => setOpen(false), 2000);
                     }
                 } else if (status.status === "error") {
                     clearInterval(interval);
@@ -251,8 +252,22 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                     setTimeout(() => setOpen(false), 800);
                 }
             } else {
-                // Async return (queued)
-                // Polling loop above handles completion
+                // Prod mode — may be synchronous (dev) or async (queued)
+                const data = await res.json();
+
+                if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+                    // Synchronous return (dev mode): the brief data is right here
+                    clearInterval(interval);
+                    setGenState({ loading: false, success: true, error: "", step: "Terminé !", percent: 100 });
+                    if (onPreview) {
+                        onPreview(data);
+                    }
+                    // Delay the DB refresh so it doesn't overwrite the preview data
+                    // before the DB write has fully settled
+                    setTimeout(() => triggerRefresh(), 3000);
+                    setTimeout(() => setOpen(false), 1500);
+                }
+                // Otherwise it's queued — the polling loop above handles completion
             }
 
         } catch (e: any) {

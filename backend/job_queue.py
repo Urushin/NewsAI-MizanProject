@@ -253,8 +253,14 @@ def worker_loop():
                 fail_job(job_id, str(e), job["attempts"], job["max_retries"])
 
         except Exception as e:
-            logger.error(f"Worker loop error: {e}")
-            time.sleep(POLL_INTERVAL)
+            error_msg = str(e)
+            # Catch common network/sleep errors on macOS to avoid log spam
+            if any(err in error_msg for err in ["nodename nor servname provided", "Connection reset", "timed out", "Errno 8", "Errno 54"]):
+                logger.warning(f"⚠️ Network issue (Supabase unreachable). Retrying in 15s... ({error_msg})")
+                time.sleep(15)
+            else:
+                logger.error(f"Worker loop error: {e}")
+                time.sleep(POLL_INTERVAL)
 
     logger.info("👋 Worker stopped gracefully")
 

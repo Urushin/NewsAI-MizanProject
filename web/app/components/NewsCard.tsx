@@ -8,13 +8,14 @@ import { API } from "../context/AuthContext";
 interface NewsItem {
     title: string;
     category: string;
-    summary: string;
+    summary: string | string[];
     score: number;
     link: string;
     keep: boolean;
     gate_passed?: string;
     reason?: string;
     credibility_score?: number;
+    localized_title?: string;
 }
 
 const THEME = {
@@ -31,15 +32,21 @@ const TrustBadge = ({ score }: { score: number }) => (
     </div>
 );
 
-function digestToBullets(digest: string): string[] {
-    return digest
+function digestToBullets(summary: string | string[]): string[] {
+    // If already an array (new backend format), return cleaned
+    if (Array.isArray(summary)) {
+        return summary.map(s => s.trim()).filter(s => s.length > 5);
+    }
+    // Legacy string format: split on sentences
+    return summary
         .split(/(?<=[.!?])\s+/)
         .map((s) => s.trim())
         .filter((s) => s.length > 10);
 }
 
-function sendFeedback(token: string | null, title: string, summary: string, action: "read" | "rejected") {
+function sendFeedback(token: string | null, title: string, summary: string | string[], action: "read" | "rejected") {
     if (!token) return;
+    const summaryText = Array.isArray(summary) ? summary.join(' ') : summary;
     fetch(`${API}/api/feedback`, {
         method: "POST",
         headers: {
@@ -48,13 +55,15 @@ function sendFeedback(token: string | null, title: string, summary: string, acti
         },
         body: JSON.stringify({
             article_title: title,
-            article_summary: summary,
+            article_summary: summaryText,
             action: action,
         }),
     }).catch(console.error);
 }
 
 export default function NewsCard({ item, index, token, onDismiss }: { item: NewsItem, index: number, token: string | null, onDismiss: (title: string) => void }) {
+    // Use localized_title if available (from backend), fallback to title
+    const displayTitle = item.localized_title || item.title;
     const [isExpanded, setIsExpanded] = useState(false);
     const [isDismissed, setIsDismissed] = useState(false);
 
@@ -100,7 +109,7 @@ export default function NewsCard({ item, index, token, onDismiss }: { item: News
 
                     {/* Taille de titre réduite pour plus de sobriété */}
                     <h2 className="text-xl sm:text-2xl font-bold leading-snug text-gray-900 group-hover:text-indigo-600 transition-all duration-300 tracking-tight">
-                        {item.title}
+                        {displayTitle}
                     </h2>
 
                     <ul className="space-y-3 max-w-2xl">

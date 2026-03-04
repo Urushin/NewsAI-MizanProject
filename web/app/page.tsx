@@ -10,8 +10,9 @@ import { Search, Sparkles } from "lucide-react";
 
 interface NewsItem {
   title: string;
+  localized_title?: string;
   category: string;
-  summary: string;
+  summary: string | string[];
   score: number;
   link: string;
   keep: boolean;
@@ -59,6 +60,13 @@ export default function Home() {
     }
   }, [authLoading, user, router]);
 
+  const dataRef = useRef<BriefData | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
   const hasTriedGenerate = useRef(false);
 
   useEffect(() => {
@@ -73,8 +81,17 @@ export default function Home() {
         return res.json();
       })
       .then((json: BriefData) => {
-        setData(json);
-        setDismissed(new Set());
+        // Don't overwrite existing content with empty data from the DB
+        // (happens in dev mode when onPreview set data but DB has no matching FK)
+        const currentData = dataRef.current;
+        if (json.content && json.content.length > 0) {
+          setData(json);
+          setDismissed(new Set());
+        } else if (!currentData || !currentData.content || currentData.content.length === 0) {
+          // Only set empty data if we don't already have content
+          setData(json);
+          setDismissed(new Set());
+        }
         setLoading(false);
 
         // Auto generation on first open if empty

@@ -89,12 +89,14 @@ def _build_user_interest_sources(profile: dict) -> list:
 def _verdict_to_dict(v: ArticleVerdict) -> dict:
     return {
         "title": v.localized_title,
+        "localized_title": v.localized_title,
         "link": v.link,
         "category": v.category,
         "score": v.score,
         "reason": v.reason,
-        "credibility": v.credibility_score,
+        "credibility_score": v.credibility_score,
         "summary": v.summary,
+        "keep": v.keep,
     }
 
 
@@ -122,7 +124,7 @@ You evaluate the user's daily TOP matches that were found via vector search.
 Output ONLY valid JSON. No markdown, no explanation.
 For each article, return a JSON object with these exact fields:
 - "localized_title": string (article title, translated to user's language if needed)
-- "summary": string (2-3 sentence summary)
+- "summary": array of strings (exactly 3 short sentences/points summarizing the article)
 - "score": int 0-100 (relevance to the user, should usually be high)
 - "keep": bool (true unless completely irrelevant)
 - "category": "Impact" or "Passion"
@@ -172,8 +174,12 @@ def _call_llm(prompt: str, system_prompt: str) -> str:
     raise RuntimeError(f"All LLM providers failed. Last error: {last_error}")
 
 
+class LLMOutputValidationError(Exception):
+    """Custom wrapper for LLM parsing and schema-matching feedback."""
+    pass
+
 def _parse_verdicts(raw_text: str, urls: List[str], titles: List[str]) -> List[ArticleVerdict]:
-    """Parse LLM JSON output into ArticleVerdict objects."""
+    """Parse LLM JSON output into strict ArticleVerdict objects."""
     try:
         data = parse_llm_json(raw_text)
     except json.JSONDecodeError as e:
@@ -184,6 +190,8 @@ def _parse_verdicts(raw_text: str, urls: List[str], titles: List[str]) -> List[A
         data = [data]
 
     verdicts = []
+    from pydantic import ValidationError
+    
     for i, item in enumerate(data):
         try:
             # Ensure link is present (fallback to original article)
@@ -195,6 +203,10 @@ def _parse_verdicts(raw_text: str, urls: List[str], titles: List[str]) -> List[A
 
             v = ArticleVerdict(**item)
             verdicts.append(v)
+        except ValidationError as e:
+            err_msg = f"Pydantic Validation Error on output #{i}: {e.errors()}"
+            logger.warning(LLMOutputValidationError(err_msg))
+            logger.warning("Graceful degradation: Skipping this specific parsed article due to formatting hallucination.")
         except Exception as e:
             logger.warning(f"Skipping invalid verdict #{i}: {e}")
 
@@ -243,6 +255,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
         user = get_user_by_username(username)
         if not user:
             logger.error(f"User {username} not found in Supabase")
+            set_generation_status(username, "error", "User profile not found", 0)
             return {"status": "error", "message": "User not found"}
 
         profile = load_user_profile(username)
@@ -334,20 +347,48 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
         
         # ── Fallback if Vector Search failed or missing manifesto ──
         if not kept:
-            logger.warning("Vector search yielded 0 results or failed. Fallback to basic mode.")
-            kept_dummy = []
-            for a in representatives[:5]:
-                kept_dummy.append(ArticleVerdict(
-                    localized_title=a.title,
-                    summary=a.content[:200] if a.content else "No summary",
-                    score=75,
-                    keep=True,
-                    category="General",
-                    reason="Matched core subject",
-                    credibility_score=5,
-                    link=a.link
-                ))
-            kept = kept_dummy
+            logger.warning("Vector search yielded 0 results or failed. Fallback: sending articles to LLM directly.")
+            _status(username, "Analyzing articles with AI...", 50)
+            
+            # Take the top representative articles and send them to the LLM
+            fallback_articles = representatives[:8]
+            fallback_dicts = [
+                {
+                    "title": a.title,
+                    "url": a.link,
+                    "content": a.content or "",
+                    "source_interest": a.source_interest,
+                }
+                for a in fallback_articles
+            ]
+            
+            try:
+                prompt = _build_batch_prompt(fallback_dicts, profile, language)
+                raw_response = _call_llm(prompt, SYSTEM_PROMPT_FINAL_PASS)
+                
+                urls = [a.link for a in fallback_articles]
+                titles = [a.title for a in fallback_articles]
+                verdicts = _parse_verdicts(raw_response, urls, titles)
+                
+                kept = [v for v in verdicts if v.keep]
+                logger.info(f"   📝 LLM fallback produced {len(kept)} articles")
+            except Exception as llm_err:
+                logger.error(f"LLM fallback also failed: {llm_err}")
+            
+            # Last resort: if even LLM failed, use minimal static data
+            if not kept:
+                logger.warning("All AI paths failed. Using minimal static fallback.")
+                for a in fallback_articles[:3]:
+                    kept.append(ArticleVerdict(
+                        localized_title=a.title,
+                        summary=["Résumé non disponible — consultez l'article original."],
+                        score=50,
+                        keep=True,
+                        category="Passion",
+                        reason="Article collecté automatiquement",
+                        credibility_score=5,
+                        link=a.link
+                    ))
 
         logger.info(f"   ✅ Total kept: {len(kept)}")
 
@@ -355,7 +396,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
             record_processed_urls(user_id, [v.link for v in kept])
 
         _status(username, "Generating global digest...", 90)
-        digest = generate_global_digest(kept, profile, language) if not is_test else ""
+        digest = generate_global_digest(kept, profile, language)
 
         now = datetime.now()
         brief = {

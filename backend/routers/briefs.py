@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks, Query
 from typing import Optional
-from database import get_supabase, get_generation_status
+from database import get_supabase, get_generation_status, get_user_by_id, get_user_by_username
 from auth import get_current_user
 from quotas import check_brief_quota, QuotaExceeded
 from stripe_billing import get_user_plan
@@ -60,24 +60,34 @@ def get_brief_history(
 
 @router.post("/generate")
 def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: str = "prod"):
+    import os
     payload = get_current_user(request)
     user_id = payload["user_id"]
     sb = get_supabase()
-    res = sb.table("profiles").select("*").eq("id", user_id).execute()
-    user = res.data[0] if res.data else {}
+    
+    # DEV MODE: the fake UUID doesn't exist in DB, run pipeline directly
+    is_dev = os.getenv("APP_STAGE") == "development"
+    
+    user = get_user_by_id(user_id) or {}
 
     username = user.get("username", payload.get("username", ""))
     language = user.get("language", "fr")
     threshold = user.get("score_threshold", 70)
+
+    # In dev mode without a real profile, use defaults from the auth payload
+    if is_dev and (not user or user.get("id") == "00000000-0000-0000-0000-000000000000"):
+        username = payload.get("username", "DevUser")
 
     try:
         check_brief_quota(user_id, sb)
     except QuotaExceeded as e:
         raise HTTPException(status_code=429, detail=str(e))
 
-    if mode == "test":
+    if mode == "test" or is_dev:
+        # Synchronous execution (dev shortcut or explicit test mode)
+        # Keep the actual requested mode so "prod" saves to DB via store_daily_brief
         from pipeline import run_pipeline_for_user
-        return run_pipeline_for_user(username, language, threshold, mode="test")
+        return run_pipeline_for_user(username, language, threshold, mode=mode)
 
     plan_info = get_user_plan(user_id, sb)
     priority = 1 if plan_info["plan"] in ("pro", "enterprise") else 0
@@ -118,8 +128,7 @@ def trigger_brief_check(request: Request):
         return {"status": "queued", "message": "Génération déjà en cours."}
 
     # 3. Check quotas and enqueue
-    res_profile = sb.table("profiles").select("*").eq("id", user_id).execute()
-    user = res_profile.data[0] if res_profile.data else {}
+    user = get_user_by_id(user_id) or {}
     username = user.get("username", payload.get("username", ""))
     language = user.get("language", "fr")
     threshold = user.get("score_threshold", 70)

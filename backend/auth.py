@@ -20,9 +20,11 @@ def get_current_user(request: Request) -> dict:
     Returns dict with 'user_id' (UUID) and 'email'.
     """
     auth = request.headers.get("Authorization", "")
+    is_dev = os.getenv("APP_STAGE") == "development"
     
     # DEV MOCK: Bypass Auth in local development for faster iteration
-    if os.getenv("APP_STAGE") == "development" and not auth:
+    # Handles both: no header at all, AND the fake "dev_token_bypass" from the frontend
+    if is_dev and (not auth or auth == "Bearer dev_token_bypass"):
         return {
             "user_id": "00000000-0000-0000-0000-000000000000",
             "email": "dev@mizan.ai",
@@ -34,17 +36,26 @@ def get_current_user(request: Request) -> dict:
 
     token = auth.split(" ", 1)[1]
 
+    # Guard: reject obviously malformed tokens before decoding
+    if not token or token.count(".") < 2:
+        raise HTTPException(
+            status_code=401,
+            detail="Token JWT malformé (segments manquants). Vérifiez votre session."
+        )
+
     try:
         import jwt
-        # Since we are using Supabase, the safest way to decode the token 
-        # without validating the signature if the secret is mismatched in dev
-        # is to just decode it. The API Gateway/Supabase RLS already protects the DB.
         payload = jwt.decode(token, options={"verify_signature": False})
 
         return {
-            "user_id": payload.get("sub"),  # Supabase stores user UUID in 'sub'
+            "user_id": payload.get("sub"),
             "email": payload.get("email", ""),
             "username": payload.get("user_metadata", {}).get("username", payload.get("email", "").split("@")[0]),
         }
+    except jwt.exceptions.DecodeError as e:
+        raise HTTPException(status_code=401, detail=f"Token JWT invalide: {e}")
+    except jwt.exceptions.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expiré. Veuillez vous reconnecter.")
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Token invalide: {e}")
+

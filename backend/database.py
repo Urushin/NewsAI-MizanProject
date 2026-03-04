@@ -51,13 +51,53 @@ def cache_content(url: str, content: str):
 # --- User & Profile Management ---
 
 def get_user_by_username(username: str) -> Optional[dict]:
-    """Fetch user profile by username."""
+    """Fetch user profile by username. In development, returns a mock if missing."""
     try:
         sb = get_supabase()
         res = sb.table("profiles").select("*").eq("username", username).execute()
-        return res.data[0] if res.data else None
+        if res.data:
+            return res.data[0]
+        
+        # DEV MOCK: Enable local development without manual Supabase entries
+        if os.getenv("APP_STAGE") == "development":
+            logger.info(f"🛠️  [DEV] Mocking user profile for username '{username}'")
+            return {
+                "id": "00000000-0000-0000-0000-000000000000",
+                "username": username or "DevUser",
+                "language": "fr",
+                "score_threshold": 70,
+                "identity": {"name": "Dev User", "role": "Journaliste"},
+                "interests": {"tags": ["AI", "Tech", "International"]},
+                "rejection_rules": ["No gossip", "No ads"]
+            }
+        return None
     except Exception as e:
         logger.error(f"Supabase user error: {e}")
+        return None
+
+def get_user_by_id(user_id: str) -> Optional[dict]:
+    """Fetch user profile by UUID. In development, returns a mock if missing."""
+    try:
+        sb = get_supabase()
+        res = sb.table("profiles").select("*").eq("id", user_id).execute()
+        if res.data:
+            return res.data[0]
+        
+        # DEV MOCK
+        if os.getenv("APP_STAGE") == "development":
+            logger.info(f"🛠️  [DEV] Mocking user profile for ID '{user_id}'")
+            return {
+                "id": user_id,
+                "username": "DevUser",
+                "language": "fr",
+                "score_threshold": 70,
+                "identity": {"name": "Dev User", "role": "Journaliste"},
+                "interests": {"tags": ["AI", "Tech", "International"]},
+                "rejection_rules": ["No gossip", "No ads"]
+            }
+        return None
+    except Exception as e:
+        logger.error(f"Supabase status error: {e}")
         return None
 
 def update_user_profile(user_id: str, updates: Dict[str, Any]):

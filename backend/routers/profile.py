@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from loguru import logger
-from database import get_supabase, update_user_profile, store_manifesto_embedding
+from database import get_supabase, update_user_profile, store_manifesto_embedding, get_user_by_id, get_user_by_username
 from auth import get_current_user
 from llm_wrapper import get_embedding_provider
 
@@ -20,11 +20,10 @@ class UpdateProfileRequest(BaseModel):
 @router.get("/me")
 def get_profile(request: Request):
     payload = get_current_user(request)
-    sb = get_supabase()
-    res = sb.table("profiles").select("*").eq("id", payload["user_id"]).execute()
-    if not res.data:
+    user = get_user_by_id(payload["user_id"])
+    if not user:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-    return res.data[0]
+    return user
 
 
 @router.put("/me/profile")
@@ -39,9 +38,7 @@ def update_full_profile(request: Request, body: UpdateProfileRequest):
 @router.get("/me/profile")
 def get_full_profile(request: Request):
     payload = get_current_user(request)
-    sb = get_supabase()
-    res = sb.table("profiles").select("*").eq("id", payload["user_id"]).execute()
-    user = res.data[0] if res.data else {}
+    user = get_user_by_id(payload["user_id"]) or {}
     return {
         "identity": user.get("identity") or {},
         "interests": user.get("interests") or {},
@@ -52,9 +49,8 @@ def get_full_profile(request: Request):
 @router.get("/me/manifesto")
 def get_manifesto(request: Request):
     payload = get_current_user(request)
-    sb = get_supabase()
-    res = sb.table("profiles").select("username").eq("id", payload["user_id"]).execute()
-    username = res.data[0]["username"] if res.data else ""
+    user = get_user_by_id(payload["user_id"]) or {}
+    username = user.get("username", "")
 
     manifesto_path = os.path.join(os.path.dirname(__file__), "..", "manifests", f"{username}.txt")
     try:
@@ -70,9 +66,8 @@ class ManifestoUpdate(BaseModel):
 @router.put("/me/manifesto")
 def update_manifesto(request: Request, body: ManifestoUpdate):
     payload = get_current_user(request)
-    sb = get_supabase()
-    res = sb.table("profiles").select("username").eq("id", payload["user_id"]).execute()
-    username = res.data[0]["username"] if res.data else ""
+    user = get_user_by_id(payload["user_id"]) or {}
+    username = user.get("username", "")
 
     manifesto_dir = os.path.join(os.path.dirname(__file__), "..", "manifests")
     os.makedirs(manifesto_dir, exist_ok=True)
@@ -98,14 +93,13 @@ class PreferencesUpdate(BaseModel):
 @router.put("/me/profile/preferences")
 def update_preferences(request: Request, body: PreferencesUpdate):
     payload = get_current_user(request)
-    sb = get_supabase()
-    res = sb.table("profiles").select("preferences").eq("id", payload["user_id"]).execute()
-    current_prefs = res.data[0].get("preferences") or {} if res.data else {}
+    user = get_user_by_id(payload["user_id"]) or {}
+    current_prefs = user.get("preferences") or {}
 
     if body.summary_length is not None:
         current_prefs["summary_length"] = body.summary_length
 
-    sb.table("profiles").update({"preferences": current_prefs}).eq("id", payload["user_id"]).execute()
+    update_user_profile(payload["user_id"], {"preferences": current_prefs})
     return {"status": "ok"}
 
 
@@ -131,9 +125,8 @@ class OnboardingRequest(BaseModel):
 @router.post("/onboarding/manifesto")
 def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
     payload = get_current_user(request)
-    sb = get_supabase()
-    res = sb.table("profiles").select("username").eq("id", payload["user_id"]).execute()
-    username = res.data[0]["username"] if res.data else ""
+    user = get_user_by_id(payload["user_id"]) or {}
+    username = user.get("username", "")
 
     lines = ["# Mon Manifesto Mizan.ai", ""]
     lines.append("## Domaines d'intérêt")
@@ -158,7 +151,7 @@ def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
         f.write(manifesto_text)
 
     interests = {topic: body.subtopics for topic in body.topics}
-    sb.table("profiles").update({"interests": interests}).eq("id", payload["user_id"]).execute()
+    update_user_profile(payload["user_id"], {"interests": interests})
 
     embed_provider = get_embedding_provider()
     if embed_provider and manifesto_text.strip():
