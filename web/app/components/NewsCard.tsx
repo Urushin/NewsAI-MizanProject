@@ -1,8 +1,14 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, X, ShieldCheck, Zap, TrendingUp, Sparkles, ArrowLeft, Bookmark, Share2 } from "lucide-react";
-import { useState, useRef, useCallback } from "react";
+import {
+    X,
+    Zap,
+    Sparkles,
+    ArrowLeft,
+    ExternalLink,
+} from "lucide-react";
+import { useState, useCallback } from "react";
 import { API } from "../context/AuthContext";
 
 interface NewsItem {
@@ -18,184 +24,231 @@ interface NewsItem {
     localized_title?: string;
 }
 
-const THEME = {
-    glass: 'bg-white/95 backdrop-blur-md ring-1 ring-black/5',
-};
-
-// Trust Badge pour le modal
-const TrustBadge = ({ score }: { score: number }) => (
-    <div className="flex items-center gap-2">
-        <div className={`w-1.5 h-1.5 rounded-full ${score >= 7 ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-        <span className="text-[10px] font-medium tracking-widest uppercase text-gray-400">
-            Trust Score: {score}/10
-        </span>
-    </div>
-);
+/* ── Summary parser ────────────────────────────────── */
 
 function digestToBullets(summary: string | string[]): string[] {
-    // If already an array (new backend format), return cleaned
     if (Array.isArray(summary)) {
-        return summary.map(s => s.trim()).filter(s => s.length > 5);
+        return summary.map((s) => s.trim()).filter((s) => s.length > 5);
     }
-    // Legacy string format: split on sentences
     return summary
         .split(/(?<=[.!?])\s+/)
         .map((s) => s.trim())
         .filter((s) => s.length > 10);
 }
 
-function sendFeedback(token: string | null, title: string, summary: string | string[], action: "read" | "rejected") {
+/* ── Feedback ──────────────────────────────────────── */
+
+function sendFeedback(
+    token: string | null,
+    title: string,
+    summary: string | string[],
+    action: "read" | "rejected"
+) {
     if (!token) return;
-    const summaryText = Array.isArray(summary) ? summary.join(' ') : summary;
+    const text = Array.isArray(summary) ? summary.join(" ") : summary;
     fetch(`${API}/api/feedback`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            article_title: title,
-            article_summary: summaryText,
-            action: action,
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ article_title: title, article_summary: text, action }),
     }).catch(console.error);
 }
 
-export default function NewsCard({ item, index, token, onDismiss }: { item: NewsItem, index: number, token: string | null, onDismiss: (title: string) => void }) {
-    // Use localized_title if available (from backend), fallback to title
+
+/* ═══════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════ */
+
+export default function NewsCard({
+    item,
+    index,
+    token,
+    onDismiss,
+}: {
+    item: NewsItem;
+    index: number;
+    token: string | null;
+    onDismiss: (title: string) => void;
+}) {
     const displayTitle = item.localized_title || item.title;
     const [isExpanded, setIsExpanded] = useState(false);
     const [isDismissed, setIsDismissed] = useState(false);
 
     const isImpact = item.gate_passed === "impact" || item.category === "Impact";
-    const tag = isImpact ? "Impact Direct" : "Passion";
-    const tagColor = isImpact ? "#EF4444" : "#6366F1";
-
     const bullets = digestToBullets(item.summary);
+    const displayPoints = bullets.length > 0 ? bullets : [typeof item.summary === "string" ? item.summary : ""];
 
-    // Fallback if no bullets
-    const displayPoints = bullets.length > 0 ? bullets : [item.summary];
+    const handleReject = useCallback(
+        (e: React.MouseEvent) => {
+            e.stopPropagation();
+            setIsDismissed(true);
+            sendFeedback(token, item.title, item.summary, "rejected");
+            onDismiss(item.title);
+            setIsExpanded(false);
+        },
+        [token, item.title, item.summary, onDismiss]
+    );
 
-    const handleReject = useCallback((e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIsDismissed(true);
-        sendFeedback(token, item.title, item.summary, "rejected");
-        onDismiss(item.title);
-        setIsExpanded(false);
-    }, [token, item.title, item.summary, onDismiss]);
+    // Extract source domain
+    const sourceDomain = (() => {
+        try { return new URL(item.link).hostname.replace("www.", ""); } catch { return ""; }
+    })();
 
     if (isDismissed) return null;
 
     return (
         <>
-            <motion.div
+            {/* ── CARD ──────────────────────────────────────── */}
+            <motion.article
                 onClick={() => {
                     sendFeedback(token, item.title, item.summary, "read");
                     setIsExpanded(true);
                 }}
-                className="group cursor-pointer py-10 first:pt-4 outline-none relative"
-                whileHover={{ scale: 1.01 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="group flex gap-4 py-5 sm:py-6 cursor-pointer transition-all duration-200 relative"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
             >
-                <div className="space-y-4">
-                    {/* Catégories plus discrètes : texte gris, petite puce de couleur */}
-                    <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: tagColor }} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-gray-600 transition-colors">
-                            {tag}
-                        </span>
-                        <span className="text-[10px] text-gray-300 uppercase tracking-widest">• Pertinence {item.score}</span>
-                    </div>
 
-                    {/* Taille de titre réduite pour plus de sobriété */}
-                    <h2 className="text-xl sm:text-2xl font-bold leading-snug text-gray-900 group-hover:text-indigo-600 transition-all duration-300 tracking-tight">
+                {/* Content */}
+                <div className="flex-1 min-w-0 flex flex-col gap-3 sm:gap-4">
+                    {/* Title */}
+                    <h3 className="text-[17px] sm:text-[19px] font-bold leading-snug text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors duration-200">
                         {displayTitle}
-                    </h2>
+                    </h3>
 
-                    <ul className="space-y-3 max-w-2xl">
-                        {displayPoints.slice(0, 3).map((point, index) => (
-                            <li key={index} className="flex items-start gap-4">
-                                <span className="mt-3 w-1.5 h-[2px] bg-gray-300 flex-shrink-0" />
-                                <span className="text-gray-600 text-[15px] leading-relaxed font-medium">
+                    {/* Summary bullets */}
+                    <ul className="flex flex-col gap-2.5">
+                        {displayPoints.slice(0, 3).map((point, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                                <span className="mt-[10px] w-2 h-[1.5px] bg-gray-300 shrink-0 rounded-sm" />
+                                <span className="text-[14px] sm:text-[15px] leading-[1.8] text-gray-500 font-[440]">
                                     {point}
                                 </span>
                             </li>
                         ))}
                     </ul>
-                </div>
-            </motion.div>
 
-            {/* Modal (Floating Glass) */}
+                </div>
+            </motion.article>
+
+            {/* ── MODAL ─────────────────────────────────────── */}
             <AnimatePresence>
                 {isExpanded && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-6 md:p-12">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-6 md:p-10">
+                        {/* Backdrop */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsExpanded(false)}
-                            className="absolute inset-0 bg-white/40 backdrop-blur-sm"
+                            className="absolute inset-0 bg-gray-900/40"
                         />
 
+                        {/* Panel */}
                         <motion.div
-                            layoutId={`modal-${item.title}`}
-                            initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                            className={`relative w-full h-full sm:h-auto sm:max-h-[85vh] sm:max-w-2xl overflow-hidden sm:rounded-2xl shadow-2xl flex flex-col ${THEME.glass}`}
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 30 }}
+                            transition={{ ease: "easeOut", duration: 0.25 }}
+                            style={{ willChange: "transform, opacity" }}
+                            className="relative w-full h-full sm:h-auto sm:max-h-[85vh] sm:max-w-2xl overflow-hidden sm:rounded-2xl bg-white shadow-2xl flex flex-col"
                         >
-                            <div className="flex items-center justify-between p-5 border-b border-black/5 bg-white/50">
-                                <button onClick={() => setIsExpanded(false)} className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-black">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between px-5 py-3 border-b border-black/[0.04] bg-white/95 shrink-0">
+                                <button
+                                    onClick={() => setIsExpanded(false)}
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"
+                                >
                                     <ArrowLeft size={20} />
                                 </button>
-                                <div className="flex gap-2">
-                                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-black/5 rounded-full text-gray-400 hover:text-indigo-600 transition-colors">
-                                        <Share2 size={18} />
+                                <div className="flex gap-1">
+                                    <a
+                                        href={item.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-all no-underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <ExternalLink size={18} />
                                     </a>
-                                    <button onClick={handleReject} className="p-2 hover:bg-black/5 rounded-full text-gray-400 hover:text-red-500 transition-colors">
+                                    <button
+                                        onClick={handleReject}
+                                        className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                                    >
                                         <X size={18} />
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 sm:p-10 custom-scrollbar bg-white">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{tag}</span>
-                                    <div className="ml-auto">
-                                        <TrustBadge score={item.credibility_score || 8} />
+                            {/* Modal Body */}
+                            <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar flex flex-col gap-6 sm:gap-8">
+                                {/* Category + Trust */}
+                                <div className="flex items-center justify-between">
+                                    <span className={`text-[11px] font-bold uppercase tracking-wide ${isImpact ? "text-red-500" : "text-indigo-500"}`}>
+                                        {isImpact ? "Impact Direct" : item.category || "Passion"}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${(item.credibility_score || 5) >= 7 ? "bg-emerald-400" : "bg-amber-400"}`} />
+                                        <span className="text-[10px] font-semibold text-gray-400 tracking-wide">
+                                            Trust {item.credibility_score || 5}/10
+                                        </span>
                                     </div>
                                 </div>
 
-                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight mb-8 text-gray-900">
-                                    {item.title}
+                                {/* Title */}
+                                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight leading-snug text-gray-900">
+                                    {displayTitle}
                                 </h1>
 
-                                <div className="prose prose-lg max-w-none text-gray-800 leading-[1.7] space-y-8">
-                                    <div className="text-lg italic border-l-2 border-indigo-200 pl-6 py-1 text-gray-600 bg-indigo-50/30 rounded-r-xl">
-                                        Points clés de l'analyse :
-                                        <ul className="mt-4 space-y-3 not-italic text-[15px] text-gray-700 font-medium">
-                                            {displayPoints.map((p, i) => (
-                                                <li key={i} className="flex items-start gap-4">
-                                                    <span className="mt-2.5 w-1 h-[2px] bg-indigo-300 flex-shrink-0" />
-                                                    <span>{p}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
+                                {/* Source */}
+                                {sourceDomain && (
+                                    <p className="text-[13px] text-gray-400">
+                                        Source : <span className="text-gray-500 font-medium">{sourceDomain}</span>
+                                    </p>
+                                )}
 
-                                    {item.reason && (
-                                        <div className="p-6 bg-gray-50 rounded-xl flex gap-4 text-sm font-medium text-gray-600">
-                                            <Sparkles size={20} className="text-indigo-500 shrink-0" />
-                                            <p>{item.reason}</p>
-                                        </div>
-                                    )}
+                                {/* Key Points */}
+                                <div className="p-5 sm:p-6 bg-[#FAFAFA] rounded-2xl border border-black/[0.04]">
+                                    <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-4">
+                                        Points clés de l&apos;analyse
+                                    </p>
+                                    <ul className="flex flex-col gap-4">
+                                        {displayPoints.map((p, i) => (
+                                            <li key={i} className="flex items-start gap-3.5">
+                                                <span className="mt-[11px] w-3 h-[2px] bg-indigo-300 opacity-60 shrink-0 rounded-sm" />
+                                                <span className="text-[14px] sm:text-[15px] leading-relaxed text-gray-600 font-[450]">{p}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
 
-                                <div className="mt-12 pt-8 border-t border-black/5 flex flex-col items-center opacity-50">
-                                    <Zap size={16} className="text-indigo-500 mb-2" />
-                                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">
+                                {/* Reason */}
+                                {item.reason && (
+                                    <div className="flex gap-4 p-5 bg-violet-50/60 rounded-2xl border border-violet-100/50">
+                                        <Sparkles size={18} className="text-indigo-500 shrink-0 mt-0.5" />
+                                        <p className="text-[14px] text-gray-600 font-medium leading-relaxed">{item.reason}</p>
+                                    </div>
+                                )}
+
+                                {/* CTA */}
+                                <a
+                                    href={item.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 self-start px-5 py-3 bg-gray-900 text-white rounded-xl text-[14px] font-semibold no-underline hover:opacity-90 active:scale-[0.98] transition-all"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    Lire l&apos;article original
+                                    <ExternalLink size={14} />
+                                </a>
+
+                                {/* Footer */}
+                                <div className="flex items-center justify-center gap-2 pt-6 border-t border-black/[0.04] mt-2 opacity-40">
+                                    <Zap size={14} className="text-indigo-500" />
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
                                         Mizan Intelligence
-                                    </p>
+                                    </span>
                                 </div>
                             </div>
                         </motion.div>

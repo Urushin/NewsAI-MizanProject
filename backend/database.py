@@ -67,8 +67,8 @@ def get_user_by_username(username: str) -> Optional[dict]:
                 "language": "fr",
                 "score_threshold": 70,
                 "identity": {"name": "Dev User", "role": "Journaliste"},
-                "interests": {"tags": ["AI", "Tech", "International"]},
-                "rejection_rules": ["No gossip", "No ads"]
+                "interests": {}, # Removed hardcoded AI/Tech tags to allow manifesto override
+                "rejection_rules": []
             }
         return None
     except Exception as e:
@@ -92,8 +92,8 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
                 "language": "fr",
                 "score_threshold": 70,
                 "identity": {"name": "Dev User", "role": "Journaliste"},
-                "interests": {"tags": ["AI", "Tech", "International"]},
-                "rejection_rules": ["No gossip", "No ads"]
+                "interests": {},
+                "rejection_rules": []
             }
         return None
     except Exception as e:
@@ -101,11 +101,13 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
         return None
 
 def update_user_profile(user_id: str, updates: Dict[str, Any]):
-    """Update user profile fields (JSONB)."""
+    """Update user profile fields (JSONB). Uses upsert to ensure the record exists."""
     try:
         sb = get_supabase()
-        sb.table("profiles").update(updates).eq("id", user_id).execute()
-        logger.info(f"✅ Profil mis à jour pour {user_id}")
+        # Use upsert instead of update so the mock DevUser's profile gets created in DB on first save
+        data = {"id": user_id, **updates}
+        sb.table("profiles").upsert(data).execute()
+        logger.info(f"✅ Profil mis à jour/créé pour {user_id}")
     except Exception as e:
         logger.error(f"Supabase profile update error: {e}")
 

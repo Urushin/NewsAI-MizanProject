@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { X, ChevronRight, Check, Target, Sparkles, SlidersHorizontal } from "lucide-react";
 import { API, useAuth } from "../context/AuthContext";
 
 interface OnboardingWizardProps {
@@ -23,7 +24,6 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
         fetch(`${API}/api/taxonomy`)
             .then((r) => r.json())
             .then((data) => {
-                // Ensure every value is an array to prevent .map() crashes
                 const safeTaxonomy: Record<string, string[]> = {};
                 for (const [key, value] of Object.entries(data)) {
                     safeTaxonomy[key] = Array.isArray(value) ? value : [];
@@ -37,7 +37,6 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
     const toggleTopic = (t: string) => {
         if (selectedTopics.includes(t)) {
             setSelectedTopics((prev) => prev.filter((x) => x !== t));
-            // Remove associated subtopics
             const subsToRemove = taxonomy[t] || [];
             setSelectedSubtopics((prev) => prev.filter((s) => !subsToRemove.includes(s)));
         } else {
@@ -75,78 +74,112 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Chargement...</div>;
+    if (loading) return null;
+
+    const currentPercent = ((step - 1) / 2) * 100;
 
     return (
-        <div className="wizard-overlay">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/40 p-4 sm:p-6" onClick={onClose}>
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="wizard-panel"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ ease: "easeOut", duration: 0.25 }}
+                style={{ willChange: "transform, opacity" }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl bg-white rounded-2xl sm:rounded-[24px] shadow-2xl flex flex-col overflow-hidden h-[90vh] sm:h-auto sm:max-h-[85vh]"
             >
-                {/* Header */}
-                <div className="wizard-header">
-                    <h2>Définissez vos Intérêts</h2>
-                    <div className="wizard-steps">
-                        <span className={step >= 1 ? "active" : ""}>1. Thèmes</span>
-                        <span className="line"></span>
-                        <span className={step >= 2 ? "active" : ""}>2. Détails</span>
-                        <span className="line"></span>
-                        <span className={step >= 3 ? "active" : ""}>3. Bonus</span>
+                {/* ── HEADER ────────────────────────────────────────────────── */}
+                <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-black/[0.04] shrink-0">
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900">
+                            Personnalisez votre Brief
+                        </h2>
+                        <p className="text-[13px] text-gray-400 font-medium mt-1">
+                            Configurez l&apos;IA pour qu&apos;elle vous suive à la trace
+                        </p>
                     </div>
+                    <button
+                        onClick={onClose}
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
 
-                {/* Content */}
-                <div className="wizard-content">
+                {/* ── PROGRESS BAR ─────────────────────────────────────────── */}
+                <div className="w-full h-1.5 bg-gray-100 shrink-0">
+                    <motion.div
+                        className="h-full bg-indigo-500 rounded-r-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${currentPercent}%` }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                    />
+                </div>
+
+                {/* ── CONTENT (SCROLLABLE) ─────────────────────────────────── */}
+                <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-8 custom-scrollbar">
                     <AnimatePresence mode="wait">
                         {step === 1 && (
-                            <motion.div
-                                key="step1"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                            >
-                                <p className="wizard-desc">Sélectionnez vos grands domaines d'intérêt.</p>
-                                <div className="grid-topics">
-                                    {Object.keys(taxonomy).map((topic) => (
-                                        <button
-                                            key={topic}
-                                            className={`topic-card ${selectedTopics.includes(topic) ? "selected" : ""}`}
-                                            onClick={() => toggleTopic(topic)}
-                                        >
-                                            {topic}
-                                        </button>
-                                    ))}
+                            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                        <Target size={18} />
+                                    </div>
+                                    <h3 className="text-[17px] font-bold text-gray-900">1. Quels sont vos grands intérêts ?</h3>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                                    {Object.keys(taxonomy).map((topic) => {
+                                        const isSelected = selectedTopics.includes(topic);
+                                        return (
+                                            <button
+                                                key={topic}
+                                                onClick={() => toggleTopic(topic)}
+                                                className={`p-4 sm:p-5 text-left rounded-xl transition-all duration-200 border-2 ${isSelected ? "border-indigo-500 bg-indigo-50/50" : "border-gray-100 hover:border-gray-200 bg-white"}`}
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className={`text-[14px] sm:text-[15px] font-bold ${isSelected ? "text-indigo-700" : "text-gray-700"}`}>
+                                                        {topic}
+                                                    </span>
+                                                    {isSelected && <Check size={16} className="text-indigo-500 shrink-0" />}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </motion.div>
                         )}
 
                         {step === 2 && (
-                            <motion.div
-                                key="step2"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                            >
-                                <p className="wizard-desc">Affinez avec des sous-thèmes spécifiques.</p>
+                            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-500">
+                                        <SlidersHorizontal size={18} />
+                                    </div>
+                                    <h3 className="text-[17px] font-bold text-gray-900">2. Soyez plus précis</h3>
+                                </div>
                                 {selectedTopics.length === 0 ? (
-                                    <p className="empty-msg">Aucun thème sélectionné.</p>
+                                    <p className="text-[14px] text-gray-500 bg-gray-50 p-6 rounded-xl text-center border border-gray-100 border-dashed">
+                                        Veuillez retourner à l&apos;étape précédente pour sélectionner un thème.
+                                    </p>
                                 ) : (
-                                    <div className="subs-container">
+                                    <div className="flex flex-col gap-8">
                                         {selectedTopics.map((topic) => (
-                                            <div key={topic} className="sub-group">
-                                                <h3>{topic}</h3>
-                                                <div className="chips-wrap">
-                                                    {taxonomy[topic]?.map((sub) => (
-                                                        <button
-                                                            key={sub}
-                                                            className={`chip ${selectedSubtopics.includes(sub) ? "selected" : ""}`}
-                                                            onClick={() => toggleSub(sub)}
-                                                        >
-                                                            {sub}
-                                                        </button>
-                                                    ))}
+                                            <div key={topic} className="flex flex-col gap-3">
+                                                <h4 className="text-[13px] font-bold uppercase tracking-wide text-gray-400">{topic}</h4>
+                                                <div className="flex flex-wrap gap-2.5">
+                                                    {taxonomy[topic]?.map((sub) => {
+                                                        const isSelected = selectedSubtopics.includes(sub);
+                                                        return (
+                                                            <button
+                                                                key={sub}
+                                                                onClick={() => toggleSub(sub)}
+                                                                className={`px-4 py-2 text-[14px] font-medium rounded-full transition-all duration-200 border ${isSelected ? "bg-gray-900 border-gray-900 text-white shadow-md shadow-gray-900/10" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"}`}
+                                                            >
+                                                                {sub}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         ))}
@@ -156,203 +189,64 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                         )}
 
                         {step === 3 && (
-                            <motion.div
-                                key="step3"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                            >
-                                <p className="wizard-desc">
-                                    Avez-vous d'autres centres d'intérêt spécifiques ? (Optionnel)
+                            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
+                                        <Sparkles size={18} />
+                                    </div>
+                                    <h3 className="text-[17px] font-bold text-gray-900">3. Précisions (Optionnel)</h3>
+                                </div>
+                                <p className="text-[14px] text-gray-500 mb-4">
+                                    Y a-t-il une entreprise, une équipe sportive, ou un sujet de niche très spécifique que vous suivez de près ?
                                 </p>
                                 <textarea
-                                    className="custom-textarea"
-                                    placeholder="Ex: Passion pour l'horlogerie vintage, suivi de l'équipe de Rugby de Toulouse..."
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 text-[15px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-gray-400"
+                                    placeholder="Ex: Passion pour l'horlogerie, les lancements spatiaux, l'équipe de rugby de Toulouse..."
                                     value={custom}
                                     onChange={(e) => setCustom(e.target.value)}
-                                    rows={6}
+                                    rows={5}
                                 />
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
 
-                {/* Footer */}
-                <div className="wizard-footer">
-                    {step > 1 && (
-                        <button className="btn-secondary" onClick={() => setStep(step - 1)}>
+                {/* ── FOOTER ───────────────────────────────────────────────── */}
+                <div className="px-6 sm:px-8 py-5 border-t border-black/[0.04] bg-[#FAFAFA] flex items-center justify-between shrink-0">
+                    {step > 1 ? (
+                        <button
+                            onClick={() => setStep(step - 1)}
+                            className="text-[14px] font-semibold text-gray-500 hover:text-gray-900 px-4 py-2 transition-colors"
+                        >
                             Retour
                         </button>
+                    ) : (
+                        <div />
                     )}
-                    <div style={{ flex: 1 }}></div>
+
                     {step < 3 ? (
                         <button
-                            className="btn-primary"
                             onClick={() => setStep(step + 1)}
                             disabled={step === 1 && selectedTopics.length === 0}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-xl text-[14px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all active:scale-95"
                         >
-                            Suivant
+                            Continuer <ChevronRight size={16} />
                         </button>
                     ) : (
-                        <button className="btn-primary" onClick={handleFinish} disabled={generating}>
-                            {generating ? "Génération..." : "C'est parti !"}
+                        <button
+                            onClick={handleFinish}
+                            disabled={generating}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[14px] font-semibold disabled:opacity-50 hover:bg-indigo-700 transition-all active:scale-95"
+                        >
+                            {generating ? (
+                                <>Génération <span className="animate-pulse">...</span></>
+                            ) : (
+                                "Créer mon assistant"
+                            )}
                         </button>
                     )}
                 </div>
             </motion.div>
-
-            {/* Styles inline for Wizard (scoped) */}
-            <style jsx>{`
-        .wizard-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(8px);
-          z-index: 2000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-        .wizard-panel {
-          background: var(--bg-card);
-          width: 100%;
-          max-width: 600px;
-          height: 80vh;
-          max-height: 700px;
-          border-radius: 24px;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-          border: 1px solid var(--separator);
-          overflow: hidden;
-        }
-        .wizard-header {
-          padding: 24px 32px;
-          border-bottom: 1px solid var(--separator);
-        }
-        .wizard-header h2 {
-          margin: 0 0 16px;
-          font-family: var(--font-serif);
-          font-size: 24px;
-        }
-        .wizard-steps {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 13px;
-          color: var(--text-lighter);
-        }
-        .wizard-steps .active {
-          color: var(--primary);
-          font-weight: 600;
-        }
-        .wizard-steps .line {
-          height: 1px;
-          flex: 1;
-          background: var(--separator);
-        }
-        .wizard-content {
-          flex: 1;
-          padding: 32px;
-          overflow-y: auto;
-        }
-        .wizard-desc {
-          margin-bottom: 24px;
-          color: var(--text-light);
-          font-size: 15px;
-        }
-        .grid-topics {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-          gap: 16px;
-        }
-        .topic-card {
-          padding: 24px 16px;
-          border: 2px solid var(--separator);
-          border-radius: 12px;
-          background: transparent;
-          color: var(--text);
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: center;
-        }
-        .topic-card:hover {
-          border-color: var(--primary);
-        }
-        .topic-card.selected {
-          border-color: var(--primary);
-          background: rgba(var(--primary-rgb), 0.05);
-          color: var(--primary);
-        }
-        .sub-group {
-          margin-bottom: 32px;
-        }
-        .sub-group h3 {
-          font-size: 16px;
-          margin-bottom: 12px;
-          font-weight: 600;
-        }
-        .chips-wrap {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-        .chip {
-          padding: 8px 16px;
-          border-radius: 20px;
-          border: 1px solid var(--separator);
-          background: var(--bg);
-          cursor: pointer;
-          font-size: 14px;
-          transition: all 0.2s;
-        }
-        .chip.selected {
-          background: var(--primary);
-          color: white;
-          border-color: var(--primary);
-        }
-        .custom-textarea {
-          width: 100%;
-          padding: 16px;
-          border-radius: 12px;
-          border: 1px solid var(--separator);
-          background: var(--bg);
-          color: var(--text);
-          font-size: 15px;
-          resize: vertical;
-        }
-        .wizard-footer {
-          padding: 24px 32px;
-          border-top: 1px solid var(--separator);
-          display: flex;
-          gap: 16px;
-        }
-        .btn-primary {
-          background: var(--text);
-          color: var(--bg);
-          padding: 12px 32px;
-          border-radius: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          border: none;
-        }
-        .btn-primary:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .btn-secondary {
-          background: transparent;
-          color: var(--text-light);
-          padding: 12px 24px;
-          cursor: pointer;
-          border: none;
-        }
-      `}</style>
         </div>
     );
 }

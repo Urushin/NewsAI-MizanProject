@@ -75,13 +75,22 @@ def _build_user_interest_sources(profile: dict) -> list:
     for topic, weight in interests.items():
         if isinstance(weight, (int, float)) and weight < 0.3:
             continue  # Skip low-interest topics
+        
+        # Build the search query
+        query_parts = [topic]
+        if isinstance(weight, list):
+            # The 'weight' is actually a list of subtopics from the wizard
+            query_parts.extend(weight)
+        
+        query_str = " OR ".join(f'"{p}"' if " " in p else p for p in query_parts)
+            
         sources.append({
             "id": f"user_topic_{topic}",
             "active": True,
             "type": "topic",
-            "query": topic,
-            "category": "User Interest",
-            "language": profile.get("preferences", {}).get("language", "en"),
+            "query": query_str,
+            "category": topic,
+            "language": profile.get("preferences", {}).get("language", "fr"),
         })
     return sources
 

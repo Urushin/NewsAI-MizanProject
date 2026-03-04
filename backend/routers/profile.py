@@ -76,6 +76,43 @@ def update_manifesto(request: Request, body: ManifestoUpdate):
     with open(manifesto_path, "w", encoding="utf-8") as f:
         f.write(body.content)
 
+    # Parse the markdown to extract topics and subtopics for the backend scraper
+    interests = {}
+    current_section = None
+    topics = []
+    
+    for line in body.content.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+            
+        if line.startswith("## Domaines d'intérêt"):
+            current_section = "topics"
+        elif line.startswith("## Sous-thèmes prioritaires"):
+            current_section = "subtopics"
+        elif line.startswith("## Notes personnelles"):
+            current_section = "custom"
+        elif line.startswith("-") and current_section == "topics":
+            topic = line[1:].strip()
+            interests[topic] = []
+            topics.append(topic)
+        elif line.startswith("-") and current_section == "subtopics":
+            subtopic = line[1:].strip()
+            # Distribute to the first topic for clustering purposes
+            if topics:
+                interests[topics[0]].append(subtopic)
+            else:
+                if "Sujets" not in interests:
+                    interests["Sujets"] = []
+                interests["Sujets"].append(subtopic)
+        elif current_section == "custom" and not line.startswith("#"):
+            if "Notes personnelles" not in interests:
+                interests["Notes personnelles"] = []
+            interests["Notes personnelles"].append(line)
+
+    if interests:
+        update_user_profile(payload["user_id"], {"interests": interests})
+
     embed_provider = get_embedding_provider()
     if embed_provider and body.content.strip():
         try:
@@ -151,6 +188,10 @@ def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
         f.write(manifesto_text)
 
     interests = {topic: body.subtopics for topic in body.topics}
+    if body.custom.strip():
+        # Treat custom notes as a standalone topic so it is fetched explicitly
+        interests["Notes personnelles"] = [body.custom.strip()]
+        
     update_user_profile(payload["user_id"], {"interests": interests})
 
     embed_provider = get_embedding_provider()

@@ -238,9 +238,12 @@ async def collect_articles(
     if progress_callback:
         progress_callback("Reading config...", 5)
 
-    rss_sources = config.get("rss_sources", [])
-    interests = user_interests if user_interests is not None else config.get("interests", [])
-    all_sources = interests + rss_sources
+    # If the user has custom interests (from the manifesto wizard), prioritize those
+    if user_interests is not None and len(user_interests) > 0:
+        all_sources = user_interests
+    else:
+        # Default global profile
+        all_sources = config.get("interests", []) + config.get("rss_sources", [])
 
     if quick_mode and all_sources:
         all_sources = [all_sources[0]]
