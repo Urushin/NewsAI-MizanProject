@@ -19,8 +19,8 @@ class RawArticle(BaseModel):
 
 
 class ArticleVerdict(BaseModel):
-    """Two-stage cognitive filter output."""
-    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    """Multi-stage cognitive filter output (supports Chimera fusion)."""
+    model_config = ConfigDict(extra='ignore', str_strip_whitespace=True)
 
     localized_title: StrictStr = Field(..., min_length=1, max_length=500)
     summary: List[StrictStr] = Field(..., min_length=1, max_length=5)
@@ -30,6 +30,10 @@ class ArticleVerdict(BaseModel):
     reason: StrictStr = Field(default="", max_length=500)
     credibility_score: Annotated[int, Field(ge=0, le=10)] = 5
     link: StrictStr = Field(default="", max_length=1500)
+    
+    # Chimera fusion metadata
+    sources_count: int = Field(default=1, ge=1)
+    source_urls: List[str] = Field(default_factory=list)
 
     @field_validator('summary', mode='before')
     @classmethod
@@ -61,11 +65,11 @@ class ArticleVerdict(BaseModel):
         """Map any LLM category value to a known category."""
         if not isinstance(v, str):
             return "Passion"
-        known = {"impact", "passion"}
+        known = {"impact", "passion", "tech", "politik", "business", "world", "security", "trending"}
         if v.strip().lower() in known:
             return v.strip().capitalize()
         # Map common LLM outputs to our categories
-        impact_keywords = {"politique", "économie", "economy", "politics", "security", "sécurité", "crisis", "crise", "war", "guerre"}
+        impact_keywords = {"politique", "économie", "economy", "politics", "sécurité", "crisis", "crise", "war", "guerre", "geopolitics", "géopolitique"}
         if v.strip().lower() in impact_keywords:
             return "Impact"
         return "Passion"

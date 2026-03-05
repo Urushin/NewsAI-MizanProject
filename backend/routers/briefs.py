@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks, Query
 from typing import Optional
-from database import get_supabase, get_generation_status, get_user_by_id, get_user_by_username
+from database import get_supabase, get_generation_status, get_user_by_id, get_user_by_username, get_daily_brief
 from auth import get_current_user
 from quotas import check_brief_quota, QuotaExceeded
 from stripe_billing import get_user_plan
@@ -11,24 +11,16 @@ router = APIRouter(prefix="/api/brief", tags=["briefs"])
 @router.get("")
 def get_brief(request: Request, date: Optional[str] = None):
     payload = get_current_user(request)
-    sb = get_supabase()
 
-    query = sb.table("daily_briefs").select("*").eq("user_id", payload["user_id"])
-    if date:
-        query = query.eq("date", date)
-    else:
-        query = query.order("date", desc=True).limit(1)
-
-    res = query.execute()
-    if not res.data:
+    brief = get_daily_brief(payload["user_id"], date)
+    if not brief:
         return {"content": []}
 
-    brief = res.data[0]
     return {
         "date": brief["date"],
-        "global_digest": brief["global_digest"],
-        "content": brief["content"],
-        "total_kept": len(brief["content"]),
+        "global_digest": brief.get("global_digest"),
+        "content": brief.get("content", []),
+        "total_kept": len(brief.get("content", [])),
     }
 
 @router.get("/history")
@@ -82,6 +74,10 @@ def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: st
         check_brief_quota(user_id, sb)
     except QuotaExceeded as e:
         raise HTTPException(status_code=429, detail=str(e))
+
+    # Reset status so frontend doesn't see old "done" status
+    from database import set_generation_status
+    set_generation_status(username, "pending", "Initializing...", 0)
 
     if mode == "test" or is_dev:
         # Synchronous execution (dev shortcut or explicit test mode)
@@ -140,6 +136,10 @@ def trigger_brief_check(request: Request):
 
     plan_info = get_user_plan(user_id, sb)
     priority = 1 if plan_info["plan"] in ("pro", "enterprise") else 0
+
+    # Reset status
+    from database import set_generation_status
+    set_generation_status(username, "pending", "Initializing...", 0)
 
     job = enqueue_job(
         job_type="generate_brief",

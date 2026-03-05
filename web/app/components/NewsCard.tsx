@@ -22,6 +22,8 @@ interface NewsItem {
     reason?: string;
     credibility_score?: number;
     localized_title?: string;
+    sources_count?: number;
+    source_urls?: string[];
 }
 
 /* ── Summary parser ────────────────────────────────── */
@@ -129,6 +131,15 @@ export default function NewsCard({
                         ))}
                     </ul>
 
+                    {/* Multi-source badge */}
+                    {item.sources_count && item.sources_count > 1 && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[11px] font-semibold rounded-full">
+                                🔗 Synthèse de {item.sources_count} sources
+                            </span>
+                        </div>
+                    )}
+
                 </div>
             </motion.article>
 
@@ -228,6 +239,34 @@ export default function NewsCard({
                                     <div className="flex gap-4 p-5 bg-violet-50/60 rounded-2xl border border-violet-100/50">
                                         <Sparkles size={18} className="text-indigo-500 shrink-0 mt-0.5" />
                                         <p className="text-[14px] text-gray-600 font-medium leading-relaxed">{item.reason}</p>
+                                    </div>
+                                )}
+
+                                {/* Sources list (Chimera fusion) */}
+                                {item.sources_count && item.sources_count > 1 && item.source_urls && (
+                                    <div className="p-4 sm:p-5 bg-gray-50 rounded-2xl border border-black/[0.04]">
+                                        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-3">
+                                            Sources ({item.sources_count})
+                                        </p>
+                                        <ul className="flex flex-col gap-2">
+                                            {item.source_urls.map((url, i) => {
+                                                let domain = "";
+                                                try { domain = new URL(url).hostname.replace("www.", ""); } catch { }
+                                                return (
+                                                    <li key={i}>
+                                                        <a
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[13px] text-indigo-500 hover:text-indigo-700 font-medium no-underline hover:underline transition-colors"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {domain || url}
+                                                        </a>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
                                     </div>
                                 )}
 

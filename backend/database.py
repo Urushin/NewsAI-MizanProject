@@ -28,6 +28,23 @@ def init_db():
     """Supabase tables should be initialized via the SQL Editor."""
     logger.info("📡 Connecté à Supabase.")
 
+# --- DX Mode Helpers ---
+_DX_MOCK_USER_ID = "00000000-0000-0000-0000-000000000000"
+
+def _is_dx_fk_error(user_id: str, error: Exception) -> bool:
+    """Check if this is a FK violation for the mock user in development mode."""
+    return (
+        os.getenv("APP_STAGE") == "development"
+        and user_id == _DX_MOCK_USER_ID
+        and "23503" in str(error)
+    )
+
+def _dx_cache_path(filename: str) -> str:
+    """Get path in local DX cache directory, creating it if needed."""
+    cache_dir = os.path.join(os.path.dirname(__file__), "cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    return os.path.join(cache_dir, filename)
+
 # --- Content Cache (Firecrawl) ---
 
 def get_cached_content(url: str) -> Optional[str]:
@@ -165,10 +182,16 @@ def record_processed_urls(user_id: str, urls: List[str]):
         data = [{"user_id": user_id, "url": url} for url in urls]
         sb.table("processed_articles").insert(data).execute()
     except Exception as e:
+        if _is_dx_fk_error(user_id, e):
+            logger.debug("🛠️ [DX] Skipping processed_articles save (mock user)")
+            return
         logger.error(f"Supabase record error: {e}")
 
 def get_recent_processed_urls(user_id: str, days: int = 7) -> set:
     """Return the set of article URLs processed recently from Supabase."""
+    # DX MODE: Return empty set so developers can test repeatedly
+    if os.getenv("APP_STAGE") == "development":
+        return set()
     try:
         sb = get_supabase()
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
@@ -181,18 +204,55 @@ def get_recent_processed_urls(user_id: str, days: int = 7) -> set:
 # --- Daily Brief Persistence ---
 
 def store_daily_brief(user_id: str, brief_data: dict):
-    """Save the final brief to Supabase instead of JSON."""
+    """Save the final brief to Supabase, with local JSON fallback for DX mode."""
+    import json as _json
+    date_str = datetime.now().date().isoformat()
+    data = {
+        "user_id": user_id,
+        "global_digest": brief_data.get("global_digest"),
+        "content": brief_data.get("content", []),
+        "date": date_str
+    }
     try:
         sb = get_supabase()
-        sb.table("daily_briefs").upsert({
-            "user_id": user_id,
-            "global_digest": brief_data.get("global_digest"),
-            "content": brief_data.get("content", []),
-            "date": datetime.now().date().isoformat()
-        }, on_conflict="user_id,date").execute()
+        sb.table("daily_briefs").upsert(data, on_conflict="user_id,date").execute()
         logger.info("✅ Brief enregistré dans Supabase.")
     except Exception as e:
+        if _is_dx_fk_error(user_id, e):
+            path = _dx_cache_path(f"brief_{user_id}.json")
+            with open(path, "w", encoding="utf-8") as f:
+                _json.dump(data, f, ensure_ascii=False)
+            logger.info(f"🛠️ [DX] Brief sauvegardé localement → {path}")
+            return
         logger.error(f"Supabase brief store error: {e}")
+
+
+def get_daily_brief(user_id: str, date: Optional[str] = None) -> Optional[dict]:
+    """Fetch daily brief from Supabase, with local JSON fallback for DX mode."""
+    import json as _json
+    # DX MODE: Try local JSON fallback FIRST to allow rapid developer iteration
+    if os.getenv("APP_STAGE") == "development":
+        path = _dx_cache_path(f"brief_{user_id}.json")
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                local = _json.load(f)
+                if not date or local.get("date") == date:
+                    logger.info(f"🛠️ [DX] Brief chargé depuis le cache local (priorité DX)")
+                    return local
+    try:
+        sb = get_supabase()
+        query = sb.table("daily_briefs").select("*").eq("user_id", user_id)
+        if date:
+            query = query.eq("date", date)
+        else:
+            query = query.order("date", desc=True).limit(1)
+        res = query.execute()
+        if res.data:
+            return res.data[0]
+    except Exception as e:
+        logger.error(f"Supabase brief fetch error: {e}")
+    return None
+
 
 # --- Status / Realtime ---
 
@@ -208,6 +268,9 @@ def store_feedback(user_id: str, article_title: str, action: str, summary: str =
             "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
     except Exception as e:
+        if _is_dx_fk_error(user_id, e):
+            logger.debug("🛠️ [DX] Skipping feedback save (mock user)")
+            return
         logger.error(f"Supabase feedback error: {e}")
 
 def set_generation_status(username: str, status: str, step: str, percent: int):

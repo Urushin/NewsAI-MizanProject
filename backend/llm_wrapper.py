@@ -118,33 +118,51 @@ class TokenTracker:
 # Global singleton
 token_tracker = TokenTracker()
 
-
 # ══════════════════════════════════════════
-# LLM Response Cache
+# LLM Response Cache (Persistent)
 # ══════════════════════════════════════════
-_response_cache: dict = {}
-_CACHE_MAX_SIZE = 200
+import json as _json
 
+_CACHE_FILE = pathlib.Path(__file__).parent / ".llm_cache.json"
+_CACHE_MAX_SIZE = 500
+
+def _load_cache() -> dict:
+    if _CACHE_FILE.exists():
+        try:
+            with open(_CACHE_FILE, "r", encoding="utf-8") as f:
+                return _json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def _save_cache():
+    try:
+        with open(_CACHE_FILE, "w", encoding="utf-8") as f:
+            _json.dump(_response_cache, f, ensure_ascii=False)
+    except Exception as e:
+        logger.warning(f"Could not save LLM cache: {e}")
+
+_response_cache: dict = _load_cache()
 
 def _cache_key(prompt: str, system_prompt: str) -> str:
     content = f"{system_prompt}|||{prompt}"
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
-
 def _cache_get(prompt: str, system_prompt: str) -> Optional[str]:
     key = _cache_key(prompt, system_prompt)
-    return _response_cache.get(key)
-
+    res = _response_cache.get(key)
+    if res:
+        logger.debug(f"   🟢 LLM Cache HIT ({key})")
+    return res
 
 def _cache_set(prompt: str, system_prompt: str, response: str):
     if len(_response_cache) >= _CACHE_MAX_SIZE:
-        # Evict oldest entries (FIFO)
         oldest = list(_response_cache.keys())[:50]
         for k in oldest:
             del _response_cache[k]
     key = _cache_key(prompt, system_prompt)
     _response_cache[key] = response
-
+    _save_cache()
 
 # ══════════════════════════════════════════
 # Pydantic AI Agent
@@ -279,10 +297,12 @@ class MistralProvider(LLMProvider):
                     )
 
                 # ── Cache response only if it looks complete ──
-                if content.strip().endswith(('}', ']')):
+                # Check after stripping markdown fences
+                cleaned_content = content.strip().rstrip("`").strip()
+                if cleaned_content.endswith(('}', ']')):
                     _cache_set(prompt, system_prompt, content)
                 else:
-                    logger.warning("⚠️ LLM response looks truncated. Skipping cache.")
+                    logger.warning(f"⚠️ LLM response looks truncated (ends with {content[-10:] if content else 'empty'}). Skipping cache.")
 
                 return content
 
@@ -378,11 +398,12 @@ def parse_llm_json(text: str) -> Union[list, dict]:
                 logger.info("✅ JSON recovered by clipping.")
             else:
                 raise e
-        except Exception:
-            logger.error(f"JSON recovery failed. Snippet: {cleaned[:200]}...")
+        except Exception as e:
+            import traceback
+            logger.error(f"   ❌ Analyst failed: {e}\n{traceback.format_exc()}")
             raise e
 
-    if isinstance(data, dict):
+    if isinstance(data, dict) and len(data) == 1:
         for v in data.values():
             if isinstance(v, list):
                 return v

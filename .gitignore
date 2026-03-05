@@ -31,6 +31,8 @@ data/briefs/
 data/feedback/
 backend/profiles/
 backend/manifests/
+backend/.llm_cache.json
+backend/cache/
 
 # Logs
 *.log

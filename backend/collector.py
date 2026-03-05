@@ -285,8 +285,10 @@ async def collect_articles(
             continue
         raw_entries.extend(result)
 
-    # ── Dedup by title + exclude already processed ──
-    seen_titles = set()
+    # ── Dedup by URL (not title!) + exclude already processed ──
+    # We keep articles with similar titles from different sources — the Chimera will fuse them.
+    # We only drop if the exact same URL appears twice.
+    seen_urls = set()
     articles = []
     skipped = 0
 
@@ -294,18 +296,18 @@ async def collect_articles(
         if quick_mode and len(articles) >= 3:
             break
 
-        title = entry["title"]
-        if title in seen_titles:
+        link = entry["link"]
+        if link in seen_urls:
             continue
-        seen_titles.add(title)
+        seen_urls.add(link)
 
-        if entry["link"] in exclude_urls:
+        if link in exclude_urls:
             skipped += 1
             continue
 
         articles.append(RawArticle(
-            title=title,
-            link=entry["link"],
+            title=entry["title"],
+            link=link,
             published=entry["published"],
             source_interest=entry["source_interest"],
             content=entry.get("summary", ""),

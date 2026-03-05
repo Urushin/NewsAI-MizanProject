@@ -209,32 +209,6 @@ export default function Home() {
           setData(json);
           setDismissed(new Set());
         }
-
-        setLoading(false);
-
-        // Auto-generate if first login and empty brief
-        if (!hasTriedGenerate.current && (!json.content || json.content.length === 0) && !json.generated_at) {
-          hasTriedGenerate.current = true;
-          setLoading(true);
-
-          const genRes = await fetch(`${API}/api/brief/generate`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` }
-          });
-
-          if (!genRes.ok) throw new Error(`Generation failed: ${genRes.status}`);
-
-          const freshRes = await fetch(`${API}/api/brief`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-
-          if (freshRes.ok) {
-            json = await freshRes.json();
-            setData(json);
-          } else {
-            throw new Error(`Failed to fetch fresh brief: ${freshRes.status}`);
-          }
-        }
       } catch (e: any) {
         console.error("Failed to fetch briefing:", e);
         setError(e.message || "An unexpected error occurred");

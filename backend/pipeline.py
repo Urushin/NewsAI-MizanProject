@@ -95,7 +95,7 @@ def _build_user_interest_sources(profile: dict) -> list:
 
 
 def _verdict_to_dict(v: ArticleVerdict) -> dict:
-    return {
+    d = {
         "title": v.localized_title,
         "localized_title": v.localized_title,
         "link": v.link,
@@ -106,18 +106,106 @@ def _verdict_to_dict(v: ArticleVerdict) -> dict:
         "summary": v.summary,
         "keep": v.keep,
     }
+    # Chimera fusion metadata
+    if v.sources_count > 1:
+        d["sources_count"] = v.sources_count
+        d["source_urls"] = v.source_urls
+    return d
 
+
+def _extract_keywords(text: str, top_n: int = 12) -> set:
+    """Extract significant keywords from text for topic matching."""
+    import re
+    # Common stop words (EN + FR) to ignore
+    STOP = {
+        "the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "or", "is",
+        "it", "its", "was", "are", "be", "has", "have", "had", "by", "with", "from",
+        "this", "that", "not", "but", "as", "if", "will", "can", "been", "more",
+        "all", "also", "than", "into", "after", "new", "says", "said", "would",
+        "could", "about", "over", "just", "no", "so", "up", "out", "their", "which",
+        "le", "la", "les", "de", "des", "du", "un", "une", "et", "en", "est", "dans",
+        "qui", "que", "par", "pour", "sur", "au", "aux", "son", "sa", "ses", "avec",
+        "ce", "cette", "il", "elle", "nous", "vous", "ils", "sont", "pas", "plus",
+        "être", "avoir", "faire", "dit", "fait", "été", "selon", "après", "entre",
+    }
+    words = re.findall(r'[a-zA-ZÀ-ÿ]{3,}', text.lower())
+    # Count word frequency
+    freq = {}
+    for w in words:
+        if w not in STOP:
+            freq[w] = freq.get(w, 0) + 1
+    # Return top N by frequency
+    sorted_words = sorted(freq.items(), key=lambda x: -x[1])
+    return {w for w, _ in sorted_words[:top_n]}
+
+
+def _article_similarity(a: 'RawArticle', b: 'RawArticle') -> float:
+    """
+    Compute similarity between two articles. Only groups articles covering
+    the SAME event/story, not just the same general topic.
+    """
+    import difflib
+    
+    # Signal 1: Title similarity (strongest signal)
+    title_sim = difflib.SequenceMatcher(
+        None, a.title.lower(), b.title.lower()
+    ).ratio()
+    
+    # GATE: If titles share almost nothing, these are different stories
+    if title_sim < 0.20:
+        return 0.0
+    
+    # Signal 2: Content lead similarity (first 500 chars)
+    content_a = (a.content or "")[:500].lower()
+    content_b = (b.content or "")[:500].lower()
+    if content_a and content_b:
+        content_sim = difflib.SequenceMatcher(None, content_a, content_b).ratio()
+    else:
+        content_sim = 0.0
+    
+    # Weighted: title dominates
+    score = (title_sim * 0.60) + (content_sim * 0.40)
+    
+    # Boost: very similar titles always group
+    if title_sim >= 0.50:
+        score = max(score, title_sim)
+    
+    return score
+
+
+# Clustering config
+CLUSTER_THRESHOLD = 0.45   # Higher = stricter (was 0.38)
+MAX_CLUSTER_SIZE = 4       # Cap: no cluster bigger than 4 articles
 
 def cluster_articles(articles: List[RawArticle]) -> List[List[RawArticle]]:
-    """Group near-duplicate articles by title prefix (simple dedup)."""
-    clusters_dict = {}
-    for a in articles:
-        # Group by the first 30 characters of the title, case-insensitive
-        prefix = a.title[:30].lower()
-        if prefix not in clusters_dict:
-            clusters_dict[prefix] = []
-        clusters_dict[prefix].append(a)
-    return list(clusters_dict.values())
+    """Group articles about the SAME event (strict clustering)."""
+    clusters: List[List[RawArticle]] = []
+    
+    for article in articles:
+        best_score = 0.0
+        best_cluster_idx = -1
+        
+        for idx, cluster in enumerate(clusters):
+            # Skip full clusters
+            if len(cluster) >= MAX_CLUSTER_SIZE:
+                continue
+            # Compare against the FIRST article (representative) only for speed
+            score = _article_similarity(article, cluster[0])
+            if score > best_score:
+                best_score = score
+                best_cluster_idx = idx
+        
+        if best_score >= CLUSTER_THRESHOLD and best_cluster_idx >= 0:
+            clusters[best_cluster_idx].append(article)
+        else:
+            clusters.append([article])
+    
+    # Log cluster stats
+    multi = [c for c in clusters if len(c) >= 2]
+    if multi:
+        logger.info(f"   🔗 Clustering: {len(multi)} multi-source clusters detected (largest: {max(len(c) for c in multi)} articles)")
+    
+    return clusters
 
 
 # ── LLM Calls (Real) ──
@@ -400,33 +488,106 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
         
         # ── Fallback if Vector Search failed or missing manifesto ──
         if not kept:
-            logger.warning("Vector search yielded 0 results or failed. Fallback: sending articles to LLM directly.")
+            logger.warning("Vector search yielded 0 results or failed. Fallback: Chimera + Batch pipeline.")
             _status(username, "Analyzing articles with AI...", 50)
             
-            # Take more articles for fallback (up to 15) and process in batches
-            fallback_articles = representatives[:15]
-            fallback_dicts = [
+            from chimera import synthesize_cluster
+            
+            # Split clusters into multi-article (→ Chimera fusion) and single-article (→ Batch)
+            multi_clusters = [c for c in clusters if len(c) >= 2]
+            single_clusters = [c for c in clusters if len(c) == 1]
+            
+            logger.info(f"   🧬 {len(multi_clusters)} multi-source clusters → Chimera | {len(single_clusters)} single-article → Batch")
+            
+            # ── Process Multi-Article Clusters via Chimera ──
+            chimera_verdicts = []
+            for cluster in multi_clusters[:10]:  # Cap at 10 clusters to control token spend
+                cluster_dicts = [
+                    {
+                        "title": a.title,
+                        "url": a.link,
+                        "content": a.content or "",
+                        "source_interest": a.source_interest,
+                    }
+                    for a in cluster
+                ]
+                try:
+                    _status(username, f"Chimera: Fusing {len(cluster)} sources...", 55)
+                    verdict_data = await synthesize_cluster(
+                        cluster_dicts, profile, language, _call_llm
+                    )
+                    
+                    # ── Normalize LLM output for Pydantic ──
+                    # LLM might return "title" instead of "localized_title"
+                    if "title" in verdict_data and "localized_title" not in verdict_data:
+                        verdict_data["localized_title"] = verdict_data.pop("title")
+                    # Ensure link is present
+                    if not verdict_data.get("link"):
+                        verdict_data["link"] = cluster[0].link
+                    # Ensure score is int
+                    if "score" in verdict_data:
+                        try:
+                            verdict_data["score"] = int(verdict_data["score"])
+                        except (ValueError, TypeError):
+                            verdict_data["score"] = 70
+                    
+                    # Parse into ArticleVerdict
+                    from pydantic import ValidationError
+                    try:
+                        v = ArticleVerdict(**verdict_data)
+                        if v.keep:
+                            chimera_verdicts.append(v)
+                            logger.info(f"   ✅ Chimera OK: \"{v.localized_title[:50]}...\"")
+                    except ValidationError as e:
+                        logger.warning(f"   ⚠️ Chimera verdict validation failed: {e}")
+                        # Last resort: build a valid verdict from raw data
+                        chimera_verdicts.append(ArticleVerdict(
+                            localized_title=verdict_data.get("localized_title", verdict_data.get("title", cluster[0].title)),
+                            summary=verdict_data.get("summary", ["Synthèse en cours de reconstruction."]),
+                            score=verdict_data.get("score", 70),
+                            keep=True,
+                            category=verdict_data.get("category", "Passion"),
+                            reason=verdict_data.get("reason", "Article fusionné par Chimera"),
+                            credibility_score=min(10, max(0, int(verdict_data.get("credibility_score", 5)))),
+                            link=verdict_data.get("link", cluster[0].link),
+                            sources_count=verdict_data.get("sources_count", len(cluster)),
+                            source_urls=verdict_data.get("source_urls", [a.link for a in cluster]),
+                        ))
+                        
+                except Exception as e:
+                    logger.error(f"   ❌ Chimera cluster failed: {e}")
+            
+            logger.info(f"   🧬 Chimera produced {len(chimera_verdicts)} fused articles")
+            
+            # ── Process Single-Article Clusters via Batch ──
+            single_articles = [c[0] for c in single_clusters][:15]
+            batch_dicts = [
                 {
                     "title": a.title,
                     "url": a.link,
                     "content": a.content or "",
                     "source_interest": a.source_interest,
                 }
-                for a in fallback_articles
+                for a in single_articles
             ]
             
-            try:
-                # Use the new batched helper
-                kept = await _process_articles_in_batches(fallback_dicts, profile, language)
-                kept = [v for v in kept if v.keep]
-                logger.info(f"   📝 LLM fallback (batched) produced {len(kept)} articles")
-            except Exception as llm_err:
-                logger.error(f"LLM fallback also failed: {llm_err}")
+            batch_verdicts = []
+            if batch_dicts:
+                try:
+                    _status(username, "Processing unique articles...", 70)
+                    batch_verdicts = await _process_articles_in_batches(batch_dicts, profile, language)
+                    batch_verdicts = [v for v in batch_verdicts if v.keep]
+                    logger.info(f"   📝 Batch produced {len(batch_verdicts)} articles")
+                except Exception as llm_err:
+                    logger.error(f"   ❌ Batch fallback failed: {llm_err}")
             
-            # Last resort: if even LLM failed, use minimal static data
+            # ── Combine Results ──
+            kept = chimera_verdicts + batch_verdicts
+            
+            # Last resort: if even everything failed, use minimal static data
             if not kept:
                 logger.warning("All AI paths failed. Using minimal static fallback.")
-                for a in fallback_articles[:3]:
+                for a in (single_articles or [c[0] for c in clusters])[:3]:
                     kept.append(ArticleVerdict(
                         localized_title=a.title,
                         summary=["Résumé non disponible — consultez l'article original."],

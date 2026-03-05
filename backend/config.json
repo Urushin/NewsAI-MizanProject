@@ -1,6 +1,6 @@
 {
     "system_settings": {
-        "version": "1.0",
+        "version": "1.1",
         "user_language": "fr",
         "ai_strictness": "high",
         "max_items_per_category": 5
@@ -15,48 +15,97 @@
     ],
     "rss_sources": [
         {
+            "id": "rss_techcrunch",
             "url": "https://techcrunch.com/feed/",
             "category": "Tech & Science"
         },
         {
+            "id": "rss_theverge",
+            "url": "https://www.theverge.com/rss/index.xml",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_arstechnica",
+            "url": "https://feeds.arstechnica.com/arstechnica/index",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_coindesk",
             "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
             "category": "Finance & Business"
         },
         {
+            "id": "rss_cointelegraph",
+            "url": "https://cointelegraph.com/rss",
+            "category": "Finance & Business"
+        },
+        {
+            "id": "rss_bbc_world",
             "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_reuters_world",
+            "url": "https://www.reutersagency.com/feed/?best-topics=political-general",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_france24_fr",
+            "url": "https://www.france24.com/fr/rss",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_lemonde",
+            "url": "https://www.lemonde.fr/rss/une.xml",
             "category": "Politique & Monde"
         }
     ],
     "interests": [
         {
-            "id": "topic_crypto_major",
+            "id": "topic_crypto_en",
             "active": true,
             "type": "topic",
-            "query": "Bitcoin OR Ethereum price analysis OR Blockchain regulation -memecoin -doge",
+            "query": "Bitcoin Ethereum cryptocurrency",
             "category": "Finance & Business",
             "language": "en"
         },
         {
-            "id": "topic_tech_ai",
+            "id": "topic_crypto_fr",
             "active": true,
             "type": "topic",
-            "query": "OpenAI OR LLM model release OR NVIDIA GPU hardware OR Python updates",
+            "query": "Bitcoin Ethereum crypto monnaie",
+            "category": "Finance & Business",
+            "language": "fr"
+        },
+        {
+            "id": "topic_ai_en",
+            "active": true,
+            "type": "topic",
+            "query": "artificial intelligence OpenAI GPT LLM",
             "category": "Tech & Science",
             "language": "en"
         },
         {
-            "id": "topic_manga_big3",
+            "id": "topic_ai_fr",
             "active": true,
             "type": "topic",
-            "query": "One Piece Chapter 1* OR Jujutsu Kaisen Chapter OR Chainsaw Man Manga release",
+            "query": "intelligence artificielle IA Mistral",
+            "category": "Tech & Science",
+            "language": "fr"
+        },
+        {
+            "id": "topic_manga",
+            "active": true,
+            "type": "topic",
+            "query": "One Piece OR Jujutsu Kaisen OR Chainsaw Man manga",
             "category": "Culture & Divertissement",
             "language": "en"
         },
         {
-            "id": "topic_gaming_souls",
+            "id": "topic_gaming",
             "active": true,
             "type": "topic",
-            "query": "Elden Ring DLC OR FromSoftware announcement OR Nintendo Direct summary",
+            "query": "Elden Ring OR FromSoftware OR Nintendo OR PlayStation",
             "category": "Culture & Divertissement",
             "language": "en"
         },
@@ -64,47 +113,55 @@
             "id": "topic_grappling",
             "active": true,
             "type": "topic",
-            "query": "ADCC Grappling results OR Gordon Ryan news OR IBJJF major tournament",
+            "query": "ADCC Grappling OR Gordon Ryan OR IBJJF",
             "category": "Lifestyle & Sport",
             "language": "en"
         },
         {
-            "id": "topic_geo_pol",
+            "id": "topic_geopolitique_fr",
             "active": true,
             "type": "topic",
-            "query": "Géopolitique Moyen-Orient OR Loi France Assemblée OR Tensions Internationales -opinion",
+            "query": "géopolitique Moyen-Orient tensions internationales",
             "category": "Politique & Monde",
             "language": "fr"
         },
         {
-            "id": "topic_ecology_climate",
+            "id": "topic_geopolitique_en",
             "active": true,
             "type": "topic",
-            "query": "Climate Change Report OR Renewable Energy Breakthrough OR Biodiversity Loss OR Reforestation projects",
+            "query": "geopolitics Middle East international tensions",
+            "category": "Politique & Monde",
+            "language": "en"
+        },
+        {
+            "id": "topic_climate_en",
+            "active": true,
+            "type": "topic",
+            "query": "climate change renewable energy",
             "category": "Société & Environnement",
             "language": "en"
         },
         {
-            "id": "topic_space_science",
+            "id": "topic_space",
             "active": true,
             "type": "topic",
-            "query": "NASA Artemis Mission OR SpaceX Starship Launch OR James Webb Telescope discovery OR Quantum Computing breakthrough",
+            "query": "NASA SpaceX space launch",
             "category": "Tech & Science",
             "language": "en"
         },
         {
-            "id": "topic_startups_vc",
+            "id": "topic_startups",
             "active": true,
             "type": "topic",
-            "query": "Y Combinator batch OR Techcrunch Disrupt winner OR Unicorn startup valuation OR SaaS trends 2026",
+            "query": "startup funding unicorn venture capital",
             "category": "Finance & Business",
             "language": "en"
         },
         {
-            "id": "topic_cinema_series",
+            "id": "topic_cinema",
             "active": true,
             "type": "topic",
-            "query": "Netflix new series release OR HBO Max upcoming shows OR Movie box office records OR Cannes Film Festival winners",
+            "query": "Netflix HBO series movie release",
             "category": "Culture & Divertissement",
             "language": "en"
         }
