@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth, API } from "../context/AuthContext";
+import { useRouter } from "next/navigation";
 import OnboardingWizard from "./OnboardingWizard";
 
 // i18n for the profile popup
@@ -67,7 +68,8 @@ interface ProfilePopupProps {
 }
 
 export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
-    const { user, token, logout, updateProfile, triggerRefresh } = useAuth();
+    const { user, token, logout, updateProfile, triggerRefresh, genStatus, setGenStatus } = useAuth();
+    const router = useRouter();
     const [open, setOpen] = useState(false);
     const [manifesto, setManifesto] = useState("");
     const [language, setLanguage] = useState(user?.language || "fr");
@@ -198,41 +200,10 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
     };
 
     const handleGenerate = async (mode: "test" | "prod") => {
-        // Reset state
-        setGenState({ loading: true, success: false, error: "", step: mode === "test" ? "Démarrage Test..." : "Démarrage Production...", percent: 0 });
-
-        // Start polling for progress
-        pollIntervalRef.current = setInterval(async () => {
-            try {
-                const res = await fetch(`${API}/api/brief/status`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const status = await res.json();
-
-                if (status.status === "done") {
-                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                    setGenState({ loading: false, success: true, error: "", step: "Terminé !", percent: 100 });
-
-                    if (mode === "prod") {
-                        // Delay refresh slightly to let DB write settle
-                        setTimeout(() => triggerRefresh(), 1000);
-                        setTimeout(() => setOpen(false), 2000);
-                    }
-                } else if (status.status === "error") {
-                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                    setGenState({ loading: false, success: false, error: "Erreur (" + status.step + ")", step: "", percent: 0 });
-                } else {
-                    setGenState((prev) => ({
-                        ...prev,
-                        step: status.step || "En cours...",
-                        percent: status.percent || prev.percent
-                    }));
-                }
-            } catch (e) { }
-        }, 1000);
+        setOpen(false); // Close popup immediately
+        setGenStatus({ active: true, step: "Initialisation...", percent: 5, isDone: false });
 
         try {
-            // Trigger Generation
             const res = await fetch(`${API}/api/brief/generate?mode=${mode}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
@@ -240,47 +211,29 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || `Erreur lancement HTTP ${res.status}`);
+                setGenStatus({ active: false, step: "", percent: 0, isDone: false });
+                alert(errData.detail || "Erreur lors du lancement de la génération");
+                return;
             }
 
-            if (mode === "test") {
-                // Synchronous return
-                const data = await res.json();
-                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); // Stop polling (already handled by sync return)
-
-                if (data.status === "empty") {
-                    setGenState({ loading: false, success: false, error: "Aucun article trouvé", step: "", percent: 0 });
-                    return;
-                }
-
-                // Success Preview
-                setGenState({ loading: false, success: true, error: "", step: "Terminé !", percent: 100 });
-                if (onPreview) {
-                    onPreview(data);
-                    setTimeout(() => setOpen(false), 800);
-                }
-            } else {
-                // Prod mode — may be synchronous (dev) or async (queued)
-                const data = await res.json();
-
-                if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-                    // Synchronous return (dev mode): the brief data is right here
-                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                    setGenState({ loading: false, success: true, error: "", step: "Terminé !", percent: 100 });
-                    if (onPreview) {
+            // Sync handling (mostly for Test mode or Dev stage)
+            const data = await res.json();
+            if (data.status === "done" || (data.content && data.content.length > 0)) {
+                // If it finished instantly (sync), update global state to done
+                setGenStatus({ active: true, step: "Terminé !", percent: 100, isDone: true });
+                setTimeout(() => {
+                    setGenStatus({ active: false, step: "", percent: 0, isDone: false });
+                    if (mode === "test" && onPreview) {
                         onPreview(data);
+                    } else {
+                        triggerRefresh();
                     }
-                    // Delay the DB refresh so it doesn't overwrite the preview data
-                    // before the DB write has fully settled
-                    setTimeout(() => triggerRefresh(), 3000);
-                    setTimeout(() => setOpen(false), 1500);
-                }
-                // Otherwise it's queued — the polling loop above handles completion
+                }, 2000);
             }
-
+            // If it's async (queued), the polling in page.tsx will take over because genStatus.active is true
         } catch (e: any) {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            setGenState({ loading: false, success: false, error: e.message || "Erreur connexion", step: "", percent: 0 });
+            setGenStatus({ active: false, step: "", percent: 0, isDone: false });
+            alert(e.message || "Erreur de connexion au serveur");
         }
     };
 
@@ -381,6 +334,23 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                                     onClick={() => setWizardOpen(true)}
                                 >
                                     🎯 Assistant
+                                </button>
+                                <button
+                                    style={{
+                                        fontSize: "12px",
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        color: "var(--text-light)",
+                                        textDecoration: "underline",
+                                        marginLeft: "10px"
+                                    }}
+                                    onClick={() => {
+                                        setOpen(false);
+                                        router.push("/sources");
+                                    }}
+                                >
+                                    📊 Sources
                                 </button>
                             </div>
                             <textarea

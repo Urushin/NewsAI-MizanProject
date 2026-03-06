@@ -20,7 +20,7 @@ export default function SignupPage() {
         setLoading(true);
         try {
             await signup(email, password, username, language);
-            router.push("/");
+            router.push("/assistant");
         } catch (err: any) {
             setError(err.message);
         } finally {

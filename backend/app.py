@@ -52,11 +52,13 @@ app = FastAPI(
 _allowed_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://192.168.1.66:3000", # Access from local network
 ]
 _frontend_url = os.getenv("FRONTEND_URL", "")
 if _frontend_url:
     _allowed_origins.append(_frontend_url)
 
+# In development, also allow the local IP explicitly.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,

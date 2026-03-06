@@ -25,9 +25,69 @@
             "category": "Tech & Science"
         },
         {
+            "id": "rss_wired",
+            "url": "https://www.wired.com/feed/rss",
+            "category": "Tech & Science"
+        },
+        {
             "id": "rss_arstechnica",
             "url": "https://feeds.arstechnica.com/arstechnica/index",
             "category": "Tech & Science"
+        },
+        {
+            "id": "rss_bloomberg_tech",
+            "url": "https://www.bloomberg.com/feeds/technology/rss.xml",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_mit_tech_review",
+            "url": "https://www.technologyreview.com/feed/",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_venturebeat",
+            "url": "https://venturebeat.com/feed/",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_zdnet",
+            "url": "https://www.zdnet.com/news/rss.xml",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_engadget",
+            "url": "https://www.engadget.com/rss.xml",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_hackernews",
+            "url": "https://news.ycombinator.com/rss",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_reddit_ai",
+            "url": "https://www.reddit.com/r/MachineLearning/.rss",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_reddit_tech",
+            "url": "https://www.reddit.com/r/technology/.rss",
+            "category": "Tech & Science"
+        },
+        {
+            "id": "rss_bloomberg_biz",
+            "url": "https://www.bloomberg.com/feeds/businessweek/rss.xml",
+            "category": "Finance & Business"
+        },
+        {
+            "id": "rss_wsj_biz",
+            "url": "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml",
+            "category": "Finance & Business"
+        },
+        {
+            "id": "rss_ft_markets",
+            "url": "https://www.ft.com/markets?format=rss",
+            "category": "Finance & Business"
         },
         {
             "id": "rss_coindesk",
@@ -40,8 +100,38 @@
             "category": "Finance & Business"
         },
         {
+            "id": "rss_decrypt",
+            "url": "https://decrypt.co/feed",
+            "category": "Finance & Business"
+        },
+        {
+            "id": "rss_reuters_biz",
+            "url": "https://www.reutersagency.com/feed/?best-topics=business",
+            "category": "Finance & Business"
+        },
+        {
+            "id": "rss_lesechos",
+            "url": "https://www.lesechos.fr/rss/rss_une.xml",
+            "category": "Finance & Business"
+        },
+        {
+            "id": "rss_latribune",
+            "url": "https://www.latribune.fr/rss/feed/une.xml",
+            "category": "Finance & Business"
+        },
+        {
             "id": "rss_bbc_world",
             "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_cnn_world",
+            "url": "http://rss.cnn.com/rss/edition_world.rss",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_aljazeera",
+            "url": "https://www.aljazeera.com/xml/rss/all.xml",
             "category": "Politique & Monde"
         },
         {
@@ -58,17 +148,64 @@
             "id": "rss_lemonde",
             "url": "https://www.lemonde.fr/rss/une.xml",
             "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_lefigaro",
+            "url": "https://www.lefigaro.fr/rss/figaro_actualites.xml",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_liberation",
+            "url": "https://www.liberation.fr/arc/outboundfeeds/rss-all/",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_nyt_world",
+            "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_the_guardian",
+            "url": "https://www.theguardian.com/world/rss",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_courrier_intl",
+            "url": "https://www.courrierinternational.com/feed/all/rss.xml",
+            "category": "Politique & Monde"
+        },
+        {
+            "id": "rss_natgeo",
+            "url": "https://www.nationalgeographic.com/rss/index.xml",
+            "category": "Société & Environnement"
+        },
+        {
+            "id": "rss_sciam",
+            "url": "https://www.scientificamerican.com/rss/all/",
+            "category": "Société & Environnement"
+        },
+        {
+            "id": "rss_variety",
+            "url": "https://variety.com/feed/",
+            "category": "Culture & Divertissement"
+        },
+        {
+            "id": "rss_hollywoodreporter",
+            "url": "https://www.hollywoodreporter.com/feed/",
+            "category": "Culture & Divertissement"
+        },
+        {
+            "id": "rss_espn",
+            "url": "https://www.espn.com/espn/rss/news",
+            "category": "Lifestyle & Sport"
+        },
+        {
+            "id": "rss_lequipe",
+            "url": "https://xml.lequipe.fr/rss/actu_rss.xml",
+            "category": "Lifestyle & Sport"
         }
     ],
     "interests": [
-        {
-            "id": "topic_crypto_en",
-            "active": true,
-            "type": "topic",
-            "query": "Bitcoin Ethereum cryptocurrency",
-            "category": "Finance & Business",
-            "language": "en"
-        },
         {
             "id": "topic_crypto_fr",
             "active": true,
@@ -78,44 +215,12 @@
             "language": "fr"
         },
         {
-            "id": "topic_ai_en",
-            "active": true,
-            "type": "topic",
-            "query": "artificial intelligence OpenAI GPT LLM",
-            "category": "Tech & Science",
-            "language": "en"
-        },
-        {
             "id": "topic_ai_fr",
             "active": true,
             "type": "topic",
-            "query": "intelligence artificielle IA Mistral",
+            "query": "intelligence artificielle IA Mistral OpenAI",
             "category": "Tech & Science",
             "language": "fr"
-        },
-        {
-            "id": "topic_manga",
-            "active": true,
-            "type": "topic",
-            "query": "One Piece OR Jujutsu Kaisen OR Chainsaw Man manga",
-            "category": "Culture & Divertissement",
-            "language": "en"
-        },
-        {
-            "id": "topic_gaming",
-            "active": true,
-            "type": "topic",
-            "query": "Elden Ring OR FromSoftware OR Nintendo OR PlayStation",
-            "category": "Culture & Divertissement",
-            "language": "en"
-        },
-        {
-            "id": "topic_grappling",
-            "active": true,
-            "type": "topic",
-            "query": "ADCC Grappling OR Gordon Ryan OR IBJJF",
-            "category": "Lifestyle & Sport",
-            "language": "en"
         },
         {
             "id": "topic_geopolitique_fr",
@@ -126,44 +231,20 @@
             "language": "fr"
         },
         {
-            "id": "topic_geopolitique_en",
+            "id": "topic_economy_fr",
             "active": true,
             "type": "topic",
-            "query": "geopolitics Middle East international tensions",
-            "category": "Politique & Monde",
-            "language": "en"
-        },
-        {
-            "id": "topic_climate_en",
-            "active": true,
-            "type": "topic",
-            "query": "climate change renewable energy",
-            "category": "Société & Environnement",
-            "language": "en"
-        },
-        {
-            "id": "topic_space",
-            "active": true,
-            "type": "topic",
-            "query": "NASA SpaceX space launch",
-            "category": "Tech & Science",
-            "language": "en"
-        },
-        {
-            "id": "topic_startups",
-            "active": true,
-            "type": "topic",
-            "query": "startup funding unicorn venture capital",
+            "query": "économie inflation marchés financiers",
             "category": "Finance & Business",
-            "language": "en"
+            "language": "fr"
         },
         {
-            "id": "topic_cinema",
+            "id": "topic_climate_fr",
             "active": true,
             "type": "topic",
-            "query": "Netflix HBO series movie release",
-            "category": "Culture & Divertissement",
-            "language": "en"
+            "query": "climat écologie transition énergétique",
+            "category": "Société & Environnement",
+            "language": "fr"
         }
     ]
 }

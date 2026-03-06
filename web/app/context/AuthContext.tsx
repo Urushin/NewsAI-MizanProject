@@ -20,6 +20,8 @@ interface AuthContextType {
     loading: boolean;
     refreshKey: number;
     triggerRefresh: () => void;
+    genStatus: { active: boolean; step: string; percent: number; isDone: boolean };
+    setGenStatus: (status: { active: boolean; step: string; percent: number; isDone: boolean }) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [genStatus, setGenStatus] = useState({ active: false, step: "", percent: 0, isDone: false });
 
     const triggerRefresh = useCallback(() => {
         setRefreshKey((k) => k + 1);
@@ -164,7 +167,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return (
         <AuthContext.Provider
-            value={{ user, token, login, signup, logout, updateProfile, loading, refreshKey, triggerRefresh }}
+            value={{
+                user, token, login, signup, logout, updateProfile,
+                loading, refreshKey, triggerRefresh,
+                genStatus, setGenStatus
+            }}
         >
             {children}
         </AuthContext.Provider>

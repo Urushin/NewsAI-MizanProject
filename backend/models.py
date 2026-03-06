@@ -2,7 +2,7 @@
 Mizan.ai — Data Models (Pydantic V2)
 """
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
-from typing import List, Annotated
+from typing import List, Annotated, Dict
 import re
 
 # Strict String defs
@@ -27,6 +27,7 @@ class ArticleVerdict(BaseModel):
     score: Annotated[int, Field(ge=0, le=100)]
     keep: bool = True
     category: StrictStr = Field(default="Passion", max_length=50)
+    sub_category: StrictStr = Field(default="Général", max_length=50)
     reason: StrictStr = Field(default="", max_length=500)
     credibility_score: Annotated[int, Field(ge=0, le=10)] = 5
     link: StrictStr = Field(default="", max_length=1500)
@@ -89,3 +90,4 @@ class DailyBrief(BaseModel):
     
     # We enforce that the content is exactly a list of verified verdicts
     content: List[ArticleVerdict] = Field(default_factory=list)
+    sources_scanned: List[Dict[str, str]] = Field(default_factory=list)

@@ -113,6 +113,41 @@ async def _retry_async(coro_fn, *args, max_retries=MAX_RETRIES, label=""):
             await asyncio.sleep(delay)
     return None
 
+# ── Firecrawl Search Depth ──
+async def search_web_articles_async(query: str, language: str = "fr", max_results: int = 5) -> List[dict]:
+    """Search the web directly via Firecrawl for fresh articles on a specific topic."""
+    try:
+        app = _get_firecrawl()
+        # Ensure we search for RECENT news
+        enhanced_query = f"{query} news {datetime.now().year}"
+        
+        loop = asyncio.get_event_loop()
+        # Firecrawl search returns a list of results with title, url, and sometimes a snippet
+        async def _do_search():
+            return app.search(enhanced_query, limit=max_results)
+            
+        results = await asyncio.wait_for(
+            loop.run_in_executor(None, _do_search),
+            timeout=SCRAPE_TIMEOUT_SEC
+        )
+        
+        articles = []
+        if not results or 'data' not in results:
+            return []
+
+        for item in results['data']:
+            articles.append({
+                "title": item.get("title", "Sans titre"),
+                "link": item.get("url"),
+                "published": "Web Search (Recent)",
+                "source_interest": "Web Search",
+                "summary": item.get("description") or item.get("content", "")[:500],
+            })
+        return articles
+    except Exception as e:
+        logger.error(f"❌ Firecrawl search failed for '{query}': {e}")
+        return []
+
 
 # ── Async RSS Feed Fetch ──
 async def fetch_feed_async(source: dict, max_per_topic: int, semaphore: asyncio.Semaphore) -> list:
@@ -165,6 +200,10 @@ async def fetch_feed_async(source: dict, max_per_topic: int, semaphore: asyncio.
                         "source_interest": source.get("category", "General"),
                         "summary": entry.get("summary") or entry.get("description") or "",
                     })
+                    
+                    if len(entries) >= max_per_topic:
+                        break
+                        
             return entries
 
         result = await _retry_async(_do_fetch, label=f"Feed:{source.get('id', url[:40])}")
@@ -250,7 +289,6 @@ async def collect_articles(
     skip_scraping: bool = False,
     user_interests: list = None,
 ) -> List[RawArticle]:
-    """Async article collection with rate limiting, timeouts, and retries."""
     config = load_config()
     if not config:
         return []
@@ -284,6 +322,48 @@ async def collect_articles(
             logger.error(f"Feed task error: {result}")
             continue
         raw_entries.extend(result)
+
+    # ── Phase 1.5: Deep Search (Firecrawl Search) if enabled or for custom interests ──
+    # Only if NOT in quick_mode and we have interests to explore
+    if not quick_mode and user_interests:
+        if progress_callback:
+            progress_callback("Deep diving into your interests...", 20)
+        
+        searchable = [src for src in user_interests if "query" in src]
+        random.shuffle(searchable)
+        
+        search_tasks = [
+            search_web_articles_async(src.get("query", src.get("id")), src.get("language", "fr")) 
+            for src in searchable[:5]
+        ]
+        search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+        
+        for result in search_results:
+            if isinstance(result, list):
+                raw_entries.extend(result)
+    
+    # ── Phase 1.7: Recursive Keyword Discovery (Signals) ──
+    # If we have some articles, extract key terms and do a laser search for "hot takes"
+    if not quick_mode and len(raw_entries) > 0:
+        if progress_callback:
+            progress_callback("Extracting deep signals...", 25)
+        
+        # Take titles of top 5 articles to find "hot topics"
+        seeds = [e['title'] for e in raw_entries[:5]]
+        discovery_queries = []
+        for seed in seeds:
+            # Simple keyword extraction (ignore small words)
+            words = [w for w in seed.split() if len(w) > 4]
+            if words:
+                discovery_queries.append(" ".join(words[:3]))
+        
+        if discovery_queries:
+            # Perform a secondary search on these signals
+            signal_tasks = [search_web_articles_async(dq, max_results=2) for dq in discovery_queries[:3]]
+            signal_results = await asyncio.gather(*signal_tasks, return_exceptions=True)
+            for res in signal_results:
+                if isinstance(res, list):
+                    raw_entries.extend(res)
 
     # ── Dedup by URL (not title!) + exclude already processed ──
     # We keep articles with similar titles from different sources — the Chimera will fuse them.

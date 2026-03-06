@@ -69,28 +69,48 @@ def _build_user_interest_sources(profile: dict) -> list:
     if isinstance(interests, list):
         return interests
     
-    # Dict format {"topic": weight} → convert to search sources
     sources = []
     for topic, weight in interests.items():
         if isinstance(weight, (int, float)) and weight < 0.3:
             continue  # Skip low-interest topics
         
-        # Build the search query
-        query_parts = [topic]
-        if isinstance(weight, list):
-            # The 'weight' is actually a list of subtopics from the wizard
-            query_parts.extend(weight)
+        # Determine language once per topic
+        lang = profile.get("preferences", {}).get("language", "fr")
         
-        query_str = " OR ".join(f'"{p}"' if " " in p else p for p in query_parts)
-            
-        sources.append({
-            "id": f"user_topic_{topic}",
-            "active": True,
-            "type": "topic",
-            "query": query_str,
-            "category": topic,
-            "language": profile.get("preferences", {}).get("language", "fr"),
-        })
+        if isinstance(weight, list):
+            # 1. Provide a general source for the Macro topic
+            sources.append({
+                "id": f"user_macro_{topic}",
+                "active": True,
+                "type": "topic",
+                "query": topic,
+                "category": topic,
+                "language": lang,
+            })
+            # 2. Provide a specific source for each subtopic to get high-precision RSS feeds
+            for sub in weight:
+                # Keep it clean for the query
+                clean_sub = sub.strip()
+                if not clean_sub:
+                    continue
+                sources.append({
+                    "id": f"user_sub_{clean_sub}",
+                    "active": True,
+                    "type": "topic",
+                    "query": clean_sub,
+                    "category": topic,  # Keep macro topic as category for fusion grouping
+                    "language": lang,
+                })
+        else:
+            # Fallback for simple weight (float) if migration hasn't happened
+            sources.append({
+                "id": f"user_topic_{topic}",
+                "active": True,
+                "type": "topic",
+                "query": topic,
+                "category": topic,
+                "language": lang,
+            })
     return sources
 
 
@@ -233,6 +253,7 @@ For each article, return a JSON object with these exact fields:
 - "score": int 0-100 (relevance to the user, should usually be high)
 - "keep": bool (true unless completely irrelevant)
 - "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
+- "sub_category": string (Specific sub-theme, e.g., "Cryptomonnaie", "Intelligence Artificielle", "SpaceX", "Guerre en Ukraine")
 - "reason": string (1 sentence explaining WHY this article matters to this user)
 - "credibility_score": int 0-10 (source reliability)
 - "link": string (the article URL, unchanged)
@@ -276,7 +297,7 @@ Evaluate these {len(articles)} top matched articles:
 
 {articles_text}
 
-Return a JSON array with one object per article. Each object must have: localized_title, summary, score, keep, category, reason, credibility_score, link."""
+Return a JSON array with one object per article. Each object must have: localized_title, summary, score, keep, category, sub_category, reason, credibility_score, link."""
 
 
 async def _call_llm(prompt: str, system_prompt: str) -> str:
@@ -616,6 +637,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
             "duration_seconds": round(time.time() - t0, 2),
             "global_digest": digest,
             "content": [_verdict_to_dict(v) for v in kept],
+            "sources_scanned": [{"title": a.title, "url": a.link} for a in raw],
         }
 
         if not is_test:

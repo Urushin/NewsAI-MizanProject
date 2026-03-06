@@ -108,7 +108,7 @@ Dans un premier terminal, depuis la racine :
 ```bash
 source .venv/bin/activate
 # On exclut le dossier web pour éviter que le reloader ne sature à cause des node_modules
-uvicorn backend.app:app --reload --port 8000 --reload-exclude "web/*"
+uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload --reload-exclude "web/*"
 ```
 *L'API sera accessible sur `http://localhost:8000`.*
 

@@ -82,6 +82,15 @@ def _get_mock_profile(user_id: str = "00000000-0000-0000-0000-000000000000", use
 def get_user_by_username(username: str) -> Optional[dict]:
     """Fetch user profile by username. In development, returns a mock if missing."""
     try:
+        # DX MODE: Try local JSON fallback FIRST to capture modified interests
+        if os.getenv("APP_STAGE") == "development" and username in ("DevUser", "Dev User", ""):
+            import json as _json
+            path = _dx_cache_path(f"profile_{_DX_MOCK_USER_ID}.json")
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    logger.info(f"🛠️ [DX] Profil chargé localement pour username '{username}'")
+                    return _json.load(f)
+
         sb = get_supabase()
         res = sb.table("profiles").select("*").eq("username", username).execute()
         if res.data:
@@ -89,7 +98,7 @@ def get_user_by_username(username: str) -> Optional[dict]:
         
         # DEV MOCK: Enable local development without manual Supabase entries
         if os.getenv("APP_STAGE") == "development":
-            logger.info(f"🛠️  [DEV] Mocking user profile for username '{username}'")
+            logger.info(f"🛠️  [DEV] Mocking initial user profile for username '{username}'")
             return _get_mock_profile(username=username)
         return None
     except Exception as e:
@@ -97,16 +106,25 @@ def get_user_by_username(username: str) -> Optional[dict]:
         return None
 
 def get_user_by_id(user_id: str) -> Optional[dict]:
-    """Fetch user profile by UUID. In development, returns a mock if missing."""
+    """Fetch user profile by UUID. In development, returns a mock if missing, priorities local cache."""
     try:
+        # DX MODE: Try local JSON fallback FIRST
+        if os.getenv("APP_STAGE") == "development" and user_id == _DX_MOCK_USER_ID:
+            import json as _json
+            path = _dx_cache_path(f"profile_{user_id}.json")
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    logger.info(f"🛠️ [DX] Profil chargé depuis le cache local")
+                    return _json.load(f)
+
         sb = get_supabase()
         res = sb.table("profiles").select("*").eq("id", user_id).execute()
         if res.data:
             return res.data[0]
         
-        # DEV MOCK
+        # DEV MOCK fallback if no local cache exists
         if os.getenv("APP_STAGE") == "development":
-            logger.info(f"🛠️  [DEV] Mocking user profile for ID '{user_id}'")
+            logger.info(f"🛠️  [DEV] Mocking initial user profile for ID '{user_id}'")
             return _get_mock_profile(user_id=user_id)
         return None
     except Exception as e:
@@ -116,17 +134,34 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
 def update_user_profile(user_id: str, updates: Dict[str, Any]):
     """Update user profile fields (JSONB). Uses upsert to ensure the record exists."""
     try:
+        # DX MODE: Handle mock user via local file
+        if os.getenv("APP_STAGE") == "development" and user_id == _DX_MOCK_USER_ID:
+            import json as _json
+            path = _dx_cache_path(f"profile_{user_id}.json")
+            
+            # Load existing or mock
+            current_profile = {}
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    current_profile = _json.load(f)
+            else:
+                current_profile = _get_mock_profile(user_id=user_id)
+            
+            # Merge updates
+            current_profile.update(updates)
+            
+            # Save
+            with open(path, "w", encoding="utf-8") as f:
+                _json.dump(current_profile, f, ensure_ascii=False)
+            logger.info(f"✅ [DX] Profil mis à jour localement -> {path}")
+            return
+
         sb = get_supabase()
         # Use upsert instead of update so the mock DevUser's profile gets created in DB on first save
         data = {"id": user_id, **updates}
         sb.table("profiles").upsert(data).execute()
         logger.info(f"✅ Profil mis à jour/créé pour {user_id}")
     except Exception as e:
-        # DX MODE: Handle foreign key violation for the mock user ID gracefully
-        if os.getenv("APP_STAGE") == "development" and user_id == "00000000-0000-0000-0000-000000000000":
-            if "23503" in str(e) or "violations foreign key":
-                logger.warning(f"🛠️ [DX MODE] Could not save profile to Supabase due to foreign key (expected for mock user). Profile updates will be kept in memory/local file if applicable.")
-                return
         logger.error(f"Supabase profile update error: {e}")
         raise e
 
@@ -207,7 +242,18 @@ def store_daily_brief(user_id: str, brief_data: dict):
     """Save the final brief to Supabase, with local JSON fallback for DX mode."""
     import json as _json
     date_str = datetime.now().date().isoformat()
-    data = {
+    # Save sources locally to avoid Supabase DB schema mismatch and save space
+    sources = brief_data.get("sources_scanned", [])
+    if sources:
+        sources_path = _dx_cache_path(f"sources_{user_id}.json")
+        try:
+            with open(sources_path, "w", encoding="utf-8") as f:
+                _json.dump({"date": date_str, "sources_scanned": sources}, f, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Failed to cache sources locally: {e}")
+
+    # Prepare data for Supabase (without sources_scanned)
+    data_for_supabase = {
         "user_id": user_id,
         "global_digest": brief_data.get("global_digest"),
         "content": brief_data.get("content", []),
@@ -215,16 +261,29 @@ def store_daily_brief(user_id: str, brief_data: dict):
     }
     try:
         sb = get_supabase()
-        sb.table("daily_briefs").upsert(data, on_conflict="user_id,date").execute()
+        sb.table("daily_briefs").upsert(data_for_supabase, on_conflict="user_id,date").execute()
         logger.info("✅ Brief enregistré dans Supabase.")
     except Exception as e:
-        if _is_dx_fk_error(user_id, e):
+        if _is_dx_fk_error(user_id, e) or os.getenv("APP_STAGE") == "development":
             path = _dx_cache_path(f"brief_{user_id}.json")
             with open(path, "w", encoding="utf-8") as f:
-                _json.dump(data, f, ensure_ascii=False)
+                _json.dump(data_for_supabase, f, ensure_ascii=False)
             logger.info(f"🛠️ [DX] Brief sauvegardé localement → {path}")
             return
         logger.error(f"Supabase brief store error: {e}")
+
+def get_daily_sources(user_id: str) -> list:
+    """Fetch the scanned sources associated with the latest brief from local cache."""
+    import json as _json
+    path = _dx_cache_path(f"sources_{user_id}.json")
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = _json.load(f)
+                return data.get("sources_scanned", [])
+        except Exception:
+            pass
+    return []
 
 
 def get_daily_brief(user_id: str, date: Optional[str] = None) -> Optional[dict]:

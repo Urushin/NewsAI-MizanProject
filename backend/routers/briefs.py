@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks, Query
 from typing import Optional
-from database import get_supabase, get_generation_status, get_user_by_id, get_user_by_username, get_daily_brief
+from database import get_supabase, get_generation_status, get_user_by_id, get_user_by_username, get_daily_brief, get_daily_sources
 from auth import get_current_user
 from quotas import check_brief_quota, QuotaExceeded
 from stripe_billing import get_user_plan
@@ -22,6 +22,12 @@ def get_brief(request: Request, date: Optional[str] = None):
         "content": brief.get("content", []),
         "total_kept": len(brief.get("content", [])),
     }
+
+@router.get("/sources")
+def get_sources_scanned(request: Request):
+    payload = get_current_user(request)
+    sources = get_daily_sources(payload["user_id"])
+    return {"sources_scanned": sources}
 
 @router.get("/history")
 def get_brief_history(
@@ -79,11 +85,12 @@ def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: st
     from database import set_generation_status
     set_generation_status(username, "pending", "Initializing...", 0)
 
+    from pipeline import _run_pipeline_for_user_async
+
     if mode == "test" or is_dev:
-        # Synchronous execution (dev shortcut or explicit test mode)
-        # Keep the actual requested mode so "prod" saves to DB via store_daily_brief
-        from pipeline import run_pipeline_for_user
-        return run_pipeline_for_user(username, language, threshold, mode=mode)
+        # Avoid blocking the main thread/event loop. Use background tasks even in dev/test.
+        background_tasks.add_task(_run_pipeline_for_user_async, username, language, threshold, mode)
+        return {"message": "Generation started in background", "status": "processing"}
 
     plan_info = get_user_plan(user_id, sb)
     priority = 1 if plan_info["plan"] in ("pro", "enterprise") else 0

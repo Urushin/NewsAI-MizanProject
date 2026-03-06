@@ -195,6 +195,7 @@ Output ONLY valid JSON with these exact fields:
 - "score": int 0-100 (relevance to the user)
 - "keep": true
 - "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
+- "sub_category": string (Specific sub-theme, e.g., "Cryptomonnaie", "Intelligence Artificielle", "SpaceX", "Guerre en Ukraine")
 - "reason": string (1 sentence: why this matters to THIS user specifically)
 - "credibility_score": int 0-10 (average source reliability)
 

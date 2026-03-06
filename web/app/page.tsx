@@ -6,6 +6,8 @@ import { useAuth, API } from "./context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import NewsCard from "./components/NewsCard";
 import ProfilePopup from "./components/ProfilePopup";
+import HistoryPanel from "./components/HistoryPanel";
+import GenerationLoader from "./components/GenerationLoader";
 import {
   Sparkles,
   Zap,
@@ -20,6 +22,7 @@ import {
   Coffee,
   AlertCircle,
   RotateCcw,
+  ChevronDown,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────── */
@@ -28,6 +31,7 @@ interface NewsItem {
   title: string;
   localized_title?: string;
   category: string;
+  sub_category?: string;
   summary: string | string[];
   score: number;
   link: string;
@@ -121,23 +125,39 @@ function formatDateTitle(dateStr?: string, lang = "fr"): string {
 
 /* ── Group articles by category ────────────────────── */
 
-function groupByCategory(articles: NewsItem[]): { category: string; items: NewsItem[] }[] {
-  const map = new Map<string, NewsItem[]>();
+function groupByCategory(articles: NewsItem[]) {
+  const mainGroupsMap = new Map<string, Map<string, NewsItem[]>>();
+
   for (const item of articles) {
     const cat = item.category || "Passion";
-    if (!map.has(cat)) map.set(cat, []);
-    map.get(cat)!.push(item);
+    const subCat = item.sub_category || "Général";
+
+    if (!mainGroupsMap.has(cat)) mainGroupsMap.set(cat, new Map());
+    const subMap = mainGroupsMap.get(cat)!;
+
+    if (!subMap.has(subCat)) subMap.set(subCat, []);
+    subMap.get(subCat)!.push(item);
   }
-  const groups: { category: string; items: NewsItem[] }[] = [];
-  // Impact first
-  if (map.has("Impact")) {
-    groups.push({ category: "Impact", items: map.get("Impact")! });
-    map.delete("Impact");
+
+  const result: { category: string; subGroups: { subCategory: string; items: NewsItem[] }[] }[] = [];
+
+  // Custom sorting: Impact first
+  const sortedCats = Array.from(mainGroupsMap.keys()).sort((a, b) => {
+    if (a === "Impact") return -1;
+    if (b === "Impact") return 1;
+    return a.localeCompare(b);
+  });
+
+  for (const cat of sortedCats) {
+    const subMap = mainGroupsMap.get(cat)!;
+    const subGroups = Array.from(subMap.entries()).map(([subCategory, items]) => ({
+      subCategory,
+      items
+    }));
+    result.push({ category: cat, subGroups });
   }
-  for (const [cat, items] of map) {
-    groups.push({ category: cat, items });
-  }
-  return groups;
+
+  return result;
 }
 
 /* ── Error State Component ────────────────────────── */
@@ -172,13 +192,15 @@ const ErrorEmptyState = ({ message, onRetry }: { message: string, onRetry: () =>
    ═══════════════════════════════════════════════════════ */
 
 export default function Home() {
-  const { user, token, loading: authLoading, refreshKey } = useAuth();
+  const { user, token, loading: authLoading, refreshKey, genStatus, setGenStatus, triggerRefresh } = useAuth();
   const router = useRouter();
   const [data, setData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showDigest, setShowDigest] = useState(false);
 
   const lang = user?.language || "fr";
   const t = i18n[lang] || i18n.en;
@@ -198,7 +220,11 @@ export default function Home() {
 
     const fetchBriefData = async () => {
       try {
-        const res = await fetch(`${API}/api/brief`, {
+        const url = selectedDate
+          ? `${API}/api/brief?date=${selectedDate}`
+          : `${API}/api/brief`;
+
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -218,7 +244,44 @@ export default function Home() {
     };
 
     fetchBriefData();
-  }, [token, refreshKey, retryKey]);
+  }, [token, refreshKey, retryKey, selectedDate]);
+
+  // Polling for generation status
+  useEffect(() => {
+    if (!token || !genStatus.active || genStatus.isDone) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API}/api/brief/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const status = await res.json();
+
+        if (status.status === "done") {
+          setGenStatus({ active: true, step: "Terminé !", percent: 100, isDone: true });
+          setTimeout(() => {
+            setGenStatus({ active: false, step: "", percent: 0, isDone: false });
+            triggerRefresh(); // Reload data
+          }, 2000);
+        } else if (status.status === "error") {
+          setGenStatus({ active: false, step: "", percent: 0, isDone: false });
+          setError("La génération a échoué. Veuillez réessayer.");
+        } else {
+          setGenStatus({
+            active: true,
+            step: status.step || "Collecte...",
+            percent: status.percent || 10,
+            isDone: false
+          });
+        }
+      } catch (e) {
+        console.error("Status check failed", e);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [token, genStatus.active, genStatus.isDone, setGenStatus, triggerRefresh]);
 
   const handleDismiss = useCallback((title: string) => {
     setDismissed((prev) => new Set(prev).add(title));
@@ -271,12 +334,24 @@ export default function Home() {
 
   const dateTitle = formatDateTitle(data?.date, lang);
 
+  if (genStatus.active) {
+    return <GenerationLoader step={genStatus.step} percent={genStatus.percent} isDone={genStatus.isDone} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-indigo-100 flex flex-col items-center w-full">
 
       {/* ── FLOATING PROFILE BUTTON (top-left) ──────── */}
-      <div className="fixed top-5 left-5 sm:top-6 sm:left-8 z-40">
+      <div className="fixed top-5 left-5 sm:top-6 sm:left-8 z-40 flex flex-col gap-3">
         <ProfilePopup onPreview={(d) => setData(d)} />
+        <HistoryPanel
+          onSelectDate={(date) => {
+            setLoading(true);
+            setSelectedDate(date);
+          }}
+          selectedDate={selectedDate}
+          lang={lang}
+        />
       </div>
 
       {/* ── MAIN ───────────────────────────────────────── */}
@@ -299,29 +374,61 @@ export default function Home() {
             )}
           </motion.div>
 
-          {/* ── EDITORIAL DIGEST ────────────────────── */}
+          {/* ── EDITORIAL DIGEST (COLLAPSIBLE) ────── */}
           {data && data.global_digest && (
             <motion.section
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-7 sm:mb-8 p-4 sm:p-5 rounded-xl bg-white border border-black/[0.04] shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+              className="mb-8"
             >
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles size={14} className="text-indigo-500 opacity-70" />
-                <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
-                  {t.briefTitle}
-                </h2>
-              </div>
-              <p className="text-[14px] text-gray-600 font-[450] leading-[1.75]">
-                {data.global_digest}
-              </p>
+              <button
+                onClick={() => setShowDigest(!showDigest)}
+                className="group flex flex-col items-center w-full focus:outline-none focus:ring-2 focus:ring-indigo-100 rounded-2xl transition-all"
+              >
+                <div className={`
+                  flex items-center gap-2.5 px-5 py-3.5 rounded-2xl border transition-all duration-300
+                  ${showDigest
+                    ? 'bg-white border-indigo-100 shadow-[0_10px_30px_-10px_rgba(99,102,241,0.1)] mb-4'
+                    : 'bg-white border-black/[0.04] shadow-sm hover:border-indigo-100 hover:shadow-md'
+                  }
+                `}>
+                  <Sparkles size={15} className={`${showDigest ? 'text-indigo-500' : 'text-gray-400'} opacity-75 transition-colors`} />
+                  <span className={`text-[11px] font-bold uppercase tracking-[0.2em] ${showDigest ? 'text-indigo-600' : 'text-gray-400'} transition-colors`}>
+                    {showDigest ? 'Résumé masqué' : 'Afficher le résumé du jour'}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: showDigest ? 180 : 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <ChevronDown size={14} className={`${showDigest ? 'text-indigo-500' : 'text-gray-400'} opacity-50`} />
+                  </motion.div>
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {showDigest && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-6 rounded-3xl bg-indigo-50/30 border border-indigo-100/50">
+                      <p className="text-[15px] text-indigo-950/80 font-[450] leading-[1.8] text-justify hyphens-auto">
+                        {data.global_digest}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.section>
           )}
 
           {/* ── ARTICLES GROUPED BY CATEGORY ────────── */}
           {groupedContent.length > 0 ? (
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-10">
               {groupedContent.map((group, gIdx) => {
                 const meta = getCategoryMeta(group.category);
                 const Ico = meta.icon;
@@ -332,28 +439,45 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.12 + gIdx * 0.08 }}
                   >
-                    <div className={`flex items-center gap-3 pb-5 ${gIdx === 0 ? 'pt-0' : 'pt-8 mt-2 border-t border-gray-200/60'}`}>
-                      <Ico size={14} className={`${meta.color} opacity-60`} />
-                      <span className={`text-[11px] font-bold uppercase tracking-[0.1em] ${meta.color} opacity-70`}>
+                    {/* Main Category Header */}
+                    <div className="flex items-center gap-3 pb-6 border-b border-gray-200/60 mb-6 font-serif">
+                      <div className={`w-8 h-8 rounded-lg ${meta.bg} flex items-center justify-center`}>
+                        <Ico size={16} className={`${meta.color}`} />
+                      </div>
+                      <span className={`text-sm font-black uppercase tracking-[0.2em] ${meta.color}`}>
                         {meta.label}
-                      </span>
-                      <span className="text-[11px] text-gray-300 font-medium">
-                        {group.items.length}
                       </span>
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <AnimatePresence>
-                        {group.items.map((article, idx) => (
-                          <NewsCard
-                            key={`${article.link}-${idx}`}
-                            item={article}
-                            index={idx}
-                            token={token}
-                            onDismiss={handleDismiss}
-                          />
-                        ))}
-                      </AnimatePresence>
+                    <div className="flex flex-col gap-8">
+                      {group.subGroups.map((sub, sIdx) => (
+                        <div key={sub.subCategory} className="flex flex-col gap-4">
+                          {/* Sub Category Tag */}
+                          <div className="flex items-center gap-2">
+                            <div className="h-4 w-[2px] bg-gray-200 rounded-full" />
+                            <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+                              {sub.subCategory}
+                            </h3>
+                            <span className="text-[10px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-black/[0.03] font-medium">
+                              {sub.items.length}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <AnimatePresence>
+                              {sub.items.map((article, idx) => (
+                                <NewsCard
+                                  key={`${article.link}-${idx}`}
+                                  item={article}
+                                  index={idx}
+                                  token={token}
+                                  onDismiss={handleDismiss}
+                                />
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </motion.section>
                 );

@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https:",
-              "connect-src 'self' http://localhost:8000 https://*.supabase.co",
+              "connect-src 'self' http://localhost:8000 http://192.168.1.66:8000 https://*.supabase.co",
             ].join("; "),
           },
         ],
