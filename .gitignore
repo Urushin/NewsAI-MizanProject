@@ -6,8 +6,9 @@
 .env
 .env.local
 .env.production
-
+.gitignore
 # Python
+.venv/
 venv/
 backend/venv/
 __pycache__/
@@ -25,6 +26,7 @@ node_modules/
 out/
 /.venv/
 .venv/
+tmp/
 # Data (local dev only, DB is in Supabase now)
 data/mizan.db
 data/brief_*.json
