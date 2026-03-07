@@ -158,6 +158,14 @@ class OnboardingRequest(BaseModel):
     topics: List[str]
     subtopics: List[str] = []
     custom: str = ""
+    # Contexte de Vie (Demographics)
+    age_range: str = ""
+    exact_age: str = ""
+    location: str = ""
+    exact_location: str = ""
+    occupation: str = ""
+    exact_occupation: str = ""
+    youtube_channels: str = ""
 
 @router.post("/onboarding/manifesto")
 async def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
@@ -179,6 +187,32 @@ async def generate_onboarding_manifesto(request: Request, body: OnboardingReques
         lines.append("## Notes personnelles")
         lines.append(body.custom)
 
+    # Add Demographic override part
+    has_demographics = any([body.age_range, body.exact_age, body.location, body.exact_location, body.occupation, body.exact_occupation])
+    
+    if has_demographics:
+        lines.append("")
+        lines.append("## Contexte de Vie")
+        lines.append("> Ce contexte permet un ciblage d'actualités ayant un impact réel sur ma vie quotidienne.")
+        if body.exact_age or body.age_range:
+            age = body.exact_age if body.exact_age else body.age_range
+            lines.append(f"- Âge : {age}")
+        if body.exact_location or body.location:
+            loc = body.exact_location if body.exact_location else body.location
+            lines.append(f"- Localisation : {loc}")
+        if body.exact_occupation or body.occupation:
+            occ = body.exact_occupation if body.exact_occupation else body.occupation
+            lines.append(f"- Profession / Secteur : {occ}")
+
+    if body.youtube_channels.strip():
+        lines.append("")
+        lines.append("## Chaînes YouTube Suivies")
+        lines.append("> Ce chapitre précise les chaînes YouTube pour lesquelles l'utilisateur souhaite un flux vidéo quotidien.")
+        for channel in body.youtube_channels.split("\n"):
+            channel = channel.strip()
+            if channel:
+                lines.append(f"- {channel}")
+
     manifesto_text = "\n".join(lines)
 
     manifesto_dir = os.path.join(os.path.dirname(__file__), "..", "manifests")
@@ -192,7 +226,25 @@ async def generate_onboarding_manifesto(request: Request, body: OnboardingReques
         # Treat custom notes as a standalone topic so it is fetched explicitly
         interests["Notes personnelles"] = [body.custom.strip()]
         
-    update_user_profile(payload["user_id"], {"interests": interests})
+    updates = {"interests": interests}
+    if has_demographics:
+        updates["identity"] = {
+            "age_range": body.age_range,
+            "exact_age": body.exact_age,
+            "location": body.location,
+            "exact_location": body.exact_location,
+            "occupation": body.occupation,
+            "exact_occupation": body.exact_occupation
+        }
+
+    # Store youtube channels as preferences
+    if body.youtube_channels:
+        channels_list = [c.strip() for c in body.youtube_channels.split("\n") if c.strip()]
+        current_prefs = user.get("preferences") or {}
+        current_prefs["youtube_channels"] = channels_list
+        updates["preferences"] = current_prefs
+
+    update_user_profile(payload["user_id"], updates)
 
     embed_provider = get_embedding_provider()
     if embed_provider and manifesto_text.strip():

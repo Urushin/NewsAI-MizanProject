@@ -244,20 +244,27 @@ def store_daily_brief(user_id: str, brief_data: dict):
     date_str = datetime.now().date().isoformat()
     # Save sources locally to avoid Supabase DB schema mismatch and save space
     sources = brief_data.get("sources_scanned", [])
-    if sources:
+    raw_articles = brief_data.get("raw_articles", [])
+    used_articles = brief_data.get("used_articles", [])
+    if sources or raw_articles or used_articles:
         sources_path = _dx_cache_path(f"sources_{user_id}.json")
         try:
             with open(sources_path, "w", encoding="utf-8") as f:
-                _json.dump({"date": date_str, "sources_scanned": sources}, f, ensure_ascii=False)
+                _json.dump({
+                    "date": date_str, 
+                    "sources_scanned": sources,
+                    "raw_articles": raw_articles,
+                    "used_articles": used_articles
+                }, f, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Failed to cache sources locally: {e}")
 
-    # Prepare data for Supabase (without sources_scanned)
     data_for_supabase = {
         "user_id": user_id,
         "global_digest": brief_data.get("global_digest"),
         "content": brief_data.get("content", []),
-        "date": date_str
+        "date": date_str,
+        "youtube_videos": brief_data.get("youtube_videos", [])
     }
     try:
         sb = get_supabase()
@@ -272,7 +279,7 @@ def store_daily_brief(user_id: str, brief_data: dict):
             return
         logger.error(f"Supabase brief store error: {e}")
 
-def get_daily_sources(user_id: str) -> list:
+def get_daily_sources(user_id: str) -> dict:
     """Fetch the scanned sources associated with the latest brief from local cache."""
     import json as _json
     path = _dx_cache_path(f"sources_{user_id}.json")
@@ -280,10 +287,14 @@ def get_daily_sources(user_id: str) -> list:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = _json.load(f)
-                return data.get("sources_scanned", [])
+                return {
+                    "sources_scanned": data.get("sources_scanned", []),
+                    "raw_articles": data.get("raw_articles", []),
+                    "used_articles": data.get("used_articles", [])
+                }
         except Exception:
             pass
-    return []
+    return {"sources_scanned": [], "raw_articles": [], "used_articles": []}
 
 
 def get_daily_brief(user_id: str, date: Optional[str] = None) -> Optional[dict]:
@@ -338,6 +349,18 @@ def set_generation_status(username: str, status: str, step: str, percent: int):
     We'll use an 'upsert' pattern.
     """
     try:
+        if os.getenv("APP_STAGE") == "development" and username in ("DevUser", "Dev User", ""):
+            import json as _json
+            path = _dx_cache_path(f"status_{username}.json")
+            with open(path, "w", encoding="utf-8") as f:
+                _json.dump({
+                    "status": status,
+                    "step": step,
+                    "percent": percent,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }, f)
+            return
+
         sb = get_supabase()
         sb.table("generation_status").upsert({
             "username": username,
@@ -346,15 +369,22 @@ def set_generation_status(username: str, status: str, step: str, percent: int):
             "percent": percent,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }).execute()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Supabase status save error: {e}")
 
 def get_generation_status(username: str) -> dict:
     try:
+        if os.getenv("APP_STAGE") == "development" and username in ("DevUser", "Dev User", ""):
+            import json as _json
+            path = _dx_cache_path(f"status_{username}.json")
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    return _json.load(f)
+
         sb = get_supabase()
         res = sb.table("generation_status").select("*").eq("username", username).execute()
         if res.data:
             return res.data[0]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Supabase status fetch error: {e}")
     return {"status": "idle", "percent": 0, "step": ""}

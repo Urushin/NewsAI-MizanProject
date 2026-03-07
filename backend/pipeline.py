@@ -161,35 +161,45 @@ def _extract_keywords(text: str, top_n: int = 12) -> set:
 
 def _article_similarity(a: 'RawArticle', b: 'RawArticle') -> float:
     """
-    Compute similarity between two articles. Only groups articles covering
-    the SAME event/story, not just the same general topic.
+    Compute similarity between two articles. We group articles that
+    are about the EXACT same subject using String comparison + Keyword overlapping.
     """
     import difflib
     
-    # Signal 1: Title similarity (strongest signal)
-    title_sim = difflib.SequenceMatcher(
-        None, a.title.lower(), b.title.lower()
-    ).ratio()
+    title_a = a.title.lower()
+    title_b = b.title.lower()
     
-    # GATE: If titles share almost nothing, these are different stories
-    if title_sim < 0.20:
-        return 0.0
+    # Signal 1: Title string similarity
+    title_sim = difflib.SequenceMatcher(None, title_a, title_b).ratio()
     
-    # Signal 2: Content lead similarity (first 500 chars)
+    # Signal 2: Keyword overlap in title/content
+    # Because we want to fuse "Bitcoin price drops" and "Why Bitcoin is surging",
+    # the title_sim might be low (different strings), but the keyword "Bitcoin" is shared.
+    a_kw = _extract_keywords(title_a + " " + (a.content or "")[:200], top_n=5)
+    b_kw = _extract_keywords(title_b + " " + (b.content or "")[:200], top_n=5)
+    
+    overlap = len(a_kw.intersection(b_kw))
+    
+    # If they share at least 2 strong keywords, we consider them same topic
+    if overlap >= 2:
+        return 0.8
+    # If they share 1 strong keyword and have a baseline text resemblance
+    if overlap == 1 and title_sim > 0.15:
+        return 0.5
+        
+    # Content similarity as fallback for poorly titled articles
     content_a = (a.content or "")[:500].lower()
     content_b = (b.content or "")[:500].lower()
     if content_a and content_b:
         content_sim = difflib.SequenceMatcher(None, content_a, content_b).ratio()
     else:
         content_sim = 0.0
-    
-    # Weighted: title dominates
+        
     score = (title_sim * 0.60) + (content_sim * 0.40)
     
-    # Boost: very similar titles always group
-    if title_sim >= 0.50:
+    if title_sim >= 0.40:
         score = max(score, title_sim)
-    
+        
     return score
 
 
@@ -246,12 +256,13 @@ def get_system_prompt_final_pass(profile: dict) -> str:
 
     return f"""You are a news relevance AI for a personalized news app.
 You evaluate the user's daily TOP matches that were found via vector search.
+CRITICAL OVERRIDE: If the user provided 'identity' (Contexte de Vie) like age, location, or occupation, you MUST highly score and KEEP any news (laws, taxes, local events, industry changes) that directly impacts them in real life, even if outside their usual interests.
 Output ONLY valid JSON. No markdown, no explanation.
 For each article, return a JSON object with these exact fields:
-- "localized_title": string (Mandatory: Translate and rewrite as a punchy journalistic title in the user's language)
+- "localized_title": string (Mandatory: Write a highly informative, concrete journalistic title in the user's language. The title MUST contain the core factual information. DO NOT use generic titles, clickbait, or meta-descriptions like 'An article about...'. Automatically remove publisher tags like [VC Now].)
 {summary_instruction}
 - "score": int 0-100 (relevance to the user, should usually be high)
-- "keep": bool (true unless completely irrelevant)
+- "keep": bool (true if the article contains actual factual news value. False if it lacks concrete information, is too generic, or is a pure clickbait empty shell)
 - "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
 - "sub_category": string (Specific sub-theme, e.g., "Cryptomonnaie", "Intelligence Artificielle", "SpaceX", "Guerre en Ukraine")
 - "reason": string (1 sentence explaining WHY this article matters to this user)
@@ -292,6 +303,8 @@ def _build_batch_prompt(articles: List[dict], profile: dict, lang: str) -> str:
     return f"""{profile_ctx}
 
 Language: {lang}
+
+IMPORTANT IMPACT RULE: If the article directly impacts the user's daily life based on their 'identity' (age, location, occupation etc), keep it and explain why in the 'reason' field (e.g. "Sélectionné car cela impacte votre tranche d'âge").
 
 Evaluate these {len(articles)} top matched articles:
 
@@ -404,16 +417,14 @@ Write a concise 3-sentence executive summary of today's news for this user. Focu
         return ""
 
 
-# ── Main Pipeline ──
-
-def run_pipeline_for_user(username: str, language: str = "fr", score_threshold: int = 70, mode: str = "prod") -> dict:
+def run_pipeline_for_user(username: str, language: str = "fr", score_threshold: int = 70, mode: str = "prod", force: bool = False) -> dict:
     """Wrapper that runs the async pipeline synchronously.
     (This keeps the existing API footprint compatible for any external direct calls,
     while internally managing the event loop)."""
     import asyncio
-    return asyncio.run(_run_pipeline_for_user_async(username, language, score_threshold, mode))
+    return asyncio.run(_run_pipeline_for_user_async(username, language, score_threshold, mode, force))
 
-async def _run_pipeline_for_user_async(username: str, language: str = "fr", score_threshold: int = 70, mode: str = "prod") -> dict:
+async def _run_pipeline_for_user_async(username: str, language: str = "fr", score_threshold: int = 70, mode: str = "prod", force: bool = False) -> dict:
     t0 = time.time()
     is_test = mode == "test"
     _status(username, "Loading profile from Supabase...", 0)
@@ -495,154 +506,198 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                     
                     if top_matches:
                         _status(username, "Final validation...", 50)
-                        # Filter similarity (closer to 1.0 is better in newer Supabase RPCs, 
-                        # but we check if it's high enough)
+                        # Filter similarity
                         good_matches = [m for m in top_matches if m.get("similarity", 0) > 0.1]
                         if not good_matches:
                             good_matches = top_matches[:5]
                             
-                        # Process in batches of 5 (defined by BATCH_SIZE)
-                        kept = await _process_articles_in_batches(good_matches, profile, language)
-                        kept = [v for v in kept if v.keep]
+                        # Instead of evaluating locally, we filter the clusters to keep the full context of Chimera
+                        good_urls = {m.get("url") for m in good_matches}
+                        clusters = [c for c in clusters if c[0].link in good_urls]
+                        logger.info(f"   🎯 Reduced to {len(clusters)} clusters via Vector Search")
                 except Exception as e:
                     logger.error(f"Embedding/Vector Search failed: {e}")
         
-        # ── Fallback if Vector Search failed or missing manifesto ──
-        if not kept:
-            logger.warning("Vector search yielded 0 results or failed. Fallback: Chimera + Batch pipeline.")
-            _status(username, "Analyzing articles with AI...", 50)
-            
-            from chimera import synthesize_cluster
-            
-            # Split clusters into multi-article (→ Chimera fusion) and single-article (→ Batch)
-            multi_clusters = [c for c in clusters if len(c) >= 2]
-            single_clusters = [c for c in clusters if len(c) == 1]
-            
-            logger.info(f"   🧬 {len(multi_clusters)} multi-source clusters → Chimera | {len(single_clusters)} single-article → Batch")
-            
-            # ── Process Multi-Article Clusters via Chimera ──
-            chimera_verdicts = []
-            for cluster in multi_clusters[:10]:  # Cap at 10 clusters to control token spend
-                cluster_dicts = [
-                    {
-                        "title": a.title,
-                        "url": a.link,
-                        "content": a.content or "",
-                        "source_interest": a.source_interest,
-                    }
-                    for a in cluster
-                ]
-                try:
-                    _status(username, f"Chimera: Fusing {len(cluster)} sources...", 55)
-                    verdict_data = await synthesize_cluster(
-                        cluster_dicts, profile, language, _call_llm
-                    )
-                    
-                    # ── Normalize LLM output for Pydantic ──
-                    # LLM might return "title" instead of "localized_title"
-                    if "title" in verdict_data and "localized_title" not in verdict_data:
-                        verdict_data["localized_title"] = verdict_data.pop("title")
-                    # Ensure link is present
-                    if not verdict_data.get("link"):
-                        verdict_data["link"] = cluster[0].link
-                    # Ensure score is int
-                    if "score" in verdict_data:
-                        try:
-                            verdict_data["score"] = int(verdict_data["score"])
-                        except (ValueError, TypeError):
-                            verdict_data["score"] = 70
-                    
-                    # Parse into ArticleVerdict
-                    from pydantic import ValidationError
-                    try:
-                        v = ArticleVerdict(**verdict_data)
-                        if v.keep:
-                            chimera_verdicts.append(v)
-                            logger.info(f"   ✅ Chimera OK: \"{v.localized_title[:50]}...\"")
-                    except ValidationError as e:
-                        logger.warning(f"   ⚠️ Chimera verdict validation failed: {e}")
-                        # Last resort: build a valid verdict from raw data
-                        chimera_verdicts.append(ArticleVerdict(
-                            localized_title=verdict_data.get("localized_title", verdict_data.get("title", cluster[0].title)),
-                            summary=verdict_data.get("summary", ["Synthèse en cours de reconstruction."]),
-                            score=verdict_data.get("score", 70),
-                            keep=True,
-                            category=verdict_data.get("category", "Passion"),
-                            reason=verdict_data.get("reason", "Article fusionné par Chimera"),
-                            credibility_score=min(10, max(0, int(verdict_data.get("credibility_score", 5)))),
-                            link=verdict_data.get("link", cluster[0].link),
-                            sources_count=verdict_data.get("sources_count", len(cluster)),
-                            source_urls=verdict_data.get("source_urls", [a.link for a in cluster]),
-                        ))
-                        
-                except Exception as e:
-                    logger.error(f"   ❌ Chimera cluster failed: {e}")
-            
-            logger.info(f"   🧬 Chimera produced {len(chimera_verdicts)} fused articles")
-            
-            # ── Process Single-Article Clusters via Batch ──
-            single_articles = [c[0] for c in single_clusters][:15]
-            batch_dicts = [
+        # ── AI Analysis (Chimera + Batch) ──
+        _status(username, "Analyzing articles with AI...", 50)
+        from chimera import synthesize_cluster
+        
+        # Split clusters into multi-article (→ Chimera fusion) and single-article (→ Batch)
+        multi_clusters = [c for c in clusters if len(c) >= 2]
+        single_clusters = [c for c in clusters if len(c) == 1]
+        
+        logger.info(f"   🧬 {len(multi_clusters)} multi-source clusters → Chimera | {len(single_clusters)} single-article → Batch")
+        
+        # ── Process Multi-Article Clusters via Chimera ──
+        chimera_verdicts = []
+        for cluster in multi_clusters[:10]:  # Cap at 10 clusters to control token spend
+            cluster_dicts = [
                 {
                     "title": a.title,
                     "url": a.link,
                     "content": a.content or "",
                     "source_interest": a.source_interest,
                 }
-                for a in single_articles
+                for a in cluster
             ]
-            
-            batch_verdicts = []
-            if batch_dicts:
+            try:
+                _status(username, f"Chimera: Fusing {len(cluster)} sources...", 55)
+                verdict_data = await synthesize_cluster(
+                    cluster_dicts, profile, language, _call_llm
+                )
+                
+                # ── Normalize LLM output for Pydantic ──
+                # LLM might return "title" instead of "localized_title"
+                if "title" in verdict_data and "localized_title" not in verdict_data:
+                    verdict_data["localized_title"] = verdict_data.pop("title")
+                # Ensure link is present
+                if not verdict_data.get("link"):
+                    verdict_data["link"] = cluster[0].link
+                # Ensure score is int
+                if "score" in verdict_data:
+                    try:
+                        verdict_data["score"] = int(verdict_data["score"])
+                    except (ValueError, TypeError):
+                        verdict_data["score"] = 70
+                
+                # Parse into ArticleVerdict
+                from pydantic import ValidationError
                 try:
-                    _status(username, "Processing unique articles...", 70)
-                    batch_verdicts = await _process_articles_in_batches(batch_dicts, profile, language)
-                    batch_verdicts = [v for v in batch_verdicts if v.keep]
-                    logger.info(f"   📝 Batch produced {len(batch_verdicts)} articles")
-                except Exception as llm_err:
-                    logger.error(f"   ❌ Batch fallback failed: {llm_err}")
-            
-            # ── Combine Results ──
-            kept = chimera_verdicts + batch_verdicts
-            
-            # Last resort: if even everything failed, use minimal static data
-            if not kept:
-                logger.warning("All AI paths failed. Using minimal static fallback.")
-                for a in (single_articles or [c[0] for c in clusters])[:3]:
-                    kept.append(ArticleVerdict(
-                        localized_title=a.title,
-                        summary=["Résumé non disponible — consultez l'article original."],
-                        score=50,
+                    v = ArticleVerdict(**verdict_data)
+                    if v.keep:
+                        chimera_verdicts.append(v)
+                        logger.info(f"   ✅ Chimera OK: \"{v.localized_title[:50]}...\"")
+                except ValidationError as e:
+                    logger.warning(f"   ⚠️ Chimera verdict validation failed: {e}")
+                    # Last resort: build a valid verdict from raw data
+                    chimera_verdicts.append(ArticleVerdict(
+                        localized_title=verdict_data.get("localized_title", verdict_data.get("title", cluster[0].title)),
+                        summary=verdict_data.get("summary", ["Synthèse en cours de reconstruction."]),
+                        score=verdict_data.get("score", 70),
                         keep=True,
-                        category="Passion",
-                        reason="Article collecté automatiquement",
-                        credibility_score=5,
-                        link=a.link
+                        category=verdict_data.get("category", "Passion"),
+                        reason=verdict_data.get("reason", "Article fusionné par Chimera"),
+                        credibility_score=min(10, max(0, int(verdict_data.get("credibility_score", 5)))),
+                        link=verdict_data.get("link", cluster[0].link),
+                        sources_count=verdict_data.get("sources_count", len(cluster)),
+                        source_urls=verdict_data.get("source_urls", [a.link for a in cluster]),
                     ))
+                    
+            except Exception as e:
+                logger.error(f"   ❌ Chimera cluster failed: {e}")
+        
+        logger.info(f"   🧬 Chimera produced {len(chimera_verdicts)} fused articles")
+        
+        # ── Process Single-Article Clusters via Batch ──
+        single_articles = [c[0] for c in single_clusters][:15]
+        batch_dicts = [
+            {
+                "title": a.title,
+                "url": a.link,
+                "content": a.content or "",
+                "source_interest": a.source_interest,
+            }
+            for a in single_articles
+        ]
+        
+        batch_verdicts = []
+        if batch_dicts:
+            try:
+                _status(username, "Processing unique articles...", 70)
+                batch_verdicts = await _process_articles_in_batches(batch_dicts, profile, language)
+                batch_verdicts = [v for v in batch_verdicts if v.keep]
+                logger.info(f"   📝 Batch produced {len(batch_verdicts)} articles")
+            except Exception as llm_err:
+                logger.error(f"   ❌ Batch fallback failed: {llm_err}")
+        
+        # ── Combine Results ──
+        kept = chimera_verdicts + batch_verdicts
+        
+        # Last resort: if even everything failed, use minimal static data
+        if not kept:
+            logger.warning("All AI paths failed. Using minimal static fallback.")
+            for a in (single_articles or [c[0] for c in clusters])[:3]:
+                kept.append(ArticleVerdict(
+                    localized_title=a.title,
+                    summary=["Résumé non disponible — consultez l'article original."],
+                    score=50,
+                    keep=True,
+                    category="Passion",
+                    reason="Article collecté automatiquement",
+                    credibility_score=5,
+                    link=a.link
+                ))
 
         logger.info(f"   ✅ Total kept: {len(kept)}")
 
         if not is_test and kept:
             record_processed_urls(user_id, [v.link for v in kept])
 
+        # ── Global digest & save ──
         _status(username, "Generating global digest...", 90)
         digest = await generate_global_digest(kept, profile, language)
+        
+        # Build used articles list (from verdicts: sources for chimera + single articles)
+        used_articles_list = []
+        for v in kept:
+            if v.sources_count > 1 and hasattr(v, "source_urls"):
+                for url in v.source_urls:
+                    used_articles_list.append({"title": f"Source (Synthèse): {v.localized_title}", "link": url})
+            else:
+                used_articles_list.append({"title": v.localized_title, "link": v.link})
+
+        # Fetch YouTube videos concurrently with digest or sequentially here
+        _status(username, "Collecting YouTube Videos...", 92)
+        youtube_channels = profile.get("preferences", {}).get("youtube_channels", [])
+        
+        # Fallback: parse manifesto file if list is empty (user might have edited file manually)
+        if not youtube_channels:
+            try:
+                # Based on directory listing: backend/manifests/DevUser.txt
+                manifesto_path = root_dir / "backend" / "manifests" / f"{username}.txt"
+                if manifesto_path.exists():
+                    with open(manifesto_path, "r", encoding="utf-8") as f:
+                        text = f.read()
+                        # Look for lines starting with - after "Chaînes YouTube Suivies"
+                        yt_section = re.search(r'## Chaînes YouTube Suivies(.*?)(?:##|$)', text, re.DOTALL | re.IGNORECASE)
+                        if yt_section:
+                            lines = re.findall(r'^\s*-\s+(.*)', yt_section.group(1), re.MULTILINE)
+                            youtube_channels = [l.strip() for l in lines if l.strip()]
+                            if youtube_channels:
+                                logger.info(f"   🎥 Found {len(youtube_channels)} YouTube channels in manifesto file fallback")
+            except Exception as e:
+                logger.error(f"   ⚠️ Manifesto fallback for YouTube failed: {e}")
+
+        youtube_videos = []
+        if youtube_channels:
+            try:
+                from youtube import fetch_youtube_videos
+                youtube_videos = await fetch_youtube_videos(youtube_channels)
+                logger.info(f"   🎥 Found {len(youtube_videos)} YouTube videos")
+            except Exception as e:
+                logger.error(f"   ❌ YouTube fetch failed: {e}")
 
         now = datetime.now()
         brief = {
             "date": now.strftime("%Y-%m-%d"),
             "generated_at": now.isoformat(),
-            "total_collected": len(raw),
-            "total_kept": len(kept),
-            "duration_seconds": round(time.time() - t0, 2),
             "global_digest": digest,
             "content": [_verdict_to_dict(v) for v in kept],
-            "sources_scanned": [{"title": a.title, "url": a.link} for a in raw],
+            "total_collected": len(raw),
+            "total_kept": len(kept),
+            "sources_scanned": [s.get("id") or s.get("query") for s in user_interests] if user_interests else [],
+            "raw_articles": [{"title": r.title, "link": r.link} for r in raw],
+            "used_articles": used_articles_list,
+            "youtube_videos": youtube_videos
         }
+
+        from database import store_daily_brief
+        store_daily_brief(user_id, brief)
 
         if not is_test:
             _status(username, "Saving to Supabase...", 95)
-            store_daily_brief(user_id, brief)
+            # The store_daily_brief call is already done above for DX mode as well
+            # so we just let it be.s now inside the new block, so this line is redundant
 
         _status(username, "Done!", 100)
         set_generation_status(username, "done", "Done!", 100)

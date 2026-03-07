@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronRight, Check, Target, Sparkles, SlidersHorizontal } from "lucide-react";
+import { X, ChevronRight, Check, Target, Sparkles, SlidersHorizontal, Radar, Youtube } from "lucide-react";
 import { API, useAuth } from "../context/AuthContext";
 
 interface OnboardingWizardProps {
@@ -16,6 +16,18 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
     const [taxonomy, setTaxonomy] = useState<Record<string, string[]>>({});
     const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
     const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([]);
+
+    // Contexte de vie (Demographics)
+    const [ageRange, setAgeRange] = useState("");
+    const [exactAge, setExactAge] = useState("");
+    const [location, setLocation] = useState("");
+    const [exactLocation, setExactLocation] = useState("");
+    const [occupation, setOccupation] = useState("");
+    const [exactOccupation, setExactOccupation] = useState("");
+
+    // YouTube subscriptions
+    const [youtubeChannels, setYoutubeChannels] = useState("");
+
     const [custom, setCustom] = useState("");
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
@@ -65,6 +77,13 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                     topics: selectedTopics,
                     subtopics: selectedSubtopics,
                     custom,
+                    age_range: ageRange,
+                    exact_age: exactAge,
+                    location: location,
+                    exact_location: exactLocation,
+                    occupation: occupation,
+                    exact_occupation: exactOccupation,
+                    youtube_channels: youtubeChannels
                 }),
             });
             onSuccess();
@@ -76,7 +95,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
 
     if (loading) return null;
 
-    const currentPercent = ((step - 1) / 2) * 100;
+    const currentPercent = ((step - 1) / 3) * 100;
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/40 p-4 sm:p-6" onClick={onClose}>
@@ -190,22 +209,142 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
 
                         {step === 3 && (
                             <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
-                                        <Sparkles size={18} />
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center text-teal-500">
+                                        <Radar size={18} />
                                     </div>
-                                    <h3 className="text-[17px] font-bold text-gray-900">3. Précisions (Optionnel)</h3>
+                                    <h3 className="text-[17px] font-bold text-gray-900">3. Votre Radar d&apos;Impact (Optionnel)</h3>
                                 </div>
-                                <p className="text-[14px] text-gray-500 mb-4">
-                                    Y a-t-il une entreprise, une équipe sportive, ou un sujet de niche très spécifique que vous suivez de près ?
-                                </p>
-                                <textarea
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 text-[15px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-gray-400"
-                                    placeholder="Ex: Passion pour l'horlogerie, les lancements spatiaux, l'équipe de rugby de Toulouse..."
-                                    value={custom}
-                                    onChange={(e) => setCustom(e.target.value)}
-                                    rows={5}
-                                />
+                                <div className="mb-6 p-4 bg-teal-50/50 rounded-xl border border-teal-100">
+                                    <p className="text-[13px] text-teal-800 leading-relaxed">
+                                        Même si vous n&apos;aimez pas l&apos;économie ou la politique, certaines actualités (réformes, lois, météo locale) peuvent avoir un <strong>impact direct sur vous</strong>. L&apos;IA filtrera intelligemment tout ce qui peut vous concerner. <em>Plus vous serez précis, plus le radar sera fin.</em>
+                                    </p>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* AGE */}
+                                    <div className="space-y-3">
+                                        <label className="text-[14px] font-bold text-gray-800">Votre âge</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {["18-25", "26-35", "36-50", "50+"].map(range => (
+                                                <button
+                                                    key={range}
+                                                    onClick={() => { setAgeRange(range); setExactAge(""); }}
+                                                    className={`px-4 py-2 text-[13px] font-medium rounded-full transition-all border ${ageRange === range ? "bg-teal-600 border-teal-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                                                >
+                                                    {range} ans
+                                                </button>
+                                            ))}
+                                            <input
+                                                type="number"
+                                                placeholder="Âge précis..."
+                                                value={exactAge}
+                                                onChange={(e) => {
+                                                    setExactAge(e.target.value);
+                                                    if (e.target.value) setAgeRange("");
+                                                }}
+                                                className="px-4 py-2 text-[13px] border border-gray-200 rounded-full focus:outline-none focus:border-teal-500 max-w-[120px]"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* LOCATION */}
+                                    <div className="space-y-3">
+                                        <label className="text-[14px] font-bold text-gray-800">Où vivez-vous ?</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {["France", "Belgique", "Suisse", "Québec"].map(loc => (
+                                                <button
+                                                    key={loc}
+                                                    onClick={() => { setLocation(loc); setExactLocation(""); }}
+                                                    className={`px-4 py-2 text-[13px] font-medium rounded-full transition-all border ${location === loc ? "bg-teal-600 border-teal-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                                                >
+                                                    {loc}
+                                                </button>
+                                            ))}
+                                            <input
+                                                type="text"
+                                                placeholder="Ville ou Région..."
+                                                value={exactLocation}
+                                                onChange={(e) => {
+                                                    setExactLocation(e.target.value);
+                                                    if (e.target.value) setLocation("");
+                                                }}
+                                                className="px-4 py-2 text-[13px] border border-gray-200 rounded-full focus:outline-none focus:border-teal-500 flex-1 min-w-[150px]"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* OCCUPATION */}
+                                    <div className="space-y-3">
+                                        <label className="text-[14px] font-bold text-gray-800">Secteur ou Profession</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {["Santé", "Tech", "Étudiant", "Éducation", "Commerce"].map(occ => (
+                                                <button
+                                                    key={occ}
+                                                    onClick={() => { setOccupation(occ); setExactOccupation(""); }}
+                                                    className={`px-4 py-2 text-[13px] font-medium rounded-full transition-all border ${occupation === occ ? "bg-teal-600 border-teal-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                                                >
+                                                    {occ}
+                                                </button>
+                                            ))}
+                                            <input
+                                                type="text"
+                                                placeholder="Titre exact (ex: Développeur)..."
+                                                value={exactOccupation}
+                                                onChange={(e) => {
+                                                    setExactOccupation(e.target.value);
+                                                    if (e.target.value) setOccupation("");
+                                                }}
+                                                className="px-4 py-2 text-[13px] border border-gray-200 rounded-full focus:outline-none focus:border-teal-500 flex-1 min-w-[200px]"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {step === 4 && (
+                            <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+
+                                {/* Section YouTube */}
+                                <div className="mb-8">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
+                                            <Youtube size={18} />
+                                        </div>
+                                        <h3 className="text-[17px] font-bold text-gray-900">Vos Chaînes YouTube Principales (Optionnel)</h3>
+                                    </div>
+                                    <p className="text-[14px] text-gray-500 mb-4 leading-relaxed">
+                                        Surveillez les dernières vidéos de vos créateurs préférés directement depuis votre édition officielle. L&apos;IA récupèrera toutes les sorties des 24 dernières heures.
+                                    </p>
+                                    <textarea
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all resize-none placeholder:text-gray-400"
+                                        placeholder="Ex: HugoDécrypte, Squeezie, Marques Brownlee (Un par ligne)"
+                                        value={youtubeChannels}
+                                        onChange={(e) => setYoutubeChannels(e.target.value)}
+                                        rows={3}
+                                    />
+                                </div>
+
+                                {/* Section Custom Notes (Touche finale) */}
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
+                                            <Sparkles size={18} />
+                                        </div>
+                                        <h3 className="text-[17px] font-bold text-gray-900">Touche finale (Optionnel)</h3>
+                                    </div>
+                                    <p className="text-[14px] text-gray-500 mb-4">
+                                        Y a-t-il une entreprise, une équipe sportive, ou un sujet de niche très spécifique que vous suivez de près ? Vous pouvez écrire librement ici.
+                                    </p>
+                                    <textarea
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 text-[15px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all resize-none placeholder:text-gray-400"
+                                        placeholder="Ex: Passion pour l'horlogerie, les lancements spatiaux, l'équipe de rugby de Toulouse..."
+                                        value={custom}
+                                        onChange={(e) => setCustom(e.target.value)}
+                                        rows={4}
+                                    />
+                                </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -224,7 +363,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                         <div />
                     )}
 
-                    {step < 3 ? (
+                    {step < 4 ? (
                         <button
                             onClick={() => setStep(step + 1)}
                             disabled={step === 1 && selectedTopics.length === 0}

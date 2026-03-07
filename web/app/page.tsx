@@ -23,6 +23,8 @@ import {
   AlertCircle,
   RotateCcw,
   ChevronDown,
+  Youtube,
+  Play
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────── */
@@ -49,6 +51,13 @@ interface BriefData {
   duration_seconds: number;
   global_digest?: string;
   content: NewsItem[];
+  youtube_videos?: {
+    title: string;
+    link: string;
+    channel: string;
+    thumbnail: string;
+    published: string;
+  }[];
 }
 
 /* ── i18n ──────────────────────────────────────────── */
@@ -497,6 +506,72 @@ export default function Home() {
                 {data?.total_kept === 0 ? t.nothingSub : t.noDataSub}
               </p>
             </motion.div>
+          )}
+
+          {/* ── YOUTUBE VIDEOS ────────── */}
+          {data?.youtube_videos && data.youtube_videos.length > 0 && (
+            <motion.section
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-12 sm:mt-16"
+            >
+              <div className="flex items-center gap-3 pb-6 border-b border-gray-200/60 mb-6 font-serif">
+                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                  <Youtube size={16} className="text-red-500" />
+                </div>
+                <span className="text-sm font-black uppercase tracking-[0.2em] text-red-500">
+                  Vidéos YouTube
+                </span>
+                <span className="text-[10px] bg-red-50 text-red-500 px-1.5 py-0.5 rounded border border-red-100 font-bold ml-auto">
+                  {data.youtube_videos.length} Récentes
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {data.youtube_videos.map((vid, i) => (
+                  <a
+                    key={`yt-${i}`}
+                    href={vid.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block bg-white rounded-2xl border border-black/[0.04] p-2 hover:shadow-lg hover:shadow-red-500/5 transition-all outline-none focus:ring-2 focus:ring-red-500 overflow-hidden"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Image container */}
+                      <div className="relative w-32 min-w-[128px] h-[72px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                        <img
+                          src={vid.thumbnail}
+                          alt="Miniature YouTube"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-8 h-8 rounded-full bg-red-600/90 text-white flex items-center justify-center backdrop-blur-sm shadow-md">
+                            <Play fill="currentColor" size={14} className="ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Texts */}
+                      <div className="flex-1 min-w-0 py-1 pr-2">
+                        <h4 className="text-[13px] font-bold tracking-tight text-gray-900 leading-[1.3] line-clamp-2 mb-1.5 group-hover:text-red-600 transition-colors">
+                          {vid.title}
+                        </h4>
+                        <div className="flex items-center gap-1.5 opacity-70">
+                          <div className="w-4 h-4 rounded-full bg-gray-100 text-[10px] flex items-center justify-center font-bold text-gray-500 overflow-hidden">
+                            {vid.channel.charAt(0)}
+                          </div>
+                          <span className="text-[11px] font-semibold text-gray-500 truncate">
+                            {vid.channel}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </motion.section>
           )}
 
           {/* ── FOOTER ────────── */}

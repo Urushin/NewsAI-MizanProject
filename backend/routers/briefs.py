@@ -20,14 +20,14 @@ def get_brief(request: Request, date: Optional[str] = None):
         "date": brief["date"],
         "global_digest": brief.get("global_digest"),
         "content": brief.get("content", []),
+        "youtube_videos": brief.get("youtube_videos", []),
         "total_kept": len(brief.get("content", [])),
     }
 
 @router.get("/sources")
 def get_sources_scanned(request: Request):
     payload = get_current_user(request)
-    sources = get_daily_sources(payload["user_id"])
-    return {"sources_scanned": sources}
+    return get_daily_sources(payload["user_id"])
 
 @router.get("/history")
 def get_brief_history(
@@ -57,7 +57,7 @@ def get_brief_history(
     }
 
 @router.post("/generate")
-def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: str = "prod"):
+def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: str = "prod", force: bool = False):
     import os
     payload = get_current_user(request)
     user_id = payload["user_id"]
@@ -89,7 +89,7 @@ def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: st
 
     if mode == "test" or is_dev:
         # Avoid blocking the main thread/event loop. Use background tasks even in dev/test.
-        background_tasks.add_task(_run_pipeline_for_user_async, username, language, threshold, mode)
+        background_tasks.add_task(_run_pipeline_for_user_async, username, language, threshold, mode, force)
         return {"message": "Generation started in background", "status": "processing"}
 
     plan_info = get_user_plan(user_id, sb)
@@ -97,7 +97,7 @@ def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: st
 
     job = enqueue_job(
         job_type="generate_brief",
-        payload={"username": username, "language": language, "score_threshold": threshold},
+        payload={"username": username, "language": language, "score_threshold": threshold, "force": force},
         user_id=user_id,
         priority=priority,
     )

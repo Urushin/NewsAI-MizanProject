@@ -4,19 +4,21 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, API } from "../context/AuthContext";
 import { motion } from "framer-motion";
-import { Loader2, ArrowLeft, ExternalLink, Database, Search } from "lucide-react";
+import { Loader2, ArrowLeft, ExternalLink, Database, Search, CheckCircle, List } from "lucide-react";
 
 interface ScannedSource {
     title: string;
-    url: string;
+    link: string;
 }
 
 export default function SourcesPage() {
     const { user, token, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [sources, setSources] = useState<ScannedSource[]>([]);
+    const [rawSources, setRawSources] = useState<ScannedSource[]>([]);
+    const [usedSources, setUsedSources] = useState<ScannedSource[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [activeTab, setActiveTab] = useState<"used" | "raw">("used");
 
     useEffect(() => {
         if (!authLoading && !user) router.push("/login");
@@ -30,17 +32,18 @@ export default function SourcesPage() {
         })
             .then(r => r.json())
             .then(data => {
-                if (data.sources_scanned) {
-                    setSources(data.sources_scanned);
-                }
+                if (data.raw_articles) setRawSources(data.raw_articles);
+                if (data.used_articles) setUsedSources(data.used_articles);
                 setLoading(false);
             })
             .catch(() => setLoading(false));
     }, [token]);
 
-    const filtered = sources.filter(s =>
+    const activeList = activeTab === "used" ? usedSources : rawSources;
+
+    const filtered = activeList.filter(s =>
         s.title.toLowerCase().includes(search.toLowerCase()) ||
-        s.url.toLowerCase().includes(search.toLowerCase())
+        s.link.toLowerCase().includes(search.toLowerCase())
     );
 
     if (authLoading || loading) {
@@ -80,9 +83,28 @@ export default function SourcesPage() {
                         Sources Analysées
                     </h1>
                     <p className="text-gray-500 mb-8 leading-relaxed">
-                        Voici la liste exhaustive de tous les articles récupérés et traités par Mizan pour votre dernière édition personnalisée.
-                        Sur les <span className="text-indigo-600 font-bold">{sources.length}</span> sources collectées, seules les plus pertinentes ont été retenues.
+                        Voici la liste de tous les articles récupérés et traités par Mizan pour votre dernière édition personnalisée.
                     </p>
+
+                    {/* Tabs */}
+                    <div className="flex gap-4 mb-6">
+                        <button
+                            onClick={() => setActiveTab("used")}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${activeTab === "used" ? "bg-indigo-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                                }`}
+                        >
+                            <CheckCircle size={16} />
+                            Articles Retenus ({usedSources.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("raw")}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${activeTab === "raw" ? "bg-indigo-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                                }`}
+                        >
+                            <List size={16} />
+                            Toutes les Sources ({rawSources.length})
+                        </button>
+                    </div>
 
                     {/* Search Bar */}
                     <div className="relative mb-8">
@@ -107,11 +129,11 @@ export default function SourcesPage() {
                                                 {item.title || "Titre inconnu"}
                                             </h3>
                                             <p className="text-[11px] text-gray-400 truncate mt-0.5">
-                                                {item.url}
+                                                {item.link}
                                             </p>
                                         </div>
                                         <a
-                                            href={item.url}
+                                            href={item.link}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all shadow-sm"

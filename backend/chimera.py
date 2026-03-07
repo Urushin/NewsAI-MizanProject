@@ -190,10 +190,10 @@ Your job is to write a single, cohesive synthesis that:
 - Highlights the most impactful implications
 
 Output ONLY valid JSON with these exact fields:
-- "localized_title": string (Mandatory: Write a punchy journalistic title in the user's language)
+- "localized_title": string (Mandatory: Write a highly informative, concrete journalistic title in the user's language. The title MUST contain the core factual information. DO NOT use generic titles, clickbait, or meta-descriptions like 'An article about...'. Automatically remove publisher tags like [VC Now].)
 - "summary": array of strings ({style})
 - "score": int 0-100 (relevance to the user)
-- "keep": true
+- "keep": bool (true if the synthesis contains actual factual news value. False if it lacks concrete information or is purely an empty shell)
 - "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
 - "sub_category": string (Specific sub-theme, e.g., "Cryptomonnaie", "Intelligence Artificielle", "SpaceX", "Guerre en Ukraine")
 - "reason": string (1 sentence: why this matters to THIS user specifically)
@@ -223,6 +223,8 @@ def build_analyst_prompt(
     return f"""User identity: {identity}
 User interests: {interests}
 Language: {lang}
+
+IMPORTANT IMPACT RULE: If the article directly impacts the user's daily life based on their identity (age, location, occupation etc), keep it and explicitly state why in the 'reason' field instead of just saying "it matches your interests".
 
 Original article titles covering this topic:
 {titles_text}

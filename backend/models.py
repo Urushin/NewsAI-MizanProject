@@ -78,6 +78,15 @@ class ArticleVerdict(BaseModel):
 # Backward compat alias
 AnalyzedArticle = ArticleVerdict
 
+class YouTubeVideo(BaseModel):
+    model_config = ConfigDict(extra='ignore', str_strip_whitespace=True)
+
+    title: StrictStr
+    link: StrictStr
+    channel: StrictStr
+    thumbnail: StrictStr
+    published: StrictStr
+
 class DailyBrief(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
 
@@ -91,3 +100,4 @@ class DailyBrief(BaseModel):
     # We enforce that the content is exactly a list of verified verdicts
     content: List[ArticleVerdict] = Field(default_factory=list)
     sources_scanned: List[Dict[str, str]] = Field(default_factory=list)
+    youtube_videos: List[YouTubeVideo] = Field(default_factory=list)
