@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth, API } from "../context/AuthContext";
+import { useApi } from "../utils/api";
 
 interface Props {
     articleTitle: string;
@@ -17,6 +18,7 @@ const dismissLabels: Record<string, { label: string; tooltip: string }> = {
 
 export default function NotInterested({ articleTitle, onDismissed, lang = "fr" }: Props) {
     const { token } = useAuth();
+    const api = useApi();
     const [dismissed, setDismissed] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -29,13 +31,8 @@ export default function NotInterested({ articleTitle, onDismissed, lang = "fr" }
 
         setLoading(true);
         try {
-            await fetch(`${API}/api/articles/dismiss`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ article_title: articleTitle }),
+            await api.post("/api/articles/dismiss", {
+                article_title: articleTitle
             });
             setDismissed(true);
             setTimeout(() => onDismissed(), 300);

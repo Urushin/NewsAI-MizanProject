@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth, API } from "./context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import NewsCard from "./components/NewsCard";
 import ProfilePopup from "./components/ProfilePopup";
 import HistoryPanel from "./components/HistoryPanel";
 import GenerationLoader from "./components/GenerationLoader";
+import ShareMenu from "./components/ShareMenu";
 import {
   Sparkles,
   Zap,
@@ -24,41 +26,14 @@ import {
   RotateCcw,
   ChevronDown,
   Youtube,
-  Play
+  Play,
+  CheckCircle2
 } from "lucide-react";
 
-/* ── Types ─────────────────────────────────────────── */
+import { NewsItem, BriefData } from "./types/news";
+import { useApi } from "./utils/api";
 
-interface NewsItem {
-  title: string;
-  localized_title?: string;
-  category: string;
-  sub_category?: string;
-  summary: string | string[];
-  score: number;
-  link: string;
-  keep: boolean;
-  gate_passed?: string;
-  reason?: string;
-  credibility_score?: number;
-}
-
-interface BriefData {
-  date: string;
-  generated_at: string;
-  total_collected: number;
-  total_kept: number;
-  duration_seconds: number;
-  global_digest?: string;
-  content: NewsItem[];
-  youtube_videos?: {
-    title: string;
-    link: string;
-    channel: string;
-    thumbnail: string;
-    published: string;
-  }[];
-}
+const CACHE_VERSION = "v1.2"; // Incremented to match new NewsItem schema (is_fused)
 
 /* ── i18n ──────────────────────────────────────────── */
 
@@ -93,8 +68,29 @@ const i18n: Record<string, Record<string, string>> = {
 
 const CATEGORY_META: Record<
   string,
-  { icon: React.ElementType; label: string; color: string; bg: string }
+  { icon: React.ElementType; label: string; color: string; bg: string; description?: string }
 > = {
+  "Ce que vous avez manqué ce matin": {
+    icon: Sparkles,
+    label: "Ce que vous avez manqué ce matin",
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    description: "Les news cruciales de ces dernières heures analysées pour vous."
+  },
+  "L'essentiel de votre secteur": {
+    icon: Briefcase,
+    label: "L'essentiel de votre secteur",
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    description: "Évolutions stratégiques et opportunités dans vos domaines pro."
+  },
+  "Lecture détente (Passion)": {
+    icon: Heart,
+    label: "Lecture détente (Passion)",
+    color: "text-rose-600",
+    bg: "bg-rose-50",
+    description: "L'actualité globale et vos centres d'intérêt secondaires."
+  },
   Impact: { icon: Zap, label: "Impact Direct", color: "text-red-500", bg: "bg-red-50" },
   Passion: { icon: Heart, label: "Passion", color: "text-indigo-500", bg: "bg-indigo-50" },
   Tech: { icon: Cpu, label: "Technologie", color: "text-cyan-500", bg: "bg-cyan-50" },
@@ -135,37 +131,48 @@ function formatDateTitle(dateStr?: string, lang = "fr"): string {
 /* ── Group articles by category ────────────────────── */
 
 function groupByCategory(articles: NewsItem[]) {
-  const mainGroupsMap = new Map<string, Map<string, NewsItem[]>>();
+  const sectionsMap = new Map<string, Map<string, NewsItem[]>>();
+  const TIERS = [
+    "Ce que vous avez manqué ce matin",
+    "L'essentiel de votre secteur",
+    "Lecture détente (Passion)"
+  ];
+  TIERS.forEach(t => sectionsMap.set(t, new Map()));
 
   for (const item of articles) {
-    const cat = item.category || "Passion";
+    let targetTier = "Lecture détente (Passion)";
+    const isHighImpact = item.gate_passed === "impact" || item.category === "Impact" || (item.score && item.score >= 90);
+    const isStrategic = ["Business", "Tech", "Security"].includes(item.category) || (item.score && item.score >= 75);
+
+    if (isHighImpact) {
+      targetTier = "Ce que vous avez manqué ce matin";
+    } else if (isStrategic) {
+      targetTier = "L'essentiel de votre secteur";
+    }
+
     const subCat = item.sub_category || "Général";
-
-    if (!mainGroupsMap.has(cat)) mainGroupsMap.set(cat, new Map());
-    const subMap = mainGroupsMap.get(cat)!;
-
+    const subMap = sectionsMap.get(targetTier)!;
     if (!subMap.has(subCat)) subMap.set(subCat, []);
     subMap.get(subCat)!.push(item);
   }
 
   const result: { category: string; subGroups: { subCategory: string; items: NewsItem[] }[] }[] = [];
+  for (const tier of TIERS) {
+    const subMap = sectionsMap.get(tier)!;
+    if (subMap.size === 0) continue;
 
-  // Custom sorting: Impact first
-  const sortedCats = Array.from(mainGroupsMap.keys()).sort((a, b) => {
-    if (a === "Impact") return -1;
-    if (b === "Impact") return 1;
-    return a.localeCompare(b);
-  });
-
-  for (const cat of sortedCats) {
-    const subMap = mainGroupsMap.get(cat)!;
     const subGroups = Array.from(subMap.entries()).map(([subCategory, items]) => ({
       subCategory,
       items
-    }));
-    result.push({ category: cat, subGroups });
-  }
+    })).sort((a, b) => {
+      const aFused = a.items.some(i => i.is_fused || i.isFused);
+      const bFused = b.items.some(i => i.is_fused || i.isFused);
+      if (aFused !== bFused) return aFused ? -1 : 1;
+      return 0;
+    });
 
+    result.push({ category: tier, subGroups });
+  }
   return result;
 }
 
@@ -178,7 +185,7 @@ const ErrorEmptyState = ({ message, onRetry }: { message: string, onRetry: () =>
     className="flex flex-col items-center justify-center py-20 px-6 text-center"
   >
     <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-red-100">
-      <AlertCircle size={32} />
+      <AlertCircle size={32} aria-hidden="true" />
     </div>
     <h3 className="text-xl font-bold text-gray-900 mb-2">Oups, une petite interférence !</h3>
     <p className="text-gray-500 max-w-sm mb-8 leading-relaxed">
@@ -190,7 +197,7 @@ const ErrorEmptyState = ({ message, onRetry }: { message: string, onRetry: () =>
       onClick={onRetry}
       className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold shadow-xl shadow-indigo-100/50 hover:bg-indigo-700 active:scale-95 transition-all"
     >
-      <RotateCcw size={18} />
+      <RotateCcw size={18} aria-hidden="true" />
       Réessayer maintenant
     </button>
   </motion.div>
@@ -203,6 +210,7 @@ const ErrorEmptyState = ({ message, onRetry }: { message: string, onRetry: () =>
 export default function Home() {
   const { user, token, loading: authLoading, refreshKey, genStatus, setGenStatus, triggerRefresh } = useAuth();
   const router = useRouter();
+  const api = useApi();
   const [data, setData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -221,76 +229,87 @@ export default function Home() {
   const dataRef = useRef<BriefData | null>(null);
   useEffect(() => { dataRef.current = data; }, [data]);
 
-  const hasTriedGenerate = useRef(false);
-
   useEffect(() => {
     if (!token) return;
     setError(null);
 
     const fetchBriefData = async () => {
+      const cacheKey = `mizan_brief_cache_${selectedDate || 'today'}`;
+      let hasCache = false;
       try {
-        const url = selectedDate
-          ? `${API}/api/brief?date=${selectedDate}`
-          : `${API}/api/brief`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsedCache = JSON.parse(cached);
+          // Version and structure validation
+          const isValid = parsedCache &&
+            parsedCache.version === CACHE_VERSION &&
+            parsedCache.data &&
+            Array.isArray(parsedCache.data.content);
 
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        let json: BriefData = await res.json();
+          if (isValid) {
+            setData(parsedCache.data);
+            setLoading(false);
+            hasCache = true;
+          } else {
+            // Invalid or old cache, clean it
+            localStorage.removeItem(cacheKey);
+          }
+        }
+      } catch (e) { }
 
-        const cur = dataRef.current;
-        if ((json.content && json.content.length > 0) || !cur?.content || cur.content.length === 0) {
+      try {
+        const url = selectedDate ? `/api/brief?date=${selectedDate}` : `/api/brief`;
+        const json: BriefData = await api.get(url);
+
+        // Content verification to avoid unnecessary re-renders
+        const currentContent = dataRef.current?.content || [];
+        const newContent = json.content || [];
+        const contentChanged = JSON.stringify(currentContent) !== JSON.stringify(newContent);
+        const digestChanged = dataRef.current?.global_digest !== json.global_digest;
+
+        if (contentChanged || digestChanged || !hasCache) {
           setData(json);
           setDismissed(new Set());
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify({
+              version: CACHE_VERSION,
+              data: json,
+              timestamp: Date.now()
+            }));
+          } catch (e) { }
         }
       } catch (e: any) {
-        console.error("Failed to fetch briefing:", e);
-        setError(e.message || "An unexpected error occurred");
+        if (!dataRef.current || (!dataRef.current.content?.length && !dataRef.current.global_digest)) {
+          setError(e.message || "Error fetching data.");
+        }
       } finally {
         setLoading(false);
       }
     };
-
     fetchBriefData();
-  }, [token, refreshKey, retryKey, selectedDate]);
+  }, [token, refreshKey, retryKey, selectedDate, api]);
 
-  // Polling for generation status
   useEffect(() => {
     if (!token || !genStatus.active || genStatus.isDone) return;
-
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${API}/api/brief/status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const status = await res.json();
-
+        const status = await api.get("/api/brief/status");
         if (status.status === "done") {
           setGenStatus({ active: true, step: "Terminé !", percent: 100, isDone: true });
           setTimeout(() => {
             setGenStatus({ active: false, step: "", percent: 0, isDone: false });
-            triggerRefresh(); // Reload data
+            triggerRefresh();
           }, 2000);
         } else if (status.status === "error") {
           setGenStatus({ active: false, step: "", percent: 0, isDone: false });
-          setError("La génération a échoué. Veuillez réessayer.");
+          setError("La génération a échoué.");
         } else {
-          setGenStatus({
-            active: true,
-            step: status.step || "Collecte...",
-            percent: status.percent || 10,
-            isDone: false
-          });
+          setGenStatus({ active: true, step: status.step || "Collecte...", percent: status.percent || 10, isDone: false });
         }
-      } catch (e) {
-        console.error("Status check failed", e);
-      }
+      } catch (e) { }
     }, 2000);
-
     return () => clearInterval(interval);
-  }, [token, genStatus.active, genStatus.isDone, setGenStatus, triggerRefresh]);
+  }, [token, genStatus.active, genStatus.isDone, setGenStatus, triggerRefresh, api]);
 
   const handleDismiss = useCallback((title: string) => {
     setDismissed((prev) => new Set(prev).add(title));
@@ -300,28 +319,33 @@ export default function Home() {
     () => (data?.content || []).filter((item) => !dismissed.has(item.title)),
     [data, dismissed]
   );
+
   const groupedContent = useMemo(() => groupByCategory(visibleContent), [visibleContent]);
 
   if (loading || authLoading || !user) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="w-full max-w-2xl flex flex-col gap-6"
-        >
-          <div className="flex justify-between items-end mb-4">
-            <div className="h-10 w-48 bg-gray-200 rounded-lg animate-pulse" />
-            <div className="h-6 w-32 bg-gray-100 rounded-md animate-pulse" />
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center w-full">
+        <main className="w-full max-w-[720px] px-6 sm:px-8 pt-10 sm:pt-12 pb-16 sm:pb-20">
+          <div className="flex flex-col items-center pt-3 pb-6 sm:pt-4 sm:pb-8">
+            <div className="h-10 sm:h-12 w-3/4 max-w-[320px] bg-gray-200/70 rounded-2xl animate-pulse mb-3" />
+            <div className="h-4 w-40 bg-gray-100 rounded-md animate-pulse" />
           </div>
-          <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
-          <div className="h-4 w-5/6 bg-gray-100 rounded animate-pulse" />
-          <div className="space-y-4 mt-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 w-full bg-white border border-gray-100 rounded-2xl animate-pulse" />
+          <div className="flex flex-col gap-10">
+            {[1, 2].map((catIdx) => (
+              <section key={catIdx}>
+                <div className="flex items-center gap-3 pb-6 border-b border-gray-100 mb-6">
+                  <div className="w-8 h-8 rounded-xl bg-gray-200/50 animate-pulse shrink-0" />
+                  <div className="h-4 w-32 bg-gray-200/60 rounded-lg animate-pulse" />
+                </div>
+                <div className="flex flex-col gap-4">
+                  {[1, 2].map((cardIdx) => (
+                    <div key={cardIdx} className="w-full bg-white rounded-[24px] border border-gray-100/60 p-5 shadow-sm h-32 animate-pulse" />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
-        </motion.div>
+        </main>
       </div>
     );
   }
@@ -329,270 +353,149 @@ export default function Home() {
   if (error) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-6">
-        <ErrorEmptyState
-          message={error}
-          onRetry={() => {
-            setLoading(true);
-            setError(null);
-            setRetryKey(k => k + 1);
-          }}
-        />
+        <ErrorEmptyState message={error} onRetry={() => { setLoading(true); setError(null); setRetryKey(k => k + 1); }} />
       </div>
     );
   }
 
   const dateTitle = formatDateTitle(data?.date, lang);
-
-  if (genStatus.active) {
-    return <GenerationLoader step={genStatus.step} percent={genStatus.percent} isDone={genStatus.isDone} />;
-  }
+  if (genStatus.active) return <GenerationLoader step={genStatus.step} percent={genStatus.percent} isDone={genStatus.isDone} />;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-gray-900 font-sans selection:bg-indigo-100 flex flex-col items-center w-full">
-
-      {/* ── FLOATING PROFILE BUTTON (top-left) ──────── */}
-      <div className="fixed top-5 left-5 sm:top-6 sm:left-8 z-40 flex flex-col gap-3">
+    <div className="min-h-screen bg-[#FAFAFA] text-gray-900 flex flex-col items-center w-full print:bg-white">
+      <div className="fixed top-5 left-5 sm:top-6 sm:left-8 z-40 flex flex-col gap-3 print:hidden">
         <ProfilePopup onPreview={(d) => setData(d)} />
-        <HistoryPanel
-          onSelectDate={(date) => {
-            setLoading(true);
-            setSelectedDate(date);
-          }}
-          selectedDate={selectedDate}
-          lang={lang}
-        />
+        <HistoryPanel onSelectDate={(date) => { setLoading(true); setSelectedDate(date); }} selectedDate={selectedDate} lang={lang} />
       </div>
 
-      {/* ── MAIN ───────────────────────────────────────── */}
-      <main className="w-full max-w-[720px] px-6 sm:px-8 pt-10 sm:pt-12 pb-16 sm:pb-20">
-        <>
-          {/* ── DATE TITLE ──────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center pt-3 pb-6 sm:pt-4 sm:pb-8"
-          >
-            <h1 className="text-[clamp(1.5rem,4vw,2rem)] font-extrabold tracking-tight text-gray-900 leading-tight">
-              {dateTitle}
-            </h1>
-            {data && data.total_kept !== undefined && (
-              <p className="mt-3 text-[13px] text-gray-400 font-medium">
-                {data.total_kept} {t.articles} · {data.total_collected || "—"} {t.scanned}
-              </p>
-            )}
-          </motion.div>
-
-          {/* ── EDITORIAL DIGEST (COLLAPSIBLE) ────── */}
-          {data && data.global_digest && (
-            <motion.section
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-8"
-            >
-              <button
-                onClick={() => setShowDigest(!showDigest)}
-                className="group flex flex-col items-center w-full focus:outline-none focus:ring-2 focus:ring-indigo-100 rounded-2xl transition-all"
-              >
-                <div className={`
-                  flex items-center gap-2.5 px-5 py-3.5 rounded-2xl border transition-all duration-300
-                  ${showDigest
-                    ? 'bg-white border-indigo-100 shadow-[0_10px_30px_-10px_rgba(99,102,241,0.1)] mb-4'
-                    : 'bg-white border-black/[0.04] shadow-sm hover:border-indigo-100 hover:shadow-md'
-                  }
-                `}>
-                  <Sparkles size={15} className={`${showDigest ? 'text-indigo-500' : 'text-gray-400'} opacity-75 transition-colors`} />
-                  <span className={`text-[11px] font-bold uppercase tracking-[0.2em] ${showDigest ? 'text-indigo-600' : 'text-gray-400'} transition-colors`}>
-                    {showDigest ? 'Résumé masqué' : 'Afficher le résumé du jour'}
-                  </span>
-                  <motion.div
-                    animate={{ rotate: showDigest ? 180 : 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <ChevronDown size={14} className={`${showDigest ? 'text-indigo-500' : 'text-gray-400'} opacity-50`} />
-                  </motion.div>
-                </div>
-              </button>
-
-              <AnimatePresence>
-                {showDigest && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-6 rounded-3xl bg-indigo-50/30 border border-indigo-100/50">
-                      <p className="text-[15px] text-indigo-950/80 font-[450] leading-[1.8] text-justify hyphens-auto">
-                        {data.global_digest}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.section>
+      <main className="w-full max-w-[720px] px-6 sm:px-8 pt-10 sm:pt-12 pb-16 sm:pb-20 print:p-0">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center pt-3 pb-6 sm:pt-4 sm:pb-8">
+          <h1 className="text-[clamp(1.5rem,4vw,2rem)] font-extrabold tracking-tight text-gray-900 leading-tight">{dateTitle}</h1>
+          {data && data.total_kept !== undefined && (
+            <p className="mt-3 text-[13px] text-gray-400 font-medium">{data.total_kept} {t.articles} · {data.total_collected || "—"} {t.scanned}</p>
           )}
+        </motion.div>
 
-          {/* ── ARTICLES GROUPED BY CATEGORY ────────── */}
-          {groupedContent.length > 0 ? (
-            <div className="flex flex-col gap-10">
-              {groupedContent.map((group, gIdx) => {
-                const meta = getCategoryMeta(group.category);
-                const Ico = meta.icon;
-                return (
-                  <motion.section
-                    key={group.category}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.12 + gIdx * 0.08 }}
-                  >
-                    {/* Main Category Header */}
-                    <div className="flex items-center gap-3 pb-6 border-b border-gray-200/60 mb-6 font-serif">
-                      <div className={`w-8 h-8 rounded-lg ${meta.bg} flex items-center justify-center`}>
-                        <Ico size={16} className={`${meta.color}`} />
+        {data?.global_digest && (
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <button onClick={() => setShowDigest(!showDigest)} className="group flex flex-col items-center w-full rounded-2xl">
+              <div className={`flex items-center gap-2.5 px-5 py-3.5 rounded-2xl border transition-all ${showDigest ? 'bg-white border-indigo-100 mb-4' : 'bg-white border-black/[0.04]'}`}>
+                <Sparkles size={15} className={`${showDigest ? 'text-indigo-500' : 'text-gray-400'}`} aria-hidden="true" />
+                <span className={`text-[11px] font-bold uppercase tracking-[0.2em] ${showDigest ? 'text-indigo-600' : 'text-gray-400'}`}>
+                  {showDigest ? 'Résumé masqué' : 'Afficher le résumé du jour'}
+                </span>
+                <motion.div animate={{ rotate: showDigest ? 180 : 0 }} aria-hidden="true"><ChevronDown size={14} aria-hidden="true" /></motion.div>
+              </div>
+            </button>
+            <AnimatePresence>
+              {showDigest && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <div className="p-6 rounded-3xl bg-indigo-50/30 border border-indigo-100/50">
+                    <p className="text-[15px] text-indigo-950/80 font-[450] leading-[1.8]">{data.global_digest}</p>
+                    {data.ai_seal && (
+                      <div className="mt-4 pt-4 border-t border-indigo-100/50 flex items-center justify-between">
+                        <div className="flex items-center gap-2"><Shield size={14} className="text-indigo-400" aria-hidden="true" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">IA Certifiée · {data.ai_seal.model}</span></div>
+                        <div className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-100/50 rounded flex items-center gap-1"><CheckCircle2 size={12} aria-hidden="true" /> Precision {data.ai_seal.precision}%</div>
                       </div>
-                      <span className={`text-sm font-black uppercase tracking-[0.2em] ${meta.color}`}>
-                        {meta.label}
-                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.section>
+        )}
+
+        <div className="flex flex-col gap-10">
+          {groupedContent.map((group, gIdx) => {
+            const meta = getCategoryMeta(group.category);
+            const Ico = meta.icon;
+            return (
+              <motion.section key={group.category} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 + gIdx * 0.08 }}>
+                <div className="flex flex-col gap-1 pb-6 border-b border-gray-200/60 mb-8 font-serif">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${meta.bg} flex items-center justify-center shadow-sm`}><Ico size={20} className={meta.color} aria-hidden="true" /></div>
+                    <div className="flex flex-col">
+                      <span className={`text-[12px] font-black uppercase tracking-[0.25em] ${meta.color}`}>{meta.label}</span>
+                      <div className="flex items-center gap-2">
+                        {meta.description && <span className="text-[11px] text-gray-400 font-medium">{meta.description}</span>}
+                        <span className="w-1 h-1 rounded-full bg-gray-200" />
+                        <span className="text-[10px] text-gray-300 font-bold uppercase leading-none">{group.subGroups.reduce((acc, s) => acc + s.items.length, 0)} Analyses</span>
+                      </div>
                     </div>
+                  </div>
+                </div>
 
-                    <div className="flex flex-col gap-8">
-                      {group.subGroups.map((sub, sIdx) => (
-                        <div key={sub.subCategory} className="flex flex-col gap-4">
-                          {/* Sub Category Tag */}
-                          <div className="flex items-center gap-2">
-                            <div className="h-4 w-[2px] bg-gray-200 rounded-full" />
-                            <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
-                              {sub.subCategory}
-                            </h3>
-                            <span className="text-[10px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-black/[0.03] font-medium">
-                              {sub.items.length}
-                            </span>
+                <div className="flex flex-col gap-8">
+                  {group.subGroups.map((sub, sIdx) => (
+                    <div key={sub.subCategory} className="flex flex-col gap-5">
+                      {sub.subCategory && !["Général", "Actualité", "News", "Divers"].includes(sub.subCategory) && (
+                        <div className="flex items-center gap-3 mt-6 mb-2">
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50/50 rounded-full border border-indigo-100/30">
+                            <Sparkles size={12} className="text-indigo-400" aria-hidden="true" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-900/60">Pont Cognitif : {sub.subCategory}</h3>
                           </div>
-
-                          <div className="flex flex-col gap-1">
-                            <AnimatePresence>
-                              {sub.items.map((article, idx) => (
+                          <span className="text-[11px] text-gray-400 italic">— {sub.items.length} perspectives</span>
+                        </div>
+                      )}
+                      <div className="relative ml-2 pl-6 border-l border-gray-100/60 mt-4">
+                        <div className="absolute -left-[4.5px] top-0 w-2 h-2 rounded-full bg-gray-100 border border-white" />
+                        <div className={`grid gap-8 ${sIdx === 0 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
+                          <AnimatePresence mode="popLayout">
+                            {sub.items.map((article, idx) => {
+                              const isFused = article.is_fused || article.isFused;
+                              const uniqueKey = isFused ? `fused-${article.title}` : article.link;
+                              return (
                                 <NewsCard
-                                  key={`${article.link}-${idx}`}
+                                  key={uniqueKey}
                                   item={article}
                                   index={idx}
-                                  token={token}
+                                  variant={(sIdx === 0 && idx === 0) || isFused ? "hero" : "compact"}
                                   onDismiss={handleDismiss}
                                 />
-                              ))}
-                            </AnimatePresence>
-                          </div>
+                              );
+                            })}
+                          </AnimatePresence>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </motion.section>
-                );
-              })}
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-24 sm:py-32"
-            >
-              <Coffee size={32} className="mx-auto mb-6 text-gray-300" />
-              <p className="text-lg font-bold text-gray-500 mb-2">
-                {data?.total_kept === 0 ? t.nothingToday : t.noData}
-              </p>
-              <p className="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">
-                {data?.total_kept === 0 ? t.nothingSub : t.noDataSub}
-              </p>
-            </motion.div>
-          )}
-
-          {/* ── YOUTUBE VIDEOS ────────── */}
-          {data?.youtube_videos && data.youtube_videos.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mt-12 sm:mt-16"
-            >
-              <div className="flex items-center gap-3 pb-6 border-b border-gray-200/60 mb-6 font-serif">
-                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                  <Youtube size={16} className="text-red-500" />
+                  ))}
                 </div>
-                <span className="text-sm font-black uppercase tracking-[0.2em] text-red-500">
-                  Vidéos YouTube
-                </span>
-                <span className="text-[10px] bg-red-50 text-red-500 px-1.5 py-0.5 rounded border border-red-100 font-bold ml-auto">
-                  {data.youtube_videos.length} Récentes
-                </span>
-              </div>
+              </motion.section>
+            );
+          })}
+        </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {data.youtube_videos.map((vid, i) => (
-                  <a
-                    key={`yt-${i}`}
-                    href={vid.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group block bg-white rounded-2xl border border-black/[0.04] p-2 hover:shadow-lg hover:shadow-red-500/5 transition-all outline-none focus:ring-2 focus:ring-red-500 overflow-hidden"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Image container */}
-                      <div className="relative w-32 min-w-[128px] h-[72px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                        <img
-                          src={vid.thumbnail}
-                          alt="Miniature YouTube"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-8 h-8 rounded-full bg-red-600/90 text-white flex items-center justify-center backdrop-blur-sm shadow-md">
-                            <Play fill="currentColor" size={14} className="ml-0.5" />
-                          </div>
-                        </div>
-                      </div>
+        {data?.youtube_videos && data.youtube_videos.length > 0 && (
+          <section className="mt-16">
+            <div className="flex items-center gap-3 pb-6 border-b mb-6 font-serif">
+              <Youtube size={16} className="text-red-500" aria-hidden="true" />
+              <span className="text-sm font-black uppercase tracking-[0.2em] text-red-500">Vidéos YouTube</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.youtube_videos.map((vid, i) => (
+                <a key={i} href={vid.link} target="_blank" rel="noopener noreferrer" className="bg-white rounded-2xl border p-2 flex items-center gap-4 hover:shadow-lg transition-all">
+                  <div className="relative w-32 h-[72px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                    <Image src={vid.thumbnail} fill className="object-cover" alt={vid.title} sizes="128px" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/5"><Play fill="white" size={14} className="text-white" aria-hidden="true" /></div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-[13px] font-bold line-clamp-2 leading-tight mb-1">{vid.title}</h4>
+                    <span className="text-[11px] text-gray-500 font-semibold">{vid.channel}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
 
-                      {/* Texts */}
-                      <div className="flex-1 min-w-0 py-1 pr-2">
-                        <h4 className="text-[13px] font-bold tracking-tight text-gray-900 leading-[1.3] line-clamp-2 mb-1.5 group-hover:text-red-600 transition-colors">
-                          {vid.title}
-                        </h4>
-                        <div className="flex items-center gap-1.5 opacity-70">
-                          <div className="w-4 h-4 rounded-full bg-gray-100 text-[10px] flex items-center justify-center font-bold text-gray-500 overflow-hidden">
-                            {vid.channel.charAt(0)}
-                          </div>
-                          <span className="text-[11px] font-semibold text-gray-500 truncate">
-                            {vid.channel}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </motion.section>
-          )}
-
-          {/* ── FOOTER ────────── */}
-          {visibleContent.length > 0 && (
-            <motion.footer
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="mt-16 sm:mt-20 pt-8 pb-4 text-center flex flex-col items-center gap-2"
-            >
-              <div className="w-10 h-px bg-gray-200 mx-auto mb-8" />
-              <div className="w-4 h-4 rounded-[3px] bg-gray-900 opacity-15 mb-1" />
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-gray-400">
-                {t.endOfBrief}
-              </p>
-              <p className="text-[13px] text-gray-400 opacity-60 max-w-[280px]">
-                {t.endSub}
-              </p>
-            </motion.footer>
-          )}
-        </>
+        {visibleContent.length > 0 && (
+          <footer className="mt-16 text-center flex flex-col items-center gap-2">
+            <div className="w-10 h-px bg-gray-200 mb-8" />
+            <ShareMenu data={data} />
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-gray-400 mt-8">{t.endOfBrief}</p>
+            <p className="text-[13px] text-gray-400 opacity-60">{t.endSub}</p>
+          </footer>
+        )}
       </main>
     </div>
   );

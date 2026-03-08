@@ -125,10 +125,10 @@ export default function GenerationLoader({ step, percent, isDone }: GenerationLo
 
                 {/* Icons steps */}
                 <div className="mt-16 flex justify-center gap-8 opacity-20">
-                    <Globe size={24} className={percent > 20 ? "text-indigo-600 opacity-100" : ""} />
-                    <Newspaper size={24} className={percent > 50 ? "text-indigo-600 opacity-100" : ""} />
-                    <Brain size={24} className={percent > 80 ? "text-indigo-600 opacity-100" : ""} />
-                    <Rocket size={24} className={percent === 100 ? "text-indigo-600 opacity-100" : ""} />
+                    <Globe size={24} className={percent > 20 ? "text-indigo-600 opacity-100" : ""} aria-hidden="true" />
+                    <Newspaper size={24} className={percent > 50 ? "text-indigo-600 opacity-100" : ""} aria-hidden="true" />
+                    <Brain size={24} className={percent > 80 ? "text-indigo-600 opacity-100" : ""} aria-hidden="true" />
+                    <Rocket size={24} className={percent === 100 ? "text-indigo-600 opacity-100" : ""} aria-hidden="true" />
                 </div>
             </div>
         </div>

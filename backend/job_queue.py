@@ -249,17 +249,33 @@ def worker_loop():
                 result = handler(payload)
                 complete_job(job_id, result if isinstance(result, dict) else {"status": "ok"})
             except Exception as e:
-                logger.error(f"❌ Job {job_id} error: {e}")
-                fail_job(job_id, str(e), job["attempts"], job["max_retries"])
+                error_msg = str(e)
+                # Differentiate between real failures and transient infrastructure errors (Supabase/Network)
+                is_transient = any(err in error_msg for err in [
+                    "nodename nor servname provided", "Connection reset", "timed out", 
+                    "Errno 8", "Errno 54", "503", "504", "Connection closed"
+                ])
+                
+                if is_transient:
+                    logger.warning(f"⚠️ Transient infrastructure error during Job {job_id}. Pausing 15s before re-evaluating... ({error_msg})")
+                    time.sleep(15)
+                    # We don't mark as failed here, we just leave it in 'processing' 
+                    # pick_next_job will eventually pick up stale/timed-out locked jobs anyway
+                    # Or we could set status back to 'retry' without incrementing attempts? 
+                    # Let's just rollback to 'retry' status to be safe.
+                    sb = get_supabase()
+                    sb.table("job_queue").update({"status": "retry"}).eq("id", job_id).execute()
+                else:
+                    logger.error(f"❌ Job {job_id} logic error: {e}")
+                    fail_job(job_id, str(e), job["attempts"], job["max_retries"])
 
         except Exception as e:
             error_msg = str(e)
-            # Catch common network/sleep errors on macOS to avoid log spam
             if any(err in error_msg for err in ["nodename nor servname provided", "Connection reset", "timed out", "Errno 8", "Errno 54"]):
-                logger.warning(f"⚠️ Network issue (Supabase unreachable). Retrying in 15s... ({error_msg})")
+                logger.warning(f"⚠️ Infrastructure issue (Supabase unreachable). Retrying in 15s... ({error_msg})")
                 time.sleep(15)
             else:
-                logger.error(f"Worker loop error: {e}")
+                logger.error(f"Worker loop fatal error: {e}")
                 time.sleep(POLL_INTERVAL)
 
     logger.info("👋 Worker stopped gracefully")

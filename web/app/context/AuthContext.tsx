@@ -17,6 +17,7 @@ interface AuthContextType {
     signup: (email: string, password: string, username: string, language?: string) => Promise<void>;
     logout: () => void;
     updateProfile: (data: Partial<User>) => Promise<void>;
+    refreshProfile: () => Promise<void>;
     loading: boolean;
     refreshKey: number;
     triggerRefresh: () => void;
@@ -142,6 +143,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("mizan_user");
     };
 
+    const refreshProfile = useCallback(async () => {
+        if (!token) return;
+        const profileRes = await fetch(`${API}/api/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (profileRes.ok) {
+            const profile = await profileRes.json();
+            setUser(profile);
+            localStorage.setItem("mizan_user", JSON.stringify(profile));
+        }
+    }, [token]);
+
     const updateProfile = async (data: Partial<User>) => {
         if (!token) return;
         const res = await fetch(`${API}/api/me/profile`, {
@@ -153,22 +166,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify(data),
         });
         if (res.ok) {
-            // Re-fetch profile to get accurate state
-            const profileRes = await fetch(`${API}/api/me`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (profileRes.ok) {
-                const profile = await profileRes.json();
-                setUser(profile);
-                localStorage.setItem("mizan_user", JSON.stringify(profile));
-            }
+            await refreshProfile();
         }
     };
 
     return (
         <AuthContext.Provider
             value={{
-                user, token, login, signup, logout, updateProfile,
+                user, token, login, signup, logout, updateProfile, refreshProfile,
                 loading, refreshKey, triggerRefresh,
                 genStatus, setGenStatus
             }}

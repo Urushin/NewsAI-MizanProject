@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAuth, API } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import OnboardingWizard from "./OnboardingWizard";
+import { motion, AnimatePresence } from "framer-motion";
+import { useApi } from "../utils/api";
+import { useToast } from "../context/ToastContext";
+import { BriefData } from "../types/news";
+import { getInitials } from "../utils/newsUtils";
 
 // i18n for the profile popup
 const labels: Record<string, Record<string, string>> = {
@@ -64,12 +69,35 @@ const labels: Record<string, Record<string, string>> = {
 };
 
 interface ProfilePopupProps {
-    onPreview?: (data: any) => void;
+    onPreview?: (data: BriefData) => void;
 }
 
 export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
-    const { user, token, logout, updateProfile, triggerRefresh, genStatus, setGenStatus } = useAuth();
+    const { user, token, logout, updateProfile, refreshProfile, triggerRefresh, genStatus, setGenStatus } = useAuth();
+    const api = useApi();
     const router = useRouter();
+
+    /** * SÉCURITÉ CONTEXTE : 
+     * Si useToast() est appelé hors d'un Provider, il lance une erreur.
+     * On utilise un try/catch ou on vérifie si le hook retourne bien une valeur 
+     * pour éviter que toute l'app ne crash.
+     */
+    let toast;
+    try {
+        toast = useToast();
+    } catch (e) {
+        console.warn("ToastContext non trouvé. Vérifiez que ToastProvider enveloppe l'application.");
+    }
+
+    // Fonction helper pour appeler le toast sans crasher
+    const triggerToast = (message: string, type: string = "info") => {
+        if (toast?.showToast) {
+            toast.showToast(message, type);
+        } else {
+            console.log(`[Toast Fallback] ${type.toUpperCase()}: ${message}`);
+        }
+    };
+
     const [open, setOpen] = useState(false);
     const [manifesto, setManifesto] = useState("");
     const [language, setLanguage] = useState(user?.language || "fr");
@@ -80,50 +108,35 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
     const [msg, setMsg] = useState("");
     const [wizardOpen, setWizardOpen] = useState(false);
 
-    // Generation state with progress
-    const [genState, setGenState] = useState({
-        loading: false,
-        success: false,
-        error: "",
-        step: "",
-        percent: 0,
-    });
     const ref = useRef<HTMLDivElement>(null);
-    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Use current user language for labels
     const t = labels[user?.language || "fr"] || labels.en;
 
-    // Sync when user changes
+    // Sync local state when the popup opens OR when user data (context) changes elsewhere
     useEffect(() => {
-        if (user) {
+        if (open && user) {
             setLanguage(user.language);
             setThreshold(user.score_threshold);
         }
-    }, [user]);
+    }, [open, user]);
 
     // Load manifesto and preferences when popup opens
     useEffect(() => {
         if (open && token) {
-            fetch(`${API}/api/me/manifesto`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-                .then((r) => r.json())
-                .then((d) => setManifesto(d.content || ""))
+            api.get("/api/me/manifesto")
+                .then((d: { content?: string }) => setManifesto(d.content || ""))
                 .catch(() => { });
 
-            fetch(`${API}/api/me/profile`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-                .then((r) => r.json())
-                .then((d) => {
+            api.get("/api/me/profile")
+                .then((d: { preferences?: { summary_length?: number } }) => {
                     if (d.preferences && d.preferences.summary_length) {
                         setSummaryLength(d.preferences.summary_length);
                     }
                 })
                 .catch(() => { });
         }
-    }, [open, token]);
+    }, [open, token, api]);
 
     // Close on outside click
     useEffect(() => {
@@ -136,91 +149,48 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
         return () => document.removeEventListener("mousedown", handler);
     }, [open]);
 
-    // Clean up polling interval on unmount
     useEffect(() => {
-        return () => {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        };
-    }, []);
+        if (open && ref.current) {
+            ref.current.focus();
+        }
+    }, [open]);
 
     if (!user) return null;
-
-    const initials = user.username.slice(0, 2).toUpperCase();
 
     const handleSave = async () => {
         setSaving(true);
         setMsg("");
         try {
-            // Update profile settings (language + threshold)
             await updateProfile({ language, score_threshold: threshold });
 
-            // Update manifesto
-            await fetch(`${API}/api/me/manifesto`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ content: manifesto }),
-            });
+            await api.put("/api/me/manifesto", { content: manifesto });
+            await api.put("/api/me/profile/preferences", { summary_length: summaryLength });
 
-            // Update summary length preferences
-            await fetch(`${API}/api/me/profile/preferences`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ summary_length: summaryLength }),
-            });
-
-            // Update password if provided
             if (newPassword.trim()) {
-                await fetch(`${API}/api/me/password`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ new_password: newPassword }),
-                });
+                await api.put("/api/me/password", { new_password: newPassword });
                 setNewPassword("");
             }
 
-            // Trigger brief refresh so page.tsx re-fetches with updated prefs
             triggerRefresh();
-
             setMsg(t.saved);
             setTimeout(() => setMsg(""), 2000);
         } catch {
             setMsg(t.error);
+            triggerToast(t.error, "error");
         } finally {
             setSaving(false);
         }
     };
 
     const handleGenerate = async (mode: "test" | "prod") => {
-        setOpen(false); // Close popup immediately
         setGenStatus({ active: true, step: "Initialisation...", percent: 5, isDone: false });
 
         try {
-            const res = await fetch(`${API}/api/brief/generate?mode=${mode}`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                setGenStatus({ active: false, step: "", percent: 0, isDone: false });
-                alert(errData.detail || "Erreur lors du lancement de la génération");
-                return;
-            }
-
-            // Sync handling (mostly for Test mode or Dev stage)
-            const data = await res.json();
+            const data: BriefData = await api.post(`/api/brief/generate?mode=${mode}`);
             if (data.status === "done" || (data.content && data.content.length > 0)) {
-                // If it finished instantly (sync), update global state to done
                 setGenStatus({ active: true, step: "Terminé !", percent: 100, isDone: true });
+                setOpen(false);
+
                 setTimeout(() => {
                     setGenStatus({ active: false, step: "", percent: 0, isDone: false });
                     if (mode === "test" && onPreview) {
@@ -230,10 +200,9 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                     }
                 }, 2000);
             }
-            // If it's async (queued), the polling in page.tsx will take over because genStatus.active is true
         } catch (e: any) {
             setGenStatus({ active: false, step: "", percent: 0, isDone: false });
-            alert(e.message || "Erreur de connexion au serveur");
+            triggerToast(e.message || "Erreur de connexion au serveur", "error");
         }
     };
 
@@ -245,204 +214,199 @@ export default function ProfilePopup({ onPreview }: ProfilePopupProps) {
                 onClick={() => setOpen(!open)}
                 aria-label="Profile"
             >
-                {initials}
+                {getInitials(user?.username || "??")}
             </button>
 
-            {/* Overlay */}
-            {open && (
-                <div className="profile-overlay">
-                    <div className="profile-panel" ref={ref}>
-                        {/* Header */}
-                        <div className="profile-header">
-                            <div className="profile-avatar-large">{initials}</div>
-                            <div>
-                                <p className="profile-username">{user.username}</p>
-                                <p className="profile-meta">
-                                    {language === "fr" ? "Français" : language === "en" ? "English" : "日本語"}
-                                </p>
+            {/* Overlay with Focus Trap effect */}
+            <AnimatePresence>
+                {open && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="profile-overlay fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-center justify-center sm:block sm:relative sm:z-auto"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="profile-panel relative z-[110]"
+                            ref={ref}
+                            tabIndex={-1}
+                        >
+                            {/* Header */}
+                            <div className="profile-header">
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-100 ring-4 ring-white">
+                                    {getInitials(user?.username || "??")}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-[22px] font-[850] text-gray-900 leading-tight">
+                                        {user?.username}
+                                    </h3>
+                                    <p className="text-[13px] text-gray-400 font-medium">Membre Mizan depuis {new Date().getFullYear()}</p>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Language */}
-                        <div className="profile-field">
-                            <label>{t.language}</label>
-                            <select
-                                value={language}
-                                onChange={(e) => setLanguage(e.target.value)}
-                            >
-                                <option value="fr">🇫🇷 Français</option>
-                                <option value="en">🇬🇧 English</option>
-                                <option value="ja">🇯🇵 日本語</option>
-                            </select>
-                            {language !== user.language && (
-                                <p className="profile-note">{t.langNote}</p>
-                            )}
-                        </div>
-
-                        {/* Score Threshold */}
-                        <div className="profile-field">
-                            <label>{t.threshold}: {threshold}</label>
-                            <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                value={threshold}
-                                onChange={(e) => setThreshold(parseInt(e.target.value))}
-                            />
-                        </div>
-
-                        {/* Summary Length Preference */}
-                        <div className="profile-field">
-                            <label>Taille des résumés ciblée (1-4)</label>
-                            <input
-                                type="range"
-                                min={1}
-                                max={4}
-                                step={1}
-                                value={summaryLength}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    if (val === 4) {
-                                        alert("Premium ⭐ : Le niveau 4 (Analyse Profonde) sera bientôt disponible pour les utilisateurs premium.");
-                                        setSummaryLength(3);
-                                    } else {
-                                        setSummaryLength(val);
-                                    }
-                                }}
-                            />
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-light)", marginTop: "4px" }}>
-                                <span>Puces</span>
-                                <span>Phrase</span>
-                                <span>1 Para</span>
-                                <span style={{ color: "var(--separator)" }}>Analyse 🔒</span>
-                            </div>
-                        </div>
-
-                        {/* Manifesto */}
-                        <div className="profile-field">
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                <label style={{ marginBottom: 0 }}>{t.manifesto}</label>
-                                <button
-                                    style={{
-                                        fontSize: "12px",
-                                        background: "none",
-                                        border: "none",
-                                        cursor: "pointer",
-                                        color: "var(--text-light)",
-                                        textDecoration: "underline"
-                                    }}
-                                    onClick={() => setWizardOpen(true)}
+                            {/* Language */}
+                            <div className="profile-field">
+                                <label>{t.language}</label>
+                                <select
+                                    value={language}
+                                    onChange={(e) => setLanguage(e.target.value)}
                                 >
-                                    🎯 Assistant
+                                    <option value="fr">🇫🇷 Français</option>
+                                    <option value="en">🇬🇧 English</option>
+                                    <option value="ja">🇯🇵 日本語</option>
+                                </select>
+                                {language !== user.language && (
+                                    <p className="profile-note">{t.langNote}</p>
+                                )}
+                            </div>
+
+                            {/* Score Threshold */}
+                            <div className="profile-field">
+                                <label>{t.threshold}: {threshold}</label>
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={100}
+                                    value={threshold}
+                                    onChange={(e) => setThreshold(parseInt(e.target.value))}
+                                />
+                            </div>
+
+                            {/* Summary Length Preference */}
+                            <div className="profile-field">
+                                <label>Taille des résumés ciblée (1-4)</label>
+                                <input
+                                    type="range"
+                                    min={1}
+                                    max={4}
+                                    step={1}
+                                    value={summaryLength}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value);
+                                        if (val === 4) {
+                                            triggerToast("Premium ⭐ : Le niveau 4 (Analyse Profonde) sera bientôt disponible.", "premium");
+                                            setSummaryLength(3);
+                                        } else {
+                                            setSummaryLength(val);
+                                        }
+                                    }}
+                                />
+                                <div className="flex justify-between text-[11px] text-gray-400 mt-1">
+                                    <span>Puces</span>
+                                    <span>Phrase</span>
+                                    <span>1 Para</span>
+                                    <span className="text-gray-200">Analyse 🔒</span>
+                                </div>
+                            </div>
+
+                            {/* Manifesto */}
+                            <div className="profile-field">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="mb-0">{t.manifesto}</label>
+                                    <div className="flex gap-3">
+                                        <button
+                                            className="text-[12px] bg-none border-none cursor-pointer text-gray-400 underline"
+                                            onClick={() => setWizardOpen(true)}
+                                        >
+                                            🎯 Assistant
+                                        </button>
+                                        <button
+                                            className="text-[12px] bg-none border-none cursor-pointer text-gray-400 underline"
+                                            onClick={() => {
+                                                setOpen(false);
+                                                router.push("/sources");
+                                            }}
+                                        >
+                                            📊 Sources
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea
+                                    value={manifesto}
+                                    onChange={(e) => setManifesto(e.target.value)}
+                                    rows={8}
+                                    placeholder={t.manifestoPlaceholder}
+                                />
+                            </div>
+
+                            {/* Generate Buttons */}
+                            <div className="flex gap-2.5 mt-4">
+                                <button
+                                    className="profile-generate flex-1 bg-gray-50 text-gray-900 border border-gray-100"
+                                    onClick={() => handleGenerate("test")}
+                                    disabled={genStatus.active}
+                                    title={t.generate}
+                                >
+                                    {genStatus.active ? (
+                                        <span className="gen-loading">⏳</span>
+                                    ) : (
+                                        <span>🧪 Test (Preview)</span>
+                                    )}
+                                </button>
+
+                                <button
+                                    className="profile-generate flex-1"
+                                    onClick={() => handleGenerate("prod")}
+                                    disabled={genStatus.active}
+                                    title="Sauvegarder dans l'historique"
+                                >
+                                    {genStatus.active ? (
+                                        <span className="gen-loading">
+                                            <span className="gen-text">{genStatus.step} ({genStatus.percent}%)</span>
+                                        </span>
+                                    ) : genStatus.isDone ? (
+                                        <span className="gen-success">{t.generated}</span>
+                                    ) : (
+                                        <span>📢 Édition Officielle</span>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Password */}
+                            <div className="profile-field">
+                                <label>{t.newPassword}</label>
+                                <input
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder={t.passwordPlaceholder}
+                                />
+                            </div>
+
+                            {/* Actions */}
+                            <div className="profile-actions">
+                                <button className="profile-save" onClick={handleSave} disabled={saving}>
+                                    {saving ? t.saving : msg || t.save}
                                 </button>
                                 <button
-                                    style={{
-                                        fontSize: "12px",
-                                        background: "none",
-                                        border: "none",
-                                        cursor: "pointer",
-                                        color: "var(--text-light)",
-                                        textDecoration: "underline",
-                                        marginLeft: "10px"
-                                    }}
+                                    className="profile-logout"
                                     onClick={() => {
+                                        logout();
                                         setOpen(false);
-                                        router.push("/sources");
                                     }}
                                 >
-                                    📊 Sources
+                                    {t.logout}
                                 </button>
                             </div>
-                            <textarea
-                                value={manifesto}
-                                onChange={(e) => setManifesto(e.target.value)}
-                                rows={8}
-                                placeholder={t.manifestoPlaceholder}
-                            />
-                        </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                        {/* Generate Button */}
-
-                        <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
-                            {/* TEST Button */}
-                            <button
-                                className="profile-generate"
-                                style={{ flex: 1, background: "var(--bg-secondary)", color: "var(--text)", border: "1px solid var(--separator)" }}
-                                onClick={() => handleGenerate("test")}
-                                disabled={genState.loading}
-                                title={t.generate}
-                            >
-                                {genState.loading ? (
-                                    <span className="gen-loading">⏳</span>
-                                ) : (
-                                    <span>🧪 Test (Preview)</span>
-                                )}
-                            </button>
-
-                            {/* PROD Button */}
-                            <button
-                                className="profile-generate"
-                                style={{ flex: 1 }}
-                                onClick={() => handleGenerate("prod")}
-                                disabled={genState.loading}
-                                title="Sauvegarder dans l'historique"
-                            >
-                                {genState.loading ? (
-                                    <span className="gen-loading">
-                                        <span className="gen-text">{genState.step} ({genState.percent}%)</span>
-                                    </span>
-                                ) : genState.success ? (
-                                    <span className="gen-success">{t.generated}</span>
-                                ) : genState.error ? (
-                                    <span className="gen-error">⚠ {genState.error}</span>
-                                ) : (
-                                    <span>📢 Édition Officielle</span>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* Password */}
-                        <div className="profile-field">
-                            <label>{t.newPassword}</label>
-                            <input
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder={t.passwordPlaceholder}
-                            />
-                        </div>
-
-                        {/* Actions */}
-                        <div className="profile-actions">
-                            <button className="profile-save" onClick={handleSave} disabled={saving}>
-                                {saving ? t.saving : msg || t.save}
-                            </button>
-                            <button
-                                className="profile-logout"
-                                onClick={() => {
-                                    logout();
-                                    setOpen(false);
-                                }}
-                            >
-                                {t.logout}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
             {/* Wizard */}
             {wizardOpen && (
                 <OnboardingWizard
                     onClose={() => setWizardOpen(false)}
                     onSuccess={() => {
                         setWizardOpen(false);
-                        // Refresh manifesto
                         if (token) {
-                            fetch(`${API}/api/me/manifesto`, {
-                                headers: { Authorization: `Bearer ${token}` },
-                            })
-                                .then((r) => r.json())
-                                .then((d) => setManifesto(d.content || ""))
+                            refreshProfile();
+                            api.get("/api/me/manifesto")
+                                .then((d: { content?: string }) => setManifesto(d.content || ""))
                                 .catch(() => { });
                         }
                     }}

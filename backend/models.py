@@ -2,7 +2,7 @@
 Mizan.ai — Data Models (Pydantic V2)
 """
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
-from typing import List, Annotated, Dict
+from typing import List, Annotated, Dict, Optional
 import re
 
 # Strict String defs
@@ -16,6 +16,8 @@ class RawArticle(BaseModel):
     published: StrictStr = Field(default="Date inconnue")
     source_interest: StrictStr = Field(default="")
     content: StrictStr = Field(default="")
+    source_name: StrictStr = Field(default="")
+    image_url: Optional[str] = Field(default=None)
 
 
 class ArticleVerdict(BaseModel):
@@ -31,10 +33,13 @@ class ArticleVerdict(BaseModel):
     reason: StrictStr = Field(default="", max_length=500)
     credibility_score: Annotated[int, Field(ge=0, le=10)] = 5
     link: StrictStr = Field(default="", max_length=1500)
+    source_name: StrictStr = Field(default="")
+    image_url: Optional[str] = Field(default=None)
     
     # Chimera fusion metadata
     sources_count: int = Field(default=1, ge=1)
     source_urls: List[str] = Field(default_factory=list)
+    source_names: List[str] = Field(default_factory=list)
 
     @field_validator('summary', mode='before')
     @classmethod

@@ -6,6 +6,8 @@ import { useAuth, API } from "../context/AuthContext";
 import { motion } from "framer-motion";
 import { Loader2, ArrowLeft, ExternalLink, Database, Search, CheckCircle, List } from "lucide-react";
 
+import { useApi } from "../utils/api";
+
 interface ScannedSource {
     title: string;
     link: string;
@@ -13,6 +15,7 @@ interface ScannedSource {
 
 export default function SourcesPage() {
     const { user, token, loading: authLoading } = useAuth();
+    const api = useApi();
     const router = useRouter();
     const [rawSources, setRawSources] = useState<ScannedSource[]>([]);
     const [usedSources, setUsedSources] = useState<ScannedSource[]>([]);
@@ -27,10 +30,7 @@ export default function SourcesPage() {
     useEffect(() => {
         if (!token) return;
 
-        fetch(`${API}/api/brief/sources`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(r => r.json())
+        api.get("/api/brief/sources")
             .then(data => {
                 if (data.raw_articles) setRawSources(data.raw_articles);
                 if (data.used_articles) setUsedSources(data.used_articles);

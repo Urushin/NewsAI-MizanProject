@@ -7,8 +7,12 @@ import OnboardingWizard from "../components/OnboardingWizard";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 
+import { NewsItem, BriefData } from "../types/news";
+import { useApi } from "../utils/api";
+
 export default function AssistantPage() {
     const { user, token, loading, setGenStatus } = useAuth();
+    const api = useApi();
     const router = useRouter();
 
     useEffect(() => {
@@ -22,10 +26,7 @@ export default function AssistantPage() {
         router.push("/"); // Go to home, it will show the immersive loader
 
         try {
-            await fetch(`${API}/api/brief/generate?mode=prod`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.post(`/api/brief/generate?mode=prod`);
             // Polling is handled by page.tsx
         } catch (err) {
             console.error(err);

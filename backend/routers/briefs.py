@@ -156,3 +156,48 @@ def trigger_brief_check(request: Request):
     )
     
     return {"status": "queued", "message": "Génération lancée.", "job_id": job.get("id")}
+
+
+from pydantic import BaseModel
+from llm_wrapper import get_providers
+from collector import get_cached_content
+import os
+
+class AnalyzeRequest(BaseModel):
+    link: str
+    title: str
+    language: str = "fr"
+
+@router.post("/analyze")
+async def analyze_article(request: Request, body: AnalyzeRequest):
+    payload = get_current_user(request)
+    sb = get_supabase()
+    is_dev = os.getenv("APP_STAGE") == "development"
+    
+    plan_info = get_user_plan(payload["user_id"], sb)
+    
+    # We strictly gate the actual LLM call behind Pro plan, unless in Dev Mode
+    if plan_info.get("plan") not in ("pro", "enterprise") and not is_dev:
+        return {
+            "status": "upgrade_required", 
+            "analysis": "L'Intelligence Artificielle de Mizan.ai est capable de rédiger l'analyse détaillée de cet article, de croiser les sources et d'en extraire le contexte géopolitique caché.\n\nCependant, cette fonctionnalité demande des capacités de lecture poussées (Premium Tokens). Passez au plan Pro pour débloquer l'analyse approfondie de ce contenu."
+        }
+        
+    providers = get_providers()
+    if not providers:
+        raise HTTPException(status_code=500, detail="No LLM provider available")
+    llm = providers[0]
+    
+    content = get_cached_content(body.link)
+    
+    if not content:
+        content = "Résumé indisponible car le contenu complet n'a pas pu être extrait de la source."
+
+    prompt = f"Title: {body.title}\nContent:\n{content[:4000]}"
+    sys_prompt = f"Tu es un journaliste analyste expert. Rédige une analyse détaillée, percutante et factuelle (environ 2 paragraphes) de l'article suivant. Donne du contexte et explique les enjeux cachés. Écris en {body.language}. N'écris pas d'introduction bateau, ne copie pas le titre, donne directement l'analyse textuelle."
+    
+    try:
+        analysis = await llm.generate(prompt, sys_prompt, max_tokens=600)
+        return {"status": "success", "analysis": analysis.strip(), "used_cache": bool(content)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

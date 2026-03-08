@@ -142,6 +142,7 @@ async def search_web_articles_async(query: str, language: str = "fr", max_result
                 "published": "Web Search (Recent)",
                 "source_interest": "Web Search",
                 "summary": item.get("description") or item.get("content", "")[:500],
+                "image_url": item.get("ogImage") or item.get("metadata", {}).get("ogImage"),
             })
         return articles
     except Exception as e:
@@ -172,32 +173,40 @@ async def fetch_feed_async(source: dict, max_per_topic: int, semaphore: asyncio.
                 feed = feedparser.parse(resp.text)
 
             entries = []
-            today = datetime.now(timezone.utc).date()
             
             for entry in feed.entries:
-                # Try to parse the publication date
                 pub_date_str = entry.get("published") or entry.get("updated")
-                is_today = False
+                is_fresh = False
                 
                 if pub_date_str:
                     try:
-                        # Parse standard RSS/Atom date format
                         dt = parsedate_to_datetime(pub_date_str)
-                        if dt.date() == today:
-                            is_today = True
+                        # We accept articles from the last 48 hours (to handle timezones and late updates)
+                        diff = datetime.now(timezone.utc) - dt
+                        if diff.total_seconds() < 172800: # 48 hours
+                            is_fresh = True
                     except Exception:
-                        # Fallback for unparseable dates: consider it valid to not miss content
-                        is_today = True
+                        is_fresh = True # Fallback: if we can't parse it, better keep it
                 else:
-                    # No date provided, assume it's fresh
-                    is_today = True
+                    is_fresh = True # No date: assume fresh
 
-                if is_today:
+                if is_fresh:
+                    # Extract source name
+                    media_name = getattr(getattr(entry, "source", None), "title", "")
+                    clean_title = entry.title.strip()
+                    
+                    if media_name:
+                        if clean_title.endswith(f" - {media_name}"):
+                            clean_title = clean_title[:-len(media_name) - 3].strip()
+                        elif clean_title.endswith(media_name):
+                            clean_title = clean_title[:-len(media_name)].rstrip(" -|").strip()
+
                     entries.append({
-                        "title": entry.title.strip(),
+                        "title": clean_title,
                         "link": entry.link,
                         "published": pub_date_str or "Date inconnue",
                         "source_interest": source.get("category", "General"),
+                        "source_name": media_name,
                         "summary": entry.get("summary") or entry.get("description") or "",
                     })
                     
@@ -233,19 +242,23 @@ async def fetch_article_content_async(url: str, semaphore: asyncio.Semaphore) ->
             # Handle dict or Pydantic response
             if isinstance(result, dict):
                 text = result.get('markdown', '')
+                image = result.get('metadata', {}).get('ogImage')
             else:
                 text = getattr(result, 'markdown', None) or ''
+                image = getattr(getattr(result, 'metadata', None), 'get', lambda k: None)('ogImage') if hasattr(result, 'metadata') else None
 
-            return text
-
-        text = await _retry_async(_do_scrape, label=f"Scrape:{url[:60]}")
+            return text, image
+        
+        scrape_res = await _retry_async(_do_scrape, label=f"Scrape:{url[:60]}")
+        text = scrape_res[0] if isinstance(scrape_res, tuple) else ""
+        image = scrape_res[1] if isinstance(scrape_res, tuple) else None
 
         if not text:
             logger.warning(f"Firecrawl failed for {url}")
-            return ""
+            return "", None
 
-        cache_content(url, text)
-        return text[:MAX_CONTENT_CHARS]
+        cache_content(url, text) # We cache only text for now to keep it simple
+        return text[:MAX_CONTENT_CHARS], image
 
 
 # ── Sync wrapper for fetch_article_content (backward-compatible) ──
@@ -391,6 +404,7 @@ async def collect_articles(
             published=entry["published"],
             source_interest=entry["source_interest"],
             content=entry.get("summary", ""),
+            source_name=entry.get("source_name", ""),
         ))
 
     if skipped:
@@ -417,7 +431,8 @@ async def collect_articles(
             logger.error(f"Scrape task error for {articles[i].link}: {result}")
             continue
         if result:
-            articles[i].content = result
+            articles[i].content = result[0] if isinstance(result, tuple) else result
+            articles[i].image_url = result[1] if isinstance(result, tuple) else None
             extracted += 1
         if progress_callback and i % 5 == 0:
             progress_callback(f"Extracting: {extracted}/{total}", 30 + int((i / total) * 40))

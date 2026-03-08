@@ -144,23 +144,23 @@ def _save_cache():
 
 _response_cache: dict = _load_cache()
 
-def _cache_key(prompt: str, system_prompt: str) -> str:
-    content = f"{system_prompt}|||{prompt}"
+def _cache_key(prompt: str, system_prompt: str, model: str, max_tokens: int) -> str:
+    content = f"{model}|||{max_tokens}|||{system_prompt}|||{prompt}"
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
-def _cache_get(prompt: str, system_prompt: str) -> Optional[str]:
-    key = _cache_key(prompt, system_prompt)
+def _cache_get(prompt: str, system_prompt: str, model: str, max_tokens: int) -> Optional[str]:
+    key = _cache_key(prompt, system_prompt, model, max_tokens)
     res = _response_cache.get(key)
     if res:
         logger.debug(f"   🟢 LLM Cache HIT ({key})")
     return res
 
-def _cache_set(prompt: str, system_prompt: str, response: str):
+def _cache_set(prompt: str, system_prompt: str, model: str, max_tokens: int, response: str):
     if len(_response_cache) >= _CACHE_MAX_SIZE:
         oldest = list(_response_cache.keys())[:50]
         for k in oldest:
             del _response_cache[k]
-    key = _cache_key(prompt, system_prompt)
+    key = _cache_key(prompt, system_prompt, model, max_tokens)
     _response_cache[key] = response
     _save_cache()
 
@@ -229,13 +229,8 @@ class MistralProvider(LLMProvider):
             system_prompt = "Output only valid JSON. No markdown."
 
         # ── Check cache ──
-        # Include max_tokens in cache key to avoid hitting old truncated results
-        cache_content = f"{system_prompt}|||{prompt}|||{max_tokens}"
-        cache_key = hashlib.sha256(cache_content.encode()).hexdigest()[:16]
-        
-        cached = _response_cache.get(cache_key)
+        cached = _cache_get(prompt, system_prompt, self.model, max_tokens)
         if cached:
-            logger.debug(f"🗂️ Cache hit for prompt hash {cache_key}")
             return cached
 
         # ── Langfuse input tracking ──
@@ -300,7 +295,7 @@ class MistralProvider(LLMProvider):
                 # Check after stripping markdown fences
                 cleaned_content = content.strip().rstrip("`").strip()
                 if cleaned_content.endswith(('}', ']')):
-                    _cache_set(prompt, system_prompt, content)
+                    _cache_set(prompt, system_prompt, self.model, max_tokens, content)
                 else:
                     logger.warning(f"⚠️ LLM response looks truncated (ends with {content[-10:] if content else 'empty'}). Skipping cache.")
 

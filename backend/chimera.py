@@ -195,8 +195,8 @@ Output ONLY valid JSON with these exact fields:
 - "score": int 0-100 (relevance to the user)
 - "keep": bool (true if the synthesis contains actual factual news value. False if it lacks concrete information or is purely an empty shell)
 - "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
-- "sub_category": string (Specific sub-theme, e.g., "Cryptomonnaie", "Intelligence Artificielle", "SpaceX", "Guerre en Ukraine")
-- "reason": string (1 sentence: why this matters to THIS user specifically)
+- "sub_category": string (CRITICAL: Be extremely specific. DO NOT use generic terms like 'Général', 'News' or 'Actualité'. Use thematic clusters like 'Entrepreneuriat Féminin', 'Marché Immobilier', 'Tensions au Moyen-Orient', 'IA Géopolitique', etc.)
+- "reason": string (1 very direct sentence explaining the core consequence or impact of this news. Do NOT use introductory phrases like 'Ce sujet est pertinent pour...' or 'Cette information montre que...'. Go straight to the point.)
 - "credibility_score": int 0-10 (average source reliability)
 
 Output ONLY the JSON object. No markdown, no explanation."""

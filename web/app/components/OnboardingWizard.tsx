@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronRight, Check, Target, Sparkles, SlidersHorizontal, Radar, Youtube } from "lucide-react";
 import { API, useAuth } from "../context/AuthContext";
 
+import { useApi } from "../utils/api";
+import { useToast } from "../context/ToastContext";
+
 interface OnboardingWizardProps {
     onClose: () => void;
     onSuccess: () => void;
@@ -12,6 +15,8 @@ interface OnboardingWizardProps {
 
 export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizardProps) {
     const { token } = useAuth();
+    const api = useApi();
+    const { showToast } = useToast();
     const [step, setStep] = useState(1);
     const [taxonomy, setTaxonomy] = useState<Record<string, string[]>>({});
     const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -33,9 +38,8 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
     const [generating, setGenerating] = useState(false);
 
     useEffect(() => {
-        fetch(`${API}/api/taxonomy`)
-            .then((r) => r.json())
-            .then((data) => {
+        api.get("/api/taxonomy")
+            .then((data: Record<string, string[]>) => {
                 const safeTaxonomy: Record<string, string[]> = {};
                 for (const [key, value] of Object.entries(data)) {
                     safeTaxonomy[key] = Array.isArray(value) ? value : [];
@@ -44,7 +48,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, []);
+    }, [api]);
 
     const toggleTopic = (t: string) => {
         if (selectedTopics.includes(t)) {
@@ -65,30 +69,25 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
     };
 
     const handleFinish = async () => {
+        if (generating) return;
         setGenerating(true);
         try {
-            await fetch(`${API}/api/onboarding/manifesto`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    topics: selectedTopics,
-                    subtopics: selectedSubtopics,
-                    custom,
-                    age_range: ageRange,
-                    exact_age: exactAge,
-                    location: location,
-                    exact_location: exactLocation,
-                    occupation: occupation,
-                    exact_occupation: exactOccupation,
-                    youtube_channels: youtubeChannels
-                }),
+            await api.post("/api/onboarding/manifesto", {
+                topics: selectedTopics,
+                subtopics: selectedSubtopics,
+                custom,
+                age_range: ageRange,
+                exact_age: exactAge,
+                location: location,
+                exact_location: exactLocation,
+                occupation: occupation,
+                exact_occupation: exactOccupation,
+                youtube_channels: youtubeChannels
             });
             onSuccess();
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+            showToast(e.message || "Erreur lors de la sauvegarde du manifeste", "error");
             setGenerating(false);
         }
     };
@@ -121,8 +120,9 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                     <button
                         onClick={onClose}
                         className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        aria-label="Fermer"
                     >
-                        <X size={18} />
+                        <X size={18} aria-hidden="true" />
                     </button>
                 </div>
 
@@ -143,7 +143,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
-                                        <Target size={18} />
+                                        <Target size={18} aria-hidden="true" />
                                     </div>
                                     <h3 className="text-[17px] font-bold text-gray-900">1. Quels sont vos grands intérêts ?</h3>
                                 </div>
@@ -160,7 +160,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                                                     <span className={`text-[14px] sm:text-[15px] font-bold ${isSelected ? "text-indigo-700" : "text-gray-700"}`}>
                                                         {topic}
                                                     </span>
-                                                    {isSelected && <Check size={16} className="text-indigo-500 shrink-0" />}
+                                                    {isSelected && <Check size={16} className="text-indigo-500 shrink-0" aria-hidden="true" />}
                                                 </div>
                                             </button>
                                         );
@@ -173,7 +173,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-500">
-                                        <SlidersHorizontal size={18} />
+                                        <SlidersHorizontal size={18} aria-hidden="true" />
                                     </div>
                                     <h3 className="text-[17px] font-bold text-gray-900">2. Soyez plus précis</h3>
                                 </div>
@@ -211,7 +211,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                             <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center text-teal-500">
-                                        <Radar size={18} />
+                                        <Radar size={18} aria-hidden="true" />
                                     </div>
                                     <h3 className="text-[17px] font-bold text-gray-900">3. Votre Radar d&apos;Impact (Optionnel)</h3>
                                 </div>
@@ -310,7 +310,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                                 <div className="mb-8">
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
-                                            <Youtube size={18} />
+                                            <Youtube size={18} aria-hidden="true" />
                                         </div>
                                         <h3 className="text-[17px] font-bold text-gray-900">Vos Chaînes YouTube Principales (Optionnel)</h3>
                                     </div>
@@ -330,7 +330,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                                 <div>
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
-                                            <Sparkles size={18} />
+                                            <Sparkles size={18} aria-hidden="true" />
                                         </div>
                                         <h3 className="text-[17px] font-bold text-gray-900">Touche finale (Optionnel)</h3>
                                     </div>
@@ -369,7 +369,7 @@ export default function OnboardingWizard({ onClose, onSuccess }: OnboardingWizar
                             disabled={step === 1 && selectedTopics.length === 0}
                             className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-xl text-[14px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all active:scale-95"
                         >
-                            Continuer <ChevronRight size={16} />
+                            Continuer <ChevronRight size={16} aria-hidden="true" />
                         </button>
                     ) : (
                         <button
