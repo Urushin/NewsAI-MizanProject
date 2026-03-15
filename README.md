@@ -1,6 +1,6 @@
-# 🏛️ Mizan.ai — Ton Filtre d'Actualité Intelligent par IA
+# 🏛️ News.ai — Ton Filtre d'Actualité Intelligent par IA
 
-Mizan.ai est un agrégateur d'actualités SaaS de nouvelle génération qui utilise l'Intelligence Artificielle pour transformer un flux d'informations massif en un briefing quotidien ultra-personnalisé. 
+News.ai est un agrégateur d'actualités SaaS de nouvelle génération qui utilise l'Intelligence Artificielle pour transformer un flux d'informations massif en un briefing quotidien ultra-personnalisé. 
 
 Le projet repose sur une architecture "Lean" et performante, séparant le traitement lourd (Python/IA) de l'interface utilisateur (Next.js/Supabase).
 
