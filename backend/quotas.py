@@ -1,5 +1,5 @@
 """
-Mizan.ai — Usage Quotas per Plan
+NewsAI — Usage Quotas per Plan
 
 Enforces per-plan limits:
   Free:       1 brief/day,  10 articles/brief

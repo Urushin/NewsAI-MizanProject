@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+.git
+.gitignore
+backend/cache
+backend/.llm_cache.json

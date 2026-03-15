@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, API } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import OnboardingWizard from "../components/OnboardingWizard";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
-
-import { NewsItem, BriefData } from "../types/news";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { useApi } from "../utils/api";
 
 export default function AssistantPage() {
-    const { user, token, loading, setGenStatus } = useAuth();
+    const { user, loading, setGenStatus } = useAuth();
     const api = useApi();
     const router = useRouter();
 
@@ -22,12 +20,11 @@ export default function AssistantPage() {
     }, [user, loading, router]);
 
     const startFirstGeneration = async () => {
-        setGenStatus({ active: true, step: "Initialisation de votre première édition...", percent: 10, isDone: false });
-        router.push("/"); // Go to home, it will show the immersive loader
+        setGenStatus({ active: true, step: "Préparation de l'Atelier d'Imprimerie...", percent: 10, isDone: false });
+        router.push("/briefing"); 
 
         try {
             await api.post(`/api/brief/generate?mode=prod`);
-            // Polling is handled by page.tsx
         } catch (err) {
             console.error(err);
             setGenStatus({ active: false, step: "", percent: 0, isDone: false });
@@ -36,30 +33,32 @@ export default function AssistantPage() {
 
     if (loading || !user) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <Loader2 className="animate-spin text-indigo-600" size={32} />
+            <div className="min-h-screen flex items-center justify-center bg-[#FDFCF8]">
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="animate-spin text-zinc-900" size={24} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Authentification Kiosque</span>
+                </div>
             </div>
         );
     }
 
     return (
-        <main className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-6 relative overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-100/30 rounded-full blur-[120px]" />
-
-            <div className="w-full max-w-4xl z-10">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-                        Bienvenue, {user.username} !
-                    </h1>
-                    <p className="text-gray-500">
-                        Prenons un instant pour configurer votre intelligence artificielle.
+        <main className="min-h-screen bg-[#FDFCF8] flex items-center justify-center p-6 sm:p-12">
+            <div className="w-full max-w-4xl">
+                <motion.div 
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="text-center mb-12"
+                >
+                    <div className="text-4xl font-[900] tracking-tighter text-zinc-900 mb-2 font-serif">M.</div>
+                    <p className="text-[12px] font-bold text-zinc-400 uppercase tracking-[0.2em] italic font-serif">
+                        Configuration de votre Ligne Éditoriale Personnelle
                     </p>
-                </div>
-                <div className="bg-white rounded-[32px] shadow-xl border border-black/[0.03] overflow-hidden">
+                </motion.div>
+                
+                <div className="bg-transparent overflow-hidden">
                     <OnboardingWizard
-                        onClose={() => router.push("/")}
+                        onClose={() => router.push("/briefing")}
                         onSuccess={startFirstGeneration}
                     />
                 </div>

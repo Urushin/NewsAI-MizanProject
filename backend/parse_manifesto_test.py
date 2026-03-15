@@ -36,7 +36,7 @@ def parse_manifesto(text: str) -> dict:
     return interests
 
 test_text = """
-# Mon Manifesto Mizan.ai
+# Mon Manifesto NewsAI
 
 ## Domaines d'intérêt
 - Lifestyle & Sport

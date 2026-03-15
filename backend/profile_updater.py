@@ -1,5 +1,5 @@
 """
-Mizan.ai — Nightly Profile Updater (Supabase)
+NewsAI — Nightly Profile Updater (Supabase)
 Reads feedback from Supabase, uses LLM to adjust user interests.
 Usage: python profile_updater.py [username]
 """

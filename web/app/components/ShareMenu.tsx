@@ -2,22 +2,28 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share, FileText, Copy, Check, X, Upload } from "lucide-react";
+import { Share, FileText, Copy, Check, Upload } from "lucide-react";
+import { shareLabels } from "../config/translations";
+import { useAuth } from "../context/AuthContext";
+import { TRANSITIONS } from "../config/constants";
 
 interface ShareMenuProps {
     data: any;
 }
 
 export default function ShareMenu({ data }: ShareMenuProps) {
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    const s = shareLabels[user?.language || "fr"] || shareLabels.en;
 
     // Formatting the briefing efficiently for text/markdown sharing length
     const formatBriefingMarkdown = () => {
         if (!data) return "";
-        let text = `# Mizan.ai - Édition du ${data.date}\n\n`;
+        let text = `# ${s.markdownTitle} ${data.date}\n\n`;
         if (data.global_digest) {
-            text += `## Résumé Éditorial\n${data.global_digest}\n\n`;
+            text += `## ${s.digestTitle}\n${data.global_digest}\n\n`;
         }
 
         if (data.content && data.content.length > 0) {
@@ -30,15 +36,15 @@ export default function ShareMenu({ data }: ShareMenuProps) {
             for (const [cat, items] of Object.entries(categories)) {
                 text += `### ${cat}\n`;
                 items.forEach((item: any) => {
-                    text += `- **${item.localized_title || item.title}**\n  ${item.summary}\n  [Lire la suite](${item.link})\n\n`;
+                    text += `- **${item.localized_title || item.title}**\n  ${item.summary}\n  [${s.readMore}](${item.link})\n\n`;
                 });
             }
         }
 
         if (data.youtube_videos && data.youtube_videos.length > 0) {
-            text += `### Vidéos YouTube\n`;
+            text += `### ${s.youtubeTitle}\n`;
             data.youtube_videos.forEach((vid: any) => {
-                text += `- **${vid.title}** (${vid.channel})\n  [Voir la vidéo](${vid.link})\n`;
+                text += `- **${vid.title}** (${vid.channel})\n  [${s.watchVideo}](${vid.link})\n`;
             });
         }
 
@@ -50,7 +56,7 @@ export default function ShareMenu({ data }: ShareMenuProps) {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: `Mizan.ai - Édition du ${data.date}`,
+                    title: `${s.markdownTitle} ${data.date}`,
                     text: text,
                 });
             } catch (e) {
@@ -88,52 +94,48 @@ export default function ShareMenu({ data }: ShareMenuProps) {
                 onClick={() => setIsOpen(!isOpen)}
                 className="group flex flex-col items-center justify-center gap-2 focus:outline-none"
             >
-                <div className="w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center hover:shadow-md hover:border-indigo-100 transition-all active:scale-95 text-gray-500 hover:text-indigo-600">
-                    <Share size={20} strokeWidth={2.5} className="group-hover:-translate-y-0.5 transition-transform" />
+                <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 shadow-xl flex items-center justify-center hover:bg-black transition-all active:scale-95 text-white">
+                    <Share size={18} strokeWidth={2} className="group-hover:-translate-y-0.5 transition-transform" />
                 </div>
-                <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400 group-hover:text-indigo-600 transition-colors">
-                    Partager l'édition
+                <span className="text-[9px] uppercase tracking-[0.2em] font-black text-zinc-400 group-hover:text-zinc-900 transition-colors">
+                    Partager
                 </span>
             </button>
 
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-60 rounded-2xl bg-white/90 backdrop-blur-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-white/50 overflow-hidden z-50 p-2"
+                        exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                        transition={TRANSITIONS.spring}
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-64 bg-[#FDFCF8] border border-zinc-200 shadow-2xl z-50 p-2 overflow-hidden"
                     >
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col">
                             <button
                                 onClick={handleShareNative}
-                                className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100/80 rounded-xl transition-colors text-left"
+                                className="flex items-center gap-4 px-4 py-4 text-[11px] font-black uppercase tracking-widest text-zinc-900 hover:bg-zinc-100 transition-colors text-left border-b border-zinc-100"
                             >
-                                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                    <Upload size={14} strokeWidth={2.5} />
-                                </div>
-                                Partager via...
+                                <Upload size={14} className="text-zinc-400" />
+                                {s.shareVia}
                             </button>
 
                             <button
                                 onClick={handlePdf}
-                                className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100/80 rounded-xl transition-colors text-left"
+                                className="flex items-center gap-4 px-4 py-4 text-[11px] font-black uppercase tracking-widest text-zinc-900 hover:bg-zinc-100 transition-colors text-left border-b border-zinc-100"
                             >
-                                <div className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-                                    <FileText size={14} strokeWidth={2.5} />
-                                </div>
-                                Exporter en PDF
+                                <FileText size={14} className="text-zinc-400" />
+                                Imprimer / PDF
                             </button>
 
                             <button
                                 onClick={handleCopy}
-                                className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100/80 rounded-xl transition-colors text-left"
+                                className="flex items-center gap-4 px-4 py-4 text-[11px] font-black uppercase tracking-widest text-zinc-900 hover:bg-zinc-100 transition-colors text-left"
                             >
-                                <div className={`w-7 h-7 rounded-lg ${copied ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'} flex items-center justify-center shrink-0 transition-colors`}>
-                                    {copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} strokeWidth={2.5} />}
+                                <div className="shrink-0">
+                                    {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-zinc-400" />}
                                 </div>
-                                {copied ? "Copié !" : "Copier (Notion)"}
+                                {copied ? s.copied : s.copy}
                             </button>
                         </div>
                     </motion.div>

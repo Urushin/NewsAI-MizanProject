@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Créer un compte",
-    description: "Inscrivez-vous sur Mizan.ai et recevez votre premier briefing IA en quelques secondes.",
+    description: "Inscrivez-vous sur NewsAI et recevez votre premier briefing IA en quelques secondes.",
     openGraph: {
-        title: "Créer un compte — Mizan.ai",
+        title: "Créer un compte — NewsAI",
         description: "Inscrivez-vous et recevez votre briefing IA personnalisé.",
     },
     robots: {

@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+.venv
+__pycache__
+.DS_Store
+web_old
+docs
+terraform
+backend/cache/*
+web/out
+web/.next
+web/node_modules
+tmp
+brain

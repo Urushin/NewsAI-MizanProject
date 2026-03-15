@@ -1,5 +1,5 @@
 """
-Mizan.ai — Feedback API (Supabase)
+NewsAI — Feedback API (Supabase)
 """
 from fastapi import APIRouter, Request
 from pydantic import BaseModel

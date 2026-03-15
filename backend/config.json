@@ -106,7 +106,7 @@
         },
         {
             "id": "rss_reuters_biz",
-            "url": "https://www.reutersagency.com/feed/?best-topics=business",
+            "url": "https://www.reuters.com/arc/outboundfeeds/v1/rss/?category=business",
             "category": "Finance & Business"
         },
         {
@@ -116,7 +116,7 @@
         },
         {
             "id": "rss_latribune",
-            "url": "https://www.latribune.fr/rss/feed/une.xml",
+            "url": "https://www.latribune.fr/feed.xml",
             "category": "Finance & Business"
         },
         {
@@ -136,7 +136,7 @@
         },
         {
             "id": "rss_reuters_world",
-            "url": "https://www.reutersagency.com/feed/?best-topics=political-general",
+            "url": "https://www.reuters.com/arc/outboundfeeds/v1/rss/",
             "category": "Politique & Monde"
         },
         {

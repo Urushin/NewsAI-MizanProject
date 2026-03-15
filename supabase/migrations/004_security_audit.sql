@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════
--- Mizan.ai — Migration 004: Security Audit & Indexes
+-- NewsAI — Migration 004: Security Audit & Indexes
 -- Idempotent Security Hardening & Performance Optimization
 -- ═══════════════════════════════════════════════════════════
 

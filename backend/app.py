@@ -32,15 +32,15 @@ from routers import (
 # ══════════════════════════════════════════
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Mizan.ai API starting...")
+    logger.info("🚀 NewsAI API starting...")
     init_db()
     yield
-    logger.info("🛑 Mizan.ai API shutting down...")
+    logger.info("🛑 NewsAI API shutting down...")
 
 
 # ── App ──
 app = FastAPI(
-    title="Mizan.ai API",
+    title="NewsAI API",
     version="6.0 (SaaS) Modular",
     lifespan=lifespan,
 )
@@ -51,18 +51,22 @@ app = FastAPI(
 # ══════════════════════════════════════════
 _allowed_origins = [
     "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3005",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3005",
     "http://192.168.1.66:3000", # Access from local network
 ]
 _frontend_url = os.getenv("FRONTEND_URL", "")
 if _frontend_url:
     _allowed_origins.append(_frontend_url)
 
-# In development, also allow the local IP explicitly.
+# In development/TP, allowing all origins to avoid tunnel issues
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"] if os.getenv("APP_STAGE") == "development" else _allowed_origins,
+    allow_credentials=False if os.getenv("APP_STAGE") == "development" else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

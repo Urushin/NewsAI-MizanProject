@@ -1,5 +1,5 @@
 """
-Mizan.ai — Data Models (Pydantic V2)
+NewsAI — Data Models (Pydantic V2)
 """
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 from typing import List, Annotated, Dict, Optional

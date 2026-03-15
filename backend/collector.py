@@ -1,5 +1,5 @@
 """
-Mizan.ai — Collector (Production-grade)
+NewsAI — Collector (Production-grade)
 Async RSS collection via Google News + content extraction via Firecrawl.
 
 Improvements over v1:
@@ -105,6 +105,11 @@ async def _retry_async(coro_fn, *args, max_retries=MAX_RETRIES, label=""):
         try:
             return await coro_fn(*args)
         except Exception as e:
+            error_str = str(e)
+            if "Insufficient credits" in error_str or "Payment Required" in error_str or "Rate Limit" in error_str:
+                logger.warning(f"🚫 Stopping '{label}' early due to API limit: {error_str[:60]}")
+                return None
+                
             if attempt == max_retries - 1:
                 logger.warning(f"⚠️ {label} failed after {max_retries} attempts: {e}")
                 return None
@@ -122,12 +127,8 @@ async def search_web_articles_async(query: str, language: str = "fr", max_result
         enhanced_query = f"{query} news {datetime.now().year}"
         
         loop = asyncio.get_event_loop()
-        # Firecrawl search returns a list of results with title, url, and sometimes a snippet
-        async def _do_search():
-            return app.search(enhanced_query, limit=max_results)
-            
         results = await asyncio.wait_for(
-            loop.run_in_executor(None, _do_search),
+            loop.run_in_executor(None, lambda: app.search(enhanced_query, limit=max_results)),
             timeout=SCRAPE_TIMEOUT_SEC
         )
         
@@ -201,6 +202,28 @@ async def fetch_feed_async(source: dict, max_per_topic: int, semaphore: asyncio.
                         elif clean_title.endswith(media_name):
                             clean_title = clean_title[:-len(media_name)].rstrip(" -|").strip()
 
+                    # ── Extract image from RSS entry ──
+                    image_url = None
+                    # Method 1: media:content (standard RSS media tag)
+                    if hasattr(entry, 'media_content') and entry.media_content:
+                        image_url = entry.media_content[0].get('url')
+                    # Method 2: media:thumbnail
+                    if not image_url and hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
+                        image_url = entry.media_thumbnail[0].get('url')
+                    # Method 3: enclosure with image type
+                    if not image_url and hasattr(entry, 'links'):
+                        for l in entry.links:
+                            if l.get('type', '').startswith('image'):
+                                image_url = l.get('href')
+                                break
+                    # Method 4: parse <img> from summary HTML
+                    if not image_url:
+                        import re as _re
+                        summary_html = entry.get("summary") or entry.get("description") or ""
+                        img_match = _re.search(r'<img[^>]+src=["\']([^"\']+)', summary_html)
+                        if img_match:
+                            image_url = img_match.group(1)
+
                     entries.append({
                         "title": clean_title,
                         "link": entry.link,
@@ -208,6 +231,7 @@ async def fetch_feed_async(source: dict, max_per_topic: int, semaphore: asyncio.
                         "source_interest": source.get("category", "General"),
                         "source_name": media_name,
                         "summary": entry.get("summary") or entry.get("description") or "",
+                        "image_url": image_url,
                     })
                     
                     if len(entries) >= max_per_topic:
@@ -224,7 +248,7 @@ async def fetch_article_content_async(url: str, semaphore: asyncio.Semaphore) ->
     """Download and extract text via Firecrawl with timeout and retry."""
     cached = get_cached_content(url)
     if cached:
-        return cached[:MAX_CONTENT_CHARS]
+        return cached[:MAX_CONTENT_CHARS], None
 
     async with semaphore:
         async def _do_scrape():
@@ -295,7 +319,7 @@ def fetch_article_content(url: str) -> str:
 
 # ── Main Collection Function (Async) ──
 async def collect_articles(
-    max_per_topic: int = 3,
+    max_per_topic: int = 5,
     exclude_urls: set = None,
     progress_callback: Optional[Callable] = None,
     quick_mode: bool = False,
@@ -311,12 +335,12 @@ async def collect_articles(
     if progress_callback:
         progress_callback("Reading config...", 5)
 
-    # If the user has custom interests (from the manifesto wizard), prioritize those
+    # Always include config RSS feeds; add user interests ON TOP
+    config_rss = config.get("rss_sources", [])
     if user_interests is not None and len(user_interests) > 0:
-        all_sources = user_interests
+        all_sources = user_interests + config_rss
     else:
-        # Default global profile
-        all_sources = config.get("interests", []) + config.get("rss_sources", [])
+        all_sources = config.get("interests", []) + config_rss
 
     if quick_mode and all_sources:
         all_sources = [all_sources[0]]
@@ -405,6 +429,7 @@ async def collect_articles(
             source_interest=entry["source_interest"],
             content=entry.get("summary", ""),
             source_name=entry.get("source_name", ""),
+            image_url=entry.get("image_url"),
         ))
 
     if skipped:
@@ -431,9 +456,13 @@ async def collect_articles(
             logger.error(f"Scrape task error for {articles[i].link}: {result}")
             continue
         if result:
-            articles[i].content = result[0] if isinstance(result, tuple) else result
-            articles[i].image_url = result[1] if isinstance(result, tuple) else None
-            extracted += 1
+            new_text = result[0] if isinstance(result, tuple) else result
+            if new_text:
+                articles[i].content = new_text
+                extracted += 1
+            new_img = result[1] if isinstance(result, tuple) and len(result) > 1 else None
+            if new_img and not articles[i].image_url:
+                articles[i].image_url = new_img
         if progress_callback and i % 5 == 0:
             progress_callback(f"Extracting: {extracted}/{total}", 30 + int((i / total) * 40))
 

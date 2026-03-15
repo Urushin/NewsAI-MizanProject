@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Connexion",
-    description: "Connectez-vous à votre compte Mizan.ai pour accéder à votre briefing personnalisé.",
+    description: "Connectez-vous à votre compte NewsAI pour accéder à votre briefing personnalisé.",
     openGraph: {
-        title: "Connexion — Mizan.ai",
+        title: "Connexion — NewsAI",
         description: "Connectez-vous à votre briefing IA personnalisé.",
     },
     robots: {

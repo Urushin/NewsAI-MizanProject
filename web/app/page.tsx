@@ -1,502 +1,278 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useAuth, API } from "./context/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
-import NewsCard from "./components/NewsCard";
-import ProfilePopup from "./components/ProfilePopup";
-import HistoryPanel from "./components/HistoryPanel";
-import GenerationLoader from "./components/GenerationLoader";
-import ShareMenu from "./components/ShareMenu";
-import {
-  Sparkles,
-  Zap,
-  Heart,
-  Globe,
-  TrendingUp,
-  Shield,
-  Cpu,
-  Landmark,
-  Briefcase,
-  Newspaper,
-  Coffee,
-  AlertCircle,
-  RotateCcw,
-  ChevronDown,
-  Youtube,
-  Play,
+import { motion } from "framer-motion";
+import { landingLabels } from "./config/translations";
+import { 
+  Sparkles, 
+  ShieldCheck, 
+  Zap, 
+  ChevronRight, 
+  ArrowRight,
   CheckCircle2
 } from "lucide-react";
 
-import { NewsItem, BriefData } from "./types/news";
-import { useApi } from "./utils/api";
-
-const CACHE_VERSION = "v1.2"; // Incremented to match new NewsItem schema (is_fused)
-
-/* ── i18n ──────────────────────────────────────────── */
-
-const i18n: Record<string, Record<string, string>> = {
-  fr: {
-    loading: "Chargement du briefing…",
-    nothingToday: "Aucune actualité pertinente pour aujourd'hui.",
-    noData: "Aucun briefing disponible pour le moment.",
-    nothingSub: "Revenez plus tard ou ajustez vos centres d'intérêt.",
-    noDataSub: "Lancez une édition depuis votre profil.",
-    endOfBrief: "Fin du briefing",
-    endSub: "Vous êtes à jour. Revenez demain pour de nouvelles actualités.",
-    articles: "articles",
-    scanned: "sources analysées",
-    briefTitle: "Le Briefing du Jour",
-  },
-  en: {
-    loading: "Loading briefing…",
-    nothingToday: "Nothing relevant today.",
-    noData: "No briefing available yet.",
-    nothingSub: "Come back later or adjust your interests.",
-    noDataSub: "Generate your first briefing from your profile.",
-    endOfBrief: "End of briefing",
-    endSub: "You're all caught up. Come back tomorrow.",
-    articles: "articles",
-    scanned: "sources scanned",
-    briefTitle: "Today's Briefing",
-  },
-};
-
-/* ── Category metadata ─────────────────────────────── */
-
-const CATEGORY_META: Record<
-  string,
-  { icon: React.ElementType; label: string; color: string; bg: string; description?: string }
-> = {
-  "Ce que vous avez manqué ce matin": {
-    icon: Sparkles,
-    label: "Ce que vous avez manqué ce matin",
-    color: "text-indigo-600",
-    bg: "bg-indigo-50",
-    description: "Les news cruciales de ces dernières heures analysées pour vous."
-  },
-  "L'essentiel de votre secteur": {
-    icon: Briefcase,
-    label: "L'essentiel de votre secteur",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    description: "Évolutions stratégiques et opportunités dans vos domaines pro."
-  },
-  "Lecture détente (Passion)": {
-    icon: Heart,
-    label: "Lecture détente (Passion)",
-    color: "text-rose-600",
-    bg: "bg-rose-50",
-    description: "L'actualité globale et vos centres d'intérêt secondaires."
-  },
-  Impact: { icon: Zap, label: "Impact Direct", color: "text-red-500", bg: "bg-red-50" },
-  Passion: { icon: Heart, label: "Passion", color: "text-indigo-500", bg: "bg-indigo-50" },
-  Tech: { icon: Cpu, label: "Technologie", color: "text-cyan-500", bg: "bg-cyan-50" },
-  Politik: { icon: Landmark, label: "Politique", color: "text-amber-500", bg: "bg-amber-50" },
-  Business: { icon: Briefcase, label: "Business", color: "text-emerald-500", bg: "bg-emerald-50" },
-  World: { icon: Globe, label: "International", color: "text-violet-500", bg: "bg-violet-50" },
-  Security: { icon: Shield, label: "Sécurité", color: "text-red-500", bg: "bg-red-50" },
-  Trending: { icon: TrendingUp, label: "Tendances", color: "text-pink-500", bg: "bg-pink-50" },
-};
-
-function getCategoryMeta(cat: string) {
-  return CATEGORY_META[cat] || { icon: Newspaper, label: cat || "Actualité", color: "text-indigo-500", bg: "bg-indigo-50" };
-}
-
-/* ── Date formatting ───────────────────────────────── */
-
-function formatDateTitle(dateStr?: string, lang = "fr"): string {
-  try {
-    const d = dateStr ? new Date(dateStr + "T12:00:00") : new Date();
-    const locale = lang === "fr" ? "fr-FR" : lang === "ja" ? "ja-JP" : "en-US";
-    const formatted = d.toLocaleDateString(locale, {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-  } catch {
-    return new Date().toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }
-}
-
-/* ── Group articles by category ────────────────────── */
-
-function groupByCategory(articles: NewsItem[]) {
-  const sectionsMap = new Map<string, Map<string, NewsItem[]>>();
-  const TIERS = [
-    "Ce que vous avez manqué ce matin",
-    "L'essentiel de votre secteur",
-    "Lecture détente (Passion)"
-  ];
-  TIERS.forEach(t => sectionsMap.set(t, new Map()));
-
-  for (const item of articles) {
-    let targetTier = "Lecture détente (Passion)";
-    const isHighImpact = item.gate_passed === "impact" || item.category === "Impact" || (item.score && item.score >= 90);
-    const isStrategic = ["Business", "Tech", "Security"].includes(item.category) || (item.score && item.score >= 75);
-
-    if (isHighImpact) {
-      targetTier = "Ce que vous avez manqué ce matin";
-    } else if (isStrategic) {
-      targetTier = "L'essentiel de votre secteur";
-    }
-
-    const subCat = item.sub_category || "Général";
-    const subMap = sectionsMap.get(targetTier)!;
-    if (!subMap.has(subCat)) subMap.set(subCat, []);
-    subMap.get(subCat)!.push(item);
-  }
-
-  const result: { category: string; subGroups: { subCategory: string; items: NewsItem[] }[] }[] = [];
-  for (const tier of TIERS) {
-    const subMap = sectionsMap.get(tier)!;
-    if (subMap.size === 0) continue;
-
-    const subGroups = Array.from(subMap.entries()).map(([subCategory, items]) => ({
-      subCategory,
-      items
-    })).sort((a, b) => {
-      const aFused = a.items.some(i => i.is_fused || i.isFused);
-      const bFused = b.items.some(i => i.is_fused || i.isFused);
-      if (aFused !== bFused) return aFused ? -1 : 1;
-      return 0;
-    });
-
-    result.push({ category: tier, subGroups });
-  }
-  return result;
-}
-
-/* ── Error State Component ────────────────────────── */
-
-const ErrorEmptyState = ({ message, onRetry }: { message: string, onRetry: () => void }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="flex flex-col items-center justify-center py-20 px-6 text-center"
-  >
-    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-red-100">
-      <AlertCircle size={32} aria-hidden="true" />
-    </div>
-    <h3 className="text-xl font-bold text-gray-900 mb-2">Oups, une petite interférence !</h3>
-    <p className="text-gray-500 max-w-sm mb-8 leading-relaxed">
-      {message.includes("401") || message.includes("403")
-        ? "Votre session a peut-être expiré. Essayez de vous reconnecter."
-        : "Nous n'avons pas pu récupérer votre briefing. Cela arrive parfois quand les serveurs prennent un café."}
-    </p>
-    <button
-      onClick={onRetry}
-      className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold shadow-xl shadow-indigo-100/50 hover:bg-indigo-700 active:scale-95 transition-all"
-    >
-      <RotateCcw size={18} aria-hidden="true" />
-      Réessayer maintenant
-    </button>
-  </motion.div>
-);
-
-/* ═══════════════════════════════════════════════════════
-   MAIN COMPONENT
-   ═══════════════════════════════════════════════════════ */
-
-export default function Home() {
-  const { user, token, loading: authLoading, refreshKey, genStatus, setGenStatus, triggerRefresh } = useAuth();
+export default function LandingPage() {
   const router = useRouter();
-  const api = useApi();
-  const [data, setData] = useState<BriefData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [showDigest, setShowDigest] = useState(false);
-
-  const lang = user?.language || "fr";
-  const t = i18n[lang] || i18n.en;
+  const [lang, setLang] = useState("fr");
 
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
-  }, [authLoading, user, router]);
-
-  const dataRef = useRef<BriefData | null>(null);
-  useEffect(() => { dataRef.current = data; }, [data]);
-
-  useEffect(() => {
-    if (!token) return;
-    setError(null);
-
-    const fetchBriefData = async () => {
-      const cacheKey = `mizan_brief_cache_${selectedDate || 'today'}`;
-      let hasCache = false;
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          const parsedCache = JSON.parse(cached);
-          // Version and structure validation
-          const isValid = parsedCache &&
-            parsedCache.version === CACHE_VERSION &&
-            parsedCache.data &&
-            Array.isArray(parsedCache.data.content);
-
-          if (isValid) {
-            setData(parsedCache.data);
-            setLoading(false);
-            hasCache = true;
-          } else {
-            // Invalid or old cache, clean it
-            localStorage.removeItem(cacheKey);
-          }
-        }
-      } catch (e) { }
-
-      try {
-        const url = selectedDate ? `/api/brief?date=${selectedDate}` : `/api/brief`;
-        const json: BriefData = await api.get(url);
-
-        // Content verification to avoid unnecessary re-renders
-        const currentContent = dataRef.current?.content || [];
-        const newContent = json.content || [];
-        const contentChanged = JSON.stringify(currentContent) !== JSON.stringify(newContent);
-        const digestChanged = dataRef.current?.global_digest !== json.global_digest;
-
-        if (contentChanged || digestChanged || !hasCache) {
-          setData(json);
-          setDismissed(new Set());
-          try {
-            localStorage.setItem(cacheKey, JSON.stringify({
-              version: CACHE_VERSION,
-              data: json,
-              timestamp: Date.now()
-            }));
-          } catch (e) { }
-        }
-      } catch (e: any) {
-        if (!dataRef.current || (!dataRef.current.content?.length && !dataRef.current.global_digest)) {
-          setError(e.message || "Error fetching data.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBriefData();
-  }, [token, refreshKey, retryKey, selectedDate, api]);
-
-  useEffect(() => {
-    if (!token || !genStatus.active || genStatus.isDone) return;
-    const interval = setInterval(async () => {
-      try {
-        const status = await api.get("/api/brief/status");
-        if (status.status === "done") {
-          setGenStatus({ active: true, step: "Terminé !", percent: 100, isDone: true });
-          setTimeout(() => {
-            setGenStatus({ active: false, step: "", percent: 0, isDone: false });
-            triggerRefresh();
-          }, 2000);
-        } else if (status.status === "error") {
-          setGenStatus({ active: false, step: "", percent: 0, isDone: false });
-          setError("La génération a échoué.");
-        } else {
-          setGenStatus({ active: true, step: status.step || "Collecte...", percent: status.percent || 10, isDone: false });
-        }
-      } catch (e) { }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [token, genStatus.active, genStatus.isDone, setGenStatus, triggerRefresh, api]);
-
-  const handleDismiss = useCallback((title: string) => {
-    setDismissed((prev) => new Set(prev).add(title));
+    if (typeof navigator !== "undefined") {
+      const browserLang = navigator.language.split("-")[0];
+      if (landingLabels[browserLang]) setLang(browserLang);
+    }
   }, []);
 
-  const visibleContent = useMemo(
-    () => (data?.content || []).filter((item) => !dismissed.has(item.title)),
-    [data, dismissed]
-  );
+  const t = landingLabels[lang] || landingLabels.en;
 
-  const groupedContent = useMemo(() => groupByCategory(visibleContent), [visibleContent]);
+  const features = [
+    {
+      icon: Zap,
+      title: t.feat1Title,
+      description: t.feat1Desc
+    },
+    {
+      icon: ShieldCheck,
+      title: t.feat2Title,
+      description: t.feat2Desc
+    },
+    {
+      icon: Sparkles,
+      title: t.feat3Title,
+      description: t.feat3Desc
+    }
+  ];
 
-  if (loading || authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center w-full">
-        <main className="w-full max-w-[720px] px-6 sm:px-8 pt-10 sm:pt-12 pb-16 sm:pb-20">
-          <div className="flex flex-col items-center pt-3 pb-6 sm:pt-4 sm:pb-8">
-            <div className="h-10 sm:h-12 w-3/4 max-w-[320px] bg-gray-200/70 rounded-2xl animate-pulse mb-3" />
-            <div className="h-4 w-40 bg-gray-100 rounded-md animate-pulse" />
-          </div>
-          <div className="flex flex-col gap-10">
-            {[1, 2].map((catIdx) => (
-              <section key={catIdx}>
-                <div className="flex items-center gap-3 pb-6 border-b border-gray-100 mb-6">
-                  <div className="w-8 h-8 rounded-xl bg-gray-200/50 animate-pulse shrink-0" />
-                  <div className="h-4 w-32 bg-gray-200/60 rounded-lg animate-pulse" />
-                </div>
-                <div className="flex flex-col gap-4">
-                  {[1, 2].map((cardIdx) => (
-                    <div key={cardIdx} className="w-full bg-white rounded-[24px] border border-gray-100/60 p-5 shadow-sm h-32 animate-pulse" />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-6">
-        <ErrorEmptyState message={error} onRetry={() => { setLoading(true); setError(null); setRetryKey(k => k + 1); }} />
-      </div>
-    );
-  }
-
-  const dateTitle = formatDateTitle(data?.date, lang);
-  if (genStatus.active) return <GenerationLoader step={genStatus.step} percent={genStatus.percent} isDone={genStatus.isDone} />;
+  const plans = [
+    {
+      name: "Journal Standard",
+      price: "0€",
+      features: ["1 Briefing quotidien", "Sources limitées", "Analyse standard", "Accès mobile"],
+      button: "Commencer la Lecture",
+      active: false
+    },
+    {
+      name: "NewsAI Pro",
+      price: "12€",
+      priceSub: "/mois",
+      features: ["Briefings illimités", "Indexation mondiale", "Analyse profonde", "Export PDF Haute Qualité", "Lecture sans distraction"],
+      button: "S'abonner au Kiosque",
+      active: true
+    },
+    {
+      name: "Rédaction Enterprise",
+      price: "Sur mesure",
+      features: ["Accès API complet", "Support Dédié", "Infrastructure isolée", "Personnalisation totale"],
+      button: "Contacter l'Imprimerie",
+      active: false
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-gray-900 flex flex-col items-center w-full print:bg-white">
-      <div className="fixed top-5 left-5 sm:top-6 sm:left-8 z-40 flex flex-col gap-3 print:hidden">
-        <ProfilePopup onPreview={(d) => setData(d)} />
-        <HistoryPanel onSelectDate={(date) => { setLoading(true); setSelectedDate(date); }} selectedDate={selectedDate} lang={lang} />
-      </div>
-
-      <main className="w-full max-w-[720px] px-6 sm:px-8 pt-10 sm:pt-12 pb-16 sm:pb-20 print:p-0">
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center pt-3 pb-6 sm:pt-4 sm:pb-8">
-          <h1 className="text-[clamp(1.5rem,4vw,2rem)] font-extrabold tracking-tight text-gray-900 leading-tight">{dateTitle}</h1>
-          {data && data.total_kept !== undefined && (
-            <p className="mt-3 text-[13px] text-gray-400 font-medium">{data.total_kept} {t.articles} · {data.total_collected || "—"} {t.scanned}</p>
-          )}
-        </motion.div>
-
-        {data?.global_digest && (
-          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <button onClick={() => setShowDigest(!showDigest)} className="group flex flex-col items-center w-full rounded-2xl">
-              <div className={`flex items-center gap-2.5 px-5 py-3.5 rounded-2xl border transition-all ${showDigest ? 'bg-white border-indigo-100 mb-4' : 'bg-white border-black/[0.04]'}`}>
-                <Sparkles size={15} className={`${showDigest ? 'text-indigo-500' : 'text-gray-400'}`} aria-hidden="true" />
-                <span className={`text-[11px] font-bold uppercase tracking-[0.2em] ${showDigest ? 'text-indigo-600' : 'text-gray-400'}`}>
-                  {showDigest ? 'Résumé masqué' : 'Afficher le résumé du jour'}
-                </span>
-                <motion.div animate={{ rotate: showDigest ? 180 : 0 }} aria-hidden="true"><ChevronDown size={14} aria-hidden="true" /></motion.div>
-              </div>
+    <div className="min-h-screen bg-[#FDFCF8] text-zinc-900 font-sans selection:bg-zinc-200 overflow-x-hidden">
+      
+      {/* Premium Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FDFCF8]/90 backdrop-blur-md border-b border-zinc-200 px-6 py-5 md:px-12">
+        <div className="max-w-7xl mx-auto flex justify-between items-center font-serif">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl font-[900] tracking-tighter">N.</span>
+            <div className="h-6 w-[1px] bg-zinc-200 mx-2 hidden sm:block" />
+            <span className="font-[900] text-sm tracking-[0.3em] uppercase hidden sm:block">NewsAI</span>
+          </div>
+          <div className="flex items-center gap-8 font-sans">
+            <button 
+              onClick={() => router.push("/login")}
+              className="text-[11px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-900 transition-colors"
+            >
+              Accès Lecteur
             </button>
-            <AnimatePresence>
-              {showDigest && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                  <div className="p-6 rounded-3xl bg-indigo-50/30 border border-indigo-100/50">
-                    <p className="text-[15px] text-indigo-950/80 font-[450] leading-[1.8]">{data.global_digest}</p>
-                    {data.ai_seal && (
-                      <div className="mt-4 pt-4 border-t border-indigo-100/50 flex items-center justify-between">
-                        <div className="flex items-center gap-2"><Shield size={14} className="text-indigo-400" aria-hidden="true" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">IA Certifiée · {data.ai_seal.model}</span></div>
-                        <div className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-100/50 rounded flex items-center gap-1"><CheckCircle2 size={12} aria-hidden="true" /> Precision {data.ai_seal.precision}%</div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.section>
-        )}
-
-        <div className="flex flex-col gap-10">
-          {groupedContent.map((group, gIdx) => {
-            const meta = getCategoryMeta(group.category);
-            const Ico = meta.icon;
-            return (
-              <motion.section key={group.category} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 + gIdx * 0.08 }}>
-                <div className="flex flex-col gap-1 pb-6 border-b border-gray-200/60 mb-8 font-serif">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${meta.bg} flex items-center justify-center shadow-sm`}><Ico size={20} className={meta.color} aria-hidden="true" /></div>
-                    <div className="flex flex-col">
-                      <span className={`text-[12px] font-black uppercase tracking-[0.25em] ${meta.color}`}>{meta.label}</span>
-                      <div className="flex items-center gap-2">
-                        {meta.description && <span className="text-[11px] text-gray-400 font-medium">{meta.description}</span>}
-                        <span className="w-1 h-1 rounded-full bg-gray-200" />
-                        <span className="text-[10px] text-gray-300 font-bold uppercase leading-none">{group.subGroups.reduce((acc, s) => acc + s.items.length, 0)} Analyses</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-8">
-                  {group.subGroups.map((sub, sIdx) => (
-                    <div key={sub.subCategory} className="flex flex-col gap-5">
-                      {sub.subCategory && !["Général", "Actualité", "News", "Divers"].includes(sub.subCategory) && (
-                        <div className="flex items-center gap-3 mt-6 mb-2">
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50/50 rounded-full border border-indigo-100/30">
-                            <Sparkles size={12} className="text-indigo-400" aria-hidden="true" />
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-900/60">Pont Cognitif : {sub.subCategory}</h3>
-                          </div>
-                          <span className="text-[11px] text-gray-400 italic">— {sub.items.length} perspectives</span>
-                        </div>
-                      )}
-                      <div className="relative ml-2 pl-6 border-l border-gray-100/60 mt-4">
-                        <div className="absolute -left-[4.5px] top-0 w-2 h-2 rounded-full bg-gray-100 border border-white" />
-                        <div className={`grid gap-8 ${sIdx === 0 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
-                          <AnimatePresence mode="popLayout">
-                            {sub.items.map((article, idx) => {
-                              const isFused = article.is_fused || article.isFused;
-                              const uniqueKey = isFused ? `fused-${article.title}` : article.link;
-                              return (
-                                <NewsCard
-                                  key={uniqueKey}
-                                  item={article}
-                                  index={idx}
-                                  variant={(sIdx === 0 && idx === 0) || isFused ? "hero" : "compact"}
-                                  onDismiss={handleDismiss}
-                                />
-                              );
-                            })}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.section>
-            );
-          })}
+            <button 
+              onClick={() => router.push("/signup")}
+              className="bg-zinc-900 text-white px-6 py-2.5 text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95"
+            >
+              Subscription
+            </button>
+          </div>
         </div>
+      </nav>
 
-        {data?.youtube_videos && data.youtube_videos.length > 0 && (
-          <section className="mt-16">
-            <div className="flex items-center gap-3 pb-6 border-b mb-6 font-serif">
-              <Youtube size={16} className="text-red-500" aria-hidden="true" />
-              <span className="text-sm font-black uppercase tracking-[0.2em] text-red-500">Vidéos YouTube</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {data.youtube_videos.map((vid, i) => (
-                <a key={i} href={vid.link} target="_blank" rel="noopener noreferrer" className="bg-white rounded-2xl border p-2 flex items-center gap-4 hover:shadow-lg transition-all">
-                  <div className="relative w-32 h-[72px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                    <Image src={vid.thumbnail} fill className="object-cover" alt={vid.title} sizes="128px" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/5"><Play fill="white" size={14} className="text-white" aria-hidden="true" /></div>
+      <main className="pt-40">
+        {/* HERO SECTION */}
+        <section className="px-6 pb-32">
+          <div className="max-w-5xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-zinc-100 border border-zinc-200 mb-10">
+                <Sparkles size={14} className="text-zinc-900" />
+                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Édition Numérique Indépendante</span>
+              </div>
+              
+              <h1 className="text-[clamp(3rem,10vw,6.5rem)] font-[900] leading-[0.95] tracking-tighter mb-10 font-serif lowercase italic">
+                {t.heroTitle1} <br />
+                <span className="text-zinc-400 font-sans uppercase tracking-[0.2em] italic text-[0.4em] block mt-4 font-black">{t.heroTitle2}</span>
+              </h1>
+              
+              <p className="text-zinc-500 text-lg sm:text-xl max-w-[650px] mx-auto mb-16 leading-[1.6] font-serif italic">
+                {t.heroSub}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <button 
+                  onClick={() => router.push("/signup")}
+                  className="w-full sm:w-auto bg-zinc-900 text-white px-12 py-6 text-[13px] font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-black hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3"
+                >
+                  Entrer dans le Kiosque <ChevronRight size={18} />
+                </button>
+                <button 
+                  onClick={() => router.push("/how-it-works")}
+                  className="w-full sm:w-auto bg-transparent text-zinc-900 border border-zinc-200 px-12 py-6 text-[13px] font-black uppercase tracking-[0.2em] hover:bg-zinc-50 transition-all flex items-center justify-center gap-3"
+                >
+                  La Méthode NewsAI
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* FEATURES GRID (NEWSPAPER STYLE) */}
+        <section className="px-6 py-32 bg-white border-y border-zinc-200">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-zinc-100">
+              {features.map((f, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.2 }}
+                  className="p-12 first:pl-0 last:pr-0"
+                >
+                  <div className="mb-8">
+                     <f.icon size={24} strokeWidth={1.5} className="text-zinc-900" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-[13px] font-bold line-clamp-2 leading-tight mb-1">{vid.title}</h4>
-                    <span className="text-[11px] text-gray-500 font-semibold">{vid.channel}</span>
-                  </div>
-                </a>
+                  <h3 className="text-2xl font-[900] mb-5 tracking-tight font-serif italic lowercase">{f.title}</h3>
+                  <p className="text-zinc-500 text-[15px] leading-relaxed font-serif italic">{f.description}</p>
+                </motion.div>
               ))}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
-        {visibleContent.length > 0 && (
-          <footer className="mt-16 text-center flex flex-col items-center gap-2">
-            <div className="w-10 h-px bg-gray-200 mb-8" />
-            <ShareMenu data={data} />
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-gray-400 mt-8">{t.endOfBrief}</p>
-            <p className="text-[13px] text-gray-400 opacity-60">{t.endSub}</p>
-          </footer>
-        )}
+        {/* STATEMENT SECTION */}
+        <section className="px-6 py-40 bg-[#FDFCF8] overflow-hidden">
+          <div className="max-w-4xl mx-auto text-center relative">
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] font-[900] text-zinc-100/50 -z-10 font-serif">“</div>
+             <h2 className="text-3xl md:text-5xl font-[900] text-zinc-900 leading-[1.2] font-serif italic tracking-tight mb-12 lowercase">
+                L’information n’est plus une question de quantité, mais de discernement. NewsAI redonne du sens à votre lecture quotidienne.
+             </h2>
+             <button 
+                onClick={() => router.push("/how-it-works")}
+                className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 hover:text-zinc-900 transition-all underline underline-offset-8 decoration-zinc-200"
+             >
+                Découvrir l'Architecture de Confiance
+             </button>
+          </div>
+        </section>
+
+        {/* SUBSCRIPTION TABLE */}
+        <section className="px-6 py-40 bg-zinc-950 text-white">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-8">
+               <div className="max-w-2xl">
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 mb-6 block">Tarification</span>
+                  <h2 className="text-5xl md:text-7xl font-[900] tracking-tighter font-serif italic lowercase">L'accès à l'essentiel.</h2>
+               </div>
+               <p className="text-zinc-400 text-lg font-serif italic max-w-sm mb-2">Des offres conçues pour les lecteurs les plus exigeants.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 border border-zinc-800">
+              {plans.map((p, i) => (
+                <motion.div 
+                  key={i}
+                  className={`p-12 flex flex-col items-start border-zinc-800 border-b md:border-b-0 md:border-r last:border-0 ${p.active ? 'bg-white text-zinc-950' : 'bg-transparent'}`}
+                >
+                  <span className={`text-[10px] font-black uppercase tracking-widest mb-10 ${p.active ? 'text-zinc-400' : 'text-zinc-500'}`}>{p.name}</span>
+                  <div className="flex items-baseline gap-2 mb-12">
+                    <span className="text-6xl font-[900] tracking-tighter font-serif">{p.price}</span>
+                    {p.priceSub && <span className="text-sm font-bold opacity-50 uppercase tracking-widest">{p.priceSub}</span>}
+                  </div>
+                  
+                  <div className="flex-1 w-full space-y-6 mb-16">
+                    {p.features.map((feat, fi) => (
+                      <div key={fi} className="flex items-start gap-4">
+                        <CheckCircle2 size={14} className={`mt-1 ${p.active ? 'text-zinc-900' : 'text-zinc-500'}`} />
+                        <span className="text-[14px] font-bold tracking-tight opacity-80">{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => router.push("/signup")}
+                    className={`w-full py-5 text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] ${
+                      p.active 
+                      ? 'bg-zinc-900 text-white shadow-2xl' 
+                      : 'bg-transparent border border-zinc-700 text-white hover:bg-zinc-800'
+                    }`}
+                  >
+                    {p.button}
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FINAL CTA */}
+        <section className="px-6 py-40 text-center border-t border-zinc-100">
+          <div className="max-w-2xl mx-auto">
+             <h2 className="text-4xl font-[900] tracking-tight mb-12 font-serif lowercase italic">Prêt à changer votre rapport à l'actualité ?</h2>
+             <button 
+                onClick={() => router.push("/signup")}
+                className="group relative inline-flex items-center gap-6 text-zinc-900"
+             >
+                <span className="text-3xl font-[900] font-serif lowercase italic transition-all group-hover:pr-4">Ouvrir votre première édition</span>
+                <ArrowRight size={32} className="transition-transform group-hover:translate-x-4" />
+             </button>
+          </div>
+        </section>
       </main>
+
+      {/* FOOTER */}
+      <footer className="bg-zinc-50 border-t border-zinc-200 py-24 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-16">
+          <div className="space-y-6 max-w-xs">
+            <span className="text-4xl font-[900] font-serif tracking-tighter block">N.</span>
+            <p className="text-zinc-400 text-sm font-serif italic leading-relaxed">
+               NewsAI est une imprimerie digitale indépendante utilisant l'intelligence artificielle pour synthétiser l'essentiel du monde.
+            </p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">© 2026 NewsAI — Imprimerie Digitale</p>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-16">
+             <div className="flex flex-col gap-4">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900">Lectures</span>
+                <a href="/briefing" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Dernière Édition</a>
+                <a href="/archive" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Archives Kiosk</a>
+                <a href="/sources" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Index des Sources</a>
+             </div>
+             <div className="flex flex-col gap-4">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900">Société</span>
+                <a href="#" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Manifesto</a>
+                <a href="/how-it-works" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Méthodologie</a>
+                <a href="/developers" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Documentation</a>
+             </div>
+             <div className="flex flex-col gap-4">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900">Réseaux</span>
+                <a href="#" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Twitter (X)</a>
+                <a href="#" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">LinkedIn</a>
+             </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

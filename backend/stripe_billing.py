@@ -1,5 +1,5 @@
 """
-Mizan.ai — Stripe Billing Integration
+NewsAI — Stripe Billing Integration
 
 Handles:
   ✅ Plan definitions (Free/Pro/Enterprise)

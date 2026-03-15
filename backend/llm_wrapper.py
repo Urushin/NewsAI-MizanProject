@@ -1,5 +1,5 @@
 """
-Mizan.ai — LLM Provider Wrapper (Production-grade)
+NewsAI — LLM Provider Wrapper (Production-grade)
 
 Improvements:
   ✅ Retry with exponential backoff (3 attempts)
@@ -123,16 +123,21 @@ token_tracker = TokenTracker()
 # ══════════════════════════════════════════
 import json as _json
 
-_CACHE_FILE = pathlib.Path(__file__).parent / ".llm_cache.json"
+# Use /tmp for cache to avoid macOS sandbox permission issues
+_CACHE_FILE = pathlib.Path("/tmp/newsai_llm_cache.json")
+_CACHE_FILE_FALLBACK = pathlib.Path(__file__).parent / ".llm_cache.json"
 _CACHE_MAX_SIZE = 500
 
 def _load_cache() -> dict:
-    if _CACHE_FILE.exists():
+    for path in (_CACHE_FILE, _CACHE_FILE_FALLBACK):
         try:
-            with open(_CACHE_FILE, "r", encoding="utf-8") as f:
-                return _json.load(f)
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    return _json.load(f)
+        except (PermissionError, OSError):
+            continue
         except Exception:
-            return {}
+            continue
     return {}
 
 def _save_cache():
@@ -414,10 +419,16 @@ _embedding_provider: Optional[MistralEmbeddingProvider] = None
 def get_providers() -> List[LLMProvider]:
     """Returns available LLM providers (cached singleton)."""
     global _providers
-    if _providers is not None:
+    if _providers is not None and len(_providers) > 0:
         return _providers
 
     _providers = []
+    
+    # FORCED RE-LOAD TO NEVER FAIL
+    from dotenv import load_dotenv
+    import pathlib
+    load_dotenv(str(pathlib.Path(__file__).parent.parent.resolve() / '.env'), override=True)
+    
     mistral_key = os.getenv("MISTRAL_API_KEY")
     if mistral_key:
         _providers.append(MistralProvider(mistral_key))
@@ -432,6 +443,11 @@ def get_embedding_provider() -> Optional[MistralEmbeddingProvider]:
     global _embedding_provider
     if _embedding_provider is not None:
         return _embedding_provider
+
+    # FORCED RE-LOAD TO NEVER FAIL
+    from dotenv import load_dotenv
+    import pathlib
+    load_dotenv(str(pathlib.Path(__file__).parent.parent.resolve() / '.env'), override=True)
         
     mistral_key = os.getenv("MISTRAL_API_KEY")
     if mistral_key:

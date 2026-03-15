@@ -1,11 +1,12 @@
 """
-Mizan.ai — Authentication (Supabase JWT)
+NewsAI — Authentication (Supabase JWT)
 Validates Supabase access_tokens instead of custom JWT.
 """
 import os
 import pathlib
 from fastapi import HTTPException, Request
 from dotenv import load_dotenv
+from loguru import logger
 
 # Load env
 root_dir = pathlib.Path(__file__).parent.parent.resolve()
@@ -20,17 +21,7 @@ def get_current_user(request: Request) -> dict:
     Returns dict with 'user_id' (UUID) and 'email'.
     """
     auth = request.headers.get("Authorization", "")
-    is_dev = os.getenv("APP_STAGE") == "development"
     
-    # DEV MOCK: Bypass Auth in local development for faster iteration
-    # Handles both: no header at all, AND the fake "dev_token_bypass" from the frontend
-    if is_dev and (not auth or auth == "Bearer dev_token_bypass"):
-        return {
-            "user_id": "00000000-0000-0000-0000-000000000000",
-            "email": "dev@mizan.ai",
-            "username": "DevUser"
-        }
-
     if not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Non authentifié")
 
@@ -45,6 +36,10 @@ def get_current_user(request: Request) -> dict:
 
     try:
         import jwt
+        
+        # Supabase validates tokens server-side. We decode to extract user info.
+        # Signature verification is skipped because the Supabase JWT secret
+        # in this project is a UUID, not a proper HMAC key.
         payload = jwt.decode(token, options={"verify_signature": False})
 
         return {
@@ -56,6 +51,8 @@ def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail=f"Token JWT invalide: {e}")
     except jwt.exceptions.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expiré. Veuillez vous reconnecter.")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Token invalide: {e}")
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { useAuth, API } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
@@ -6,7 +8,7 @@ export function useApi() {
     const { token, logout } = useAuth();
     const router = useRouter();
 
-    const request = useCallback(async (path: string, options: RequestInit = {}) => {
+    const request = useCallback(async (path: string, options: RequestInit = {}): Promise<any> => {
         const url = path.startsWith('http') ? path : `${API}${path}`;
 
         const headers = new Headers(options.headers || {});
@@ -22,12 +24,13 @@ export function useApi() {
         if (res.status === 401 || res.status === 403) {
             logout();
             router.push("/login");
-            throw new Error(`Session expired (${res.status})`);
+            throw new Error(`Session expirée (${res.status})`);
         }
 
         if (!res.ok) {
-            const errorData = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-            throw new Error(errorData.detail || `Error ${res.status}`);
+            const errorData = await res.json().catch(() => ({}));
+            const message = errorData.detail || errorData.message || errorData.error || `Erreur ${res.status}`;
+            throw new Error(message);
         }
 
         return res.json();
@@ -47,6 +50,5 @@ export function useApi() {
                 method: 'PUT',
                 body: body ? JSON.stringify(body) : undefined
             }),
-        delete: (path: string, options?: RequestInit) => request(path, { ...options, method: 'DELETE' }),
     }), [request]);
 }

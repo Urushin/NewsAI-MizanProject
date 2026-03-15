@@ -1,5 +1,5 @@
 """
-Mizan.ai — Job Queue (Supabase-based)
+NewsAI — Job Queue (Supabase-based)
 
 A lightweight, durable job queue backed by Supabase Postgres.
 No Redis/RabbitMQ dependency required.

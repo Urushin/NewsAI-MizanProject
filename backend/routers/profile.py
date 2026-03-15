@@ -173,7 +173,7 @@ async def generate_onboarding_manifesto(request: Request, body: OnboardingReques
     user = get_user_by_id(payload["user_id"]) or {}
     username = user.get("username", "")
 
-    lines = ["# Mon Manifesto Mizan.ai", ""]
+    lines = ["# Mon Manifesto NewsAI", ""]
     lines.append("## Domaines d'intérêt")
     for topic in body.topics:
         lines.append(f"- {topic}")

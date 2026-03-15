@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { X, CheckCircle, AlertCircle, Info, Sparkles } from "lucide-react";
 
 type ToastType = "success" | "error" | "info" | "premium";
 
@@ -36,32 +36,32 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return (
         <ToastContext.Provider value={{ showToast }}>
             {children}
-            <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none">
+            <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[300] flex flex-col gap-3 pointer-events-none w-full max-w-[400px] px-6">
                 <AnimatePresence>
                     {toasts.map((toast) => (
                         <motion.div
                             key={toast.id}
-                            initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                             className={`
-                                pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-[20px] shadow-2xl border min-w-[300px] max-w-md
-                                ${toast.type === "success" ? "bg-white border-emerald-100 text-emerald-900" :
-                                    toast.type === "error" ? "bg-white border-red-100 text-red-900" :
-                                        toast.type === "premium" ? "bg-indigo-600 border-indigo-500 text-white" :
-                                            "bg-white border-gray-100 text-gray-900"}
+                                pointer-events-auto flex items-center gap-4 px-6 py-4 rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] border backdrop-blur-xl
+                                ${toast.type === "success" ? "bg-white/90 border-emerald-100 text-emerald-900" :
+                                    toast.type === "error" ? "bg-white/90 border-red-100 text-red-900" :
+                                        toast.type === "premium" ? "bg-indigo-600 text-white border-indigo-500" :
+                                            "bg-white/90 border-black/[0.04] text-gray-900"}
                             `}
                         >
                             <div className="shrink-0">
                                 {toast.type === "success" && <CheckCircle size={20} className="text-emerald-500" aria-hidden="true" />}
                                 {toast.type === "error" && <AlertCircle size={20} className="text-red-500" aria-hidden="true" />}
-                                {toast.type === "premium" && <div className="text-xl">⭐</div>}
+                                {toast.type === "premium" && <Sparkles size={20} className="text-white" />}
                                 {toast.type === "info" && <Info size={20} className="text-indigo-500" aria-hidden="true" />}
                             </div>
-                            <p className="flex-1 text-[14px] font-bold leading-tight">{toast.message}</p>
+                            <p className="flex-1 text-[13px] font-black leading-tight tracking-tight">{toast.message}</p>
                             <button
                                 onClick={() => removeToast(toast.id)}
-                                className={`shrink-0 opacity-40 hover:opacity-100 transition-opacity ${toast.type === "premium" ? "text-white" : "text-gray-400"}`}
+                                className={`shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 ${toast.type === "premium" ? "text-white" : "text-gray-400"}`}
                             >
                                 <X size={16} aria-hidden="true" />
                             </button>

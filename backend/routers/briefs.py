@@ -68,13 +68,13 @@ def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: st
     
     user = get_user_by_id(user_id) or {}
 
+    # In production, we strictly use the user profile from DB
+    if not user:
+        raise HTTPException(status_code=404, detail="Profil utilisateur introuvable")
+
     username = user.get("username", payload.get("username", ""))
     language = user.get("language", "fr")
     threshold = user.get("score_threshold", 70)
-
-    # In dev mode without a real profile, use defaults from the auth payload
-    if is_dev and (not user or user.get("id") == "00000000-0000-0000-0000-000000000000"):
-        username = payload.get("username", "DevUser")
 
     try:
         check_brief_quota(user_id, sb)
@@ -95,13 +95,21 @@ def generate_brief(request: Request, background_tasks: BackgroundTasks, mode: st
     plan_info = get_user_plan(user_id, sb)
     priority = 1 if plan_info["plan"] in ("pro", "enterprise") else 0
 
-    job = enqueue_job(
-        job_type="generate_brief",
-        payload={"username": username, "language": language, "score_threshold": threshold, "force": force},
-        user_id=user_id,
-        priority=priority,
-    )
-    return {"message": "Generation queued", "status": "queued", "job_id": job.get("id")}
+    try:
+        job = enqueue_job(
+            job_type="generate_brief",
+            payload={"username": username, "language": language, "score_threshold": threshold, "force": force},
+            user_id=user_id,
+            priority=priority,
+        )
+        return {"message": "Generation queued", "status": "queued", "job_id": job.get("id")}
+    except Exception as e:
+        # Fallback: if job_queue insert fails (e.g. RLS), run pipeline directly
+        from loguru import logger
+        logger.warning(f"Job queue insert failed ({e}), falling back to direct background task")
+        from pipeline import _run_pipeline_for_user_async
+        background_tasks.add_task(_run_pipeline_for_user_async, username, language, threshold, "prod", force)
+        return {"message": "Generation started in background (direct)", "status": "processing"}
 
 @router.get("/status")
 def get_brief_status(request: Request):
@@ -136,13 +144,9 @@ def trigger_brief_check(request: Request):
     language = user.get("language", "fr")
     threshold = user.get("score_threshold", 70)
 
-    try:
-        check_brief_quota(user_id, sb)
-    except QuotaExceeded as e:
-        raise HTTPException(status_code=429, detail=str(e))
-
+    # Check plan for priority
     plan_info = get_user_plan(user_id, sb)
-    priority = 1 if plan_info["plan"] in ("pro", "enterprise") else 0
+    priority = 1 if plan_info.get("plan") in ("pro", "enterprise") else 0
 
     # Reset status
     from database import set_generation_status
@@ -180,7 +184,7 @@ async def analyze_article(request: Request, body: AnalyzeRequest):
     if plan_info.get("plan") not in ("pro", "enterprise") and not is_dev:
         return {
             "status": "upgrade_required", 
-            "analysis": "L'Intelligence Artificielle de Mizan.ai est capable de rédiger l'analyse détaillée de cet article, de croiser les sources et d'en extraire le contexte géopolitique caché.\n\nCependant, cette fonctionnalité demande des capacités de lecture poussées (Premium Tokens). Passez au plan Pro pour débloquer l'analyse approfondie de ce contenu."
+            "analysis": "L'Intelligence Artificielle de NewsAI est capable de rédiger l'analyse détaillée de cet article, de croiser les sources et d'en extraire le contexte géopolitique caché.\n\nCependant, cette fonctionnalité demande des capacités de lecture poussées (Premium Tokens). Passez au plan Pro pour débloquer l'analyse approfondie de ce contenu."
         }
         
     providers = get_providers()

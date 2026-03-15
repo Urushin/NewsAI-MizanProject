@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mizan.ai";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://newsai.local";
 
 export default function sitemap(): MetadataRoute.Sitemap {
     return [

@@ -1,5 +1,5 @@
 """
-Mizan.ai — CRON Scheduler
+NewsAI — CRON Scheduler
 
 Generates daily briefs for all active users.
 Run via crontab, Vercel CRON, Railway CRON, or GitHub Actions.

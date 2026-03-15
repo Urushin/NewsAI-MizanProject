@@ -9,13 +9,13 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mizan.ai";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://newsai.local";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Mizan.ai — Your Intelligent News Filter",
-    template: "%s | Mizan.ai",
+    default: "NewsAI — Your Intelligent News Filter",
+    template: "%s | NewsAI",
   },
   description:
     "AI-powered personalized news briefing. Get only the news that matters to you, filtered by artificial intelligence.",
@@ -28,9 +28,9 @@ export const metadata: Metadata = {
     "veille technologique",
     "actualités intelligentes",
   ],
-  authors: [{ name: "Mizan.ai" }],
-  creator: "Mizan.ai",
-  publisher: "Mizan.ai",
+  authors: [{ name: "NewsAI" }],
+  creator: "NewsAI",
+  publisher: "NewsAI",
 
   // Canonical
   alternates: {
@@ -48,8 +48,8 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     alternateLocale: ["en_US", "ja_JP"],
     url: SITE_URL,
-    siteName: "Mizan.ai",
-    title: "Mizan.ai — Your Intelligent News Filter",
+    siteName: "NewsAI",
+    title: "NewsAI — Your Intelligent News Filter",
     description:
       "AI-powered personalized news briefing. Get only the news that matters to you.",
     images: [
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Mizan.ai Open Graph Image",
+        alt: "NewsAI Open Graph Image",
       },
     ],
   },
@@ -65,11 +65,11 @@ export const metadata: Metadata = {
   // Twitter Card
   twitter: {
     card: "summary_large_image",
-    title: "Mizan.ai — Your Intelligent News Filter",
+    title: "NewsAI — Your Intelligent News Filter",
     description:
       "AI-powered personalized news briefing. Get only the news that matters to you.",
     images: ["/og-image.png"],
-    creator: "@mizanai",
+    creator: "@newsaiai",
   },
 
   // Robots
@@ -93,7 +93,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F9F9F9",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F9F9F9" },
+    { media: "(prefers-color-scheme: dark)", color: "#171717" }
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -103,7 +106,7 @@ function WebsiteJsonLd() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Mizan.ai",
+    name: "NewsAI",
     url: SITE_URL,
     description:
       "AI-powered personalized news briefing platform that filters and summarizes news articles based on your interests.",
@@ -116,7 +119,7 @@ function WebsiteJsonLd() {
     },
     creator: {
       "@type": "Organization",
-      name: "Mizan.ai Team",
+      name: "NewsAI Team",
     },
   };
 

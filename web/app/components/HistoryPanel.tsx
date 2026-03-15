@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { useAuth, API } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { History, Calendar, ChevronRight, X, Clock } from "lucide-react";
-
 import { useApi } from "../utils/api";
 
 interface HistoryEntry {
@@ -13,57 +12,34 @@ interface HistoryEntry {
     total_collected: number;
 }
 
+import { historyLabels, commonLabels } from "../config/translations";
+import { TRANSITIONS } from "../config/constants";
+
 interface Props {
     onSelectDate: (date: string | null) => void;
     selectedDate: string | null;
     lang: string;
 }
 
-const i18n: Record<string, Record<string, string>> = {
-    fr: {
-        title: "Historique",
-        empty: "Aucun historique disponible",
-        today: "Aujourd'hui",
-        articles: "articles",
-        back: "← Retour à aujourd'hui",
-    },
-    en: {
-        title: "History",
-        empty: "No history available",
-        today: "Today",
-        articles: "articles",
-        back: "← Back to today",
-    },
-    ja: {
-        title: "履歴",
-        empty: "履歴はまだありません",
-        today: "今日",
-        articles: "件",
-        back: "← 今日に戻る",
-    },
-};
-
 function formatHistoryDate(dateStr: string, lang: string): string {
-    // Handle timestamp format: YYYY-MM-DD_HH-MM-SS
     const parts = dateStr.split("_");
     const datePart = parts[0];
     const timePart = parts[1];
 
     const [y, m, d] = datePart.split("-").map(Number);
     const date = new Date(y, m - 1, d);
-    const locale = lang === "fr" ? "fr-FR" : lang === "ja" ? "ja-JP" : "en-US";
+    const locale = lang === "fr" ? "fr-FR" : "en-US";
 
     const formattedDate = date.toLocaleDateString(locale, {
-        weekday: "long",
+        weekday: "short",
         day: "numeric",
-        month: "long",
-        year: "numeric",
+        month: "short",
     });
 
     if (timePart) {
         const [h, min] = timePart.split("-");
-        const timeSep = lang === 'fr' ? 'h' : ':';
-        return `${formattedDate} (${h}${timeSep}${min})`;
+        const hFmt = lang === "fr" ? "h" : ":";
+        return `${formattedDate} (${h}${hFmt}${min})`;
     }
     return formattedDate;
 }
@@ -76,7 +52,8 @@ export default function HistoryPanel({ onSelectDate, selectedDate, lang }: Props
     const [loading, setLoading] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
 
-    const t = i18n[lang] || i18n.en;
+    const t = historyLabels[lang] || historyLabels.en;
+    const c = commonLabels[lang] || commonLabels.en;
 
     useEffect(() => {
         if (!open || !token) return;
@@ -84,13 +61,9 @@ export default function HistoryPanel({ onSelectDate, selectedDate, lang }: Props
         api.get("/api/brief/history")
             .then((data: { dates: HistoryEntry[] }) => {
                 setDates(data.dates || []);
-                setLoading(false);
             })
-            .catch(() => setLoading(false));
-
-        if (panelRef.current) {
-            panelRef.current.focus();
-        }
+            .catch(() => {})
+            .finally(() => setLoading(false));
     }, [open, token, api]);
 
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -105,106 +78,93 @@ export default function HistoryPanel({ onSelectDate, selectedDate, lang }: Props
     }, [dates, lang, selectedDate, todayStr]);
 
     return (
-        <div className="history-wrapper relative">
+        <div className="relative">
             <motion.button
-                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`history-toggle ${open ? 'active' : ''}`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all bg-zinc-950 text-white shadow-xl hover:bg-black group ${open ? 'ring-2 ring-zinc-200' : ''}`}
                 onClick={() => setOpen((o) => !o)}
                 aria-label={t.title}
                 title={t.title}
             >
-                <History size={18} aria-hidden="true" />
+                <History size={16} />
             </motion.button>
 
             <AnimatePresence>
                 {open && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-[2px] pointer-events-auto"
-                        onClick={() => setOpen(false)}
-                    />
-                )}
-            </AnimatePresence>
+                    <>
+                      <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 z-[150] bg-zinc-950/40 backdrop-blur-sm"
+                          onClick={() => setOpen(false)}
+                      />
+                      <motion.div
+                          initial={{ opacity: 0, scale: 0.98, x: -10 }}
+                          animate={{ opacity: 1, scale: 1, x: 0 }}
+                          exit={{ opacity: 0, scale: 0.98, x: -10 }}
+                          transition={TRANSITIONS.spring}
+                          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:absolute sm:top-0 sm:left-14 sm:translate-x-0 sm:translate-y-0 z-[160] w-[90vw] max-w-[320px] bg-[#FDFCF8] rounded-none shadow-2xl border border-zinc-200 p-8 flex flex-col"
+                          ref={panelRef}
+                      >
+                          <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-200">
+                              <h3 className="text-[11px] font-[900] text-zinc-900 flex items-center gap-3 uppercase tracking-[0.2em] font-sans">
+                                  <Clock size={16} className="text-zinc-400" />
+                                  Archives
+                              </h3>
+                              <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-zinc-900">
+                                  <X size={20} />
+                              </button>
+                          </div>
 
-            <AnimatePresence>
-                {open && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="history-panel-premium z-[110]"
-                        ref={panelRef}
-                        tabIndex={-1}
-                    >
-                        <div className="flex items-center justify-between mb-4 px-1">
-                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                <Clock size={14} className="text-indigo-500" aria-hidden="true" />
-                                {t.title}
-                            </h3>
-                            <button
-                                onClick={() => setOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <X size={16} aria-hidden="true" />
-                            </button>
-                        </div>
+                          {selectedDate && (
+                              <button
+                                  className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-100 text-zinc-900 text-[10px] font-black uppercase tracking-widest mb-6 hover:bg-zinc-200 transition-colors"
+                                  onClick={() => {
+                                      onSelectDate(null);
+                                      setOpen(false);
+                                  }}
+                              >
+                                  <ChevronRight size={14} className="rotate-180" />
+                                  Retour Aujourd'hui
+                              </button>
+                          )}
 
-                        {selectedDate && (
-                            <button
-                                className="history-back-premium mb-4"
-                                onClick={() => {
-                                    onSelectDate(null);
-                                    setOpen(false);
-                                }}
-                            >
-                                <ChevronRight size={14} className="rotate-180" aria-hidden="true" />
-                                {t.back}
-                            </button>
-                        )}
-
-                        <div className="history-scroll-area custom-scrollbar max-h-[320px] overflow-y-auto">
-                            {loading ? (
-                                <div className="flex flex-col gap-2">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="h-12 bg-gray-50 rounded-xl animate-pulse" />
-                                    ))}
-                                </div>
-                            ) : dates.length === 0 ? (
-                                <div className="py-8 text-center">
-                                    <Calendar size={24} className="mx-auto text-gray-200 mb-2" aria-hidden="true" />
-                                    <p className="text-xs text-gray-400 font-medium">{t.empty}</p>
-                                </div>
-                            ) : (
-                                <ul className="history-list-premium">
-                                    {formattedEntries.map((entry) => {
-                                        return (
-                                            <li key={entry.date}>
-                                                <button
-                                                    className={`history-item-btn ${entry.isSelected ? "selected" : ""}`}
-                                                    onClick={() => {
-                                                        onSelectDate(entry.isMainToday ? null : entry.date);
-                                                        setOpen(false);
-                                                    }}
-                                                >
-                                                    <div className="history-item-left">
-                                                        <span className="history-item-date">{entry.label}</span>
-                                                        <span className="history-item-meta">
-                                                            {entry.total_kept} {t.articles} • {entry.total_collected} sources
-                                                        </span>
-                                                    </div>
-                                                    <ChevronRight size={14} className={`history-item-arrow ${entry.isSelected ? 'opacity-100' : 'opacity-0'} transition-opacity`} aria-hidden="true" />
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            )}
-                        </div>
-                    </motion.div>
+                          <div className="flex-1 max-h-[400px] overflow-y-auto custom-scrollbar -mx-4 px-4 space-y-0">
+                              {loading ? (
+                                  [1, 2, 3].map(i => (
+                                      <div key={i} className="h-16 border-b border-zinc-100 animate-pulse" />
+                                  ))
+                              ) : dates.length === 0 ? (
+                                  <div className="py-20 text-center">
+                                      <Calendar size={24} className="mx-auto text-zinc-200 mb-4" />
+                                      <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-relaxed">{t.empty}</p>
+                                  </div>
+                              ) : (
+                                  formattedEntries.map((entry) => (
+                                      <button
+                                          key={entry.date}
+                                          className={`w-full text-left py-5 border-b border-zinc-100 flex justify-between items-center transition-all group ${entry.isSelected ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+                                          onClick={() => {
+                                              onSelectDate(entry.isMainToday ? null : entry.date);
+                                              setOpen(false);
+                                          }}
+                                      >
+                                           <div className="flex flex-col gap-1">
+                                               <p className={`text-[15px] font-[700] text-zinc-900 font-serif ${entry.isSelected ? "underline underline-offset-4 decoration-zinc-900" : ""}`}>
+                                                   {entry.label}
+                                               </p>
+                                               <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">
+                                                   {entry.total_kept} Articles • {entry.total_collected} Sources
+                                               </p>
+                                           </div>
+                                          <ChevronRight size={14} className={`transition-transform duration-300 group-hover:translate-x-1 ${entry.isSelected ? 'text-zinc-900' : 'text-zinc-300'}`} />
+                                      </button>
+                                  ))
+                              )}
+                          </div>
+                      </motion.div>
+                    </>
                 )}
             </AnimatePresence>
         </div>

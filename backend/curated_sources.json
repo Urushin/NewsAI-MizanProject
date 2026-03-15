@@ -1,0 +1,3680 @@
+{
+    "sources": [
+        {
+            "name": "rss_techcrunch",
+            "url": "https://techcrunch.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_theverge",
+            "url": "https://www.theverge.com/rss/index.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_wired",
+            "url": "https://www.wired.com/feed/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_arstechnica",
+            "url": "https://feeds.arstechnica.com/arstechnica/index",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_bloomberg_tech",
+            "url": "https://www.bloomberg.com/feeds/technology/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_mit_tech_review",
+            "url": "https://www.technologyreview.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_venturebeat",
+            "url": "https://venturebeat.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_zdnet",
+            "url": "https://www.zdnet.com/news/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_engadget",
+            "url": "https://www.engadget.com/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_hackernews",
+            "url": "https://news.ycombinator.com/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_reddit_ai",
+            "url": "https://www.reddit.com/r/MachineLearning/.rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_reddit_tech",
+            "url": "https://www.reddit.com/r/technology/.rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Tech & Science"
+        },
+        {
+            "name": "rss_bloomberg_biz",
+            "url": "https://www.bloomberg.com/feeds/businessweek/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_wsj_biz",
+            "url": "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_ft_markets",
+            "url": "https://www.ft.com/markets?format=rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_coindesk",
+            "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_cointelegraph",
+            "url": "https://cointelegraph.com/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_decrypt",
+            "url": "https://decrypt.co/feed",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_reuters_biz",
+            "url": "https://www.reutersagency.com/feed/?best-topics=business",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_lesechos",
+            "url": "https://www.lesechos.fr/rss/rss_une.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_latribune",
+            "url": "https://www.latribune.fr/rss/feed/une.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Finance & Business"
+        },
+        {
+            "name": "rss_bbc_world",
+            "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_cnn_world",
+            "url": "http://rss.cnn.com/rss/edition_world.rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_aljazeera",
+            "url": "https://www.aljazeera.com/xml/rss/all.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_reuters_world",
+            "url": "https://www.reutersagency.com/feed/?best-topics=political-general",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_france24_fr",
+            "url": "https://www.france24.com/fr/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_lemonde",
+            "url": "https://www.lemonde.fr/rss/une.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_lefigaro",
+            "url": "https://www.lefigaro.fr/rss/figaro_actualites.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_liberation",
+            "url": "https://www.liberation.fr/arc/outboundfeeds/rss-all/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_nyt_world",
+            "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_the_guardian",
+            "url": "https://www.theguardian.com/world/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_courrier_intl",
+            "url": "https://www.courrierinternational.com/feed/all/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Politique & Monde"
+        },
+        {
+            "name": "rss_natgeo",
+            "url": "https://www.nationalgeographic.com/rss/index.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Société & Environnement"
+        },
+        {
+            "name": "rss_sciam",
+            "url": "https://www.scientificamerican.com/rss/all/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Société & Environnement"
+        },
+        {
+            "name": "rss_variety",
+            "url": "https://variety.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Culture & Divertissement"
+        },
+        {
+            "name": "rss_hollywoodreporter",
+            "url": "https://www.hollywoodreporter.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "Culture & Divertissement"
+        },
+        {
+            "name": "rss_espn",
+            "url": "https://www.espn.com/espn/rss/news",
+            "tier": 2,
+            "lang": "en",
+            "category": "Lifestyle & Sport"
+        },
+        {
+            "name": "rss_lequipe",
+            "url": "https://xml.lequipe.fr/rss/actu_rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "Lifestyle & Sport"
+        },
+        {
+            "name": "BBC World",
+            "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "politics"
+        },
+        {
+            "name": "AP News",
+            "url": "https://news.google.com/rss/search?q=site:apnews.com&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "politics"
+        },
+        {
+            "name": "Reuters World",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+world&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "politics"
+        },
+        {
+            "name": "CNN World",
+            "url": "https://news.google.com/rss/search?q=site:cnn.com+world+news+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "politics"
+        },
+        {
+            "name": "Reuters US",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+US&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "NPR News",
+            "url": "https://feeds.npr.org/1001/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "PBS NewsHour",
+            "url": "https://www.pbs.org/newshour/feeds/rss/headlines",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "ABC News",
+            "url": "https://feeds.abcnews.com/abcnews/topstories",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "CBS News",
+            "url": "https://www.cbsnews.com/latest/rss/main",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "NBC News",
+            "url": "https://feeds.nbcnews.com/nbcnews/public/news",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "Wall Street Journal",
+            "url": "https://feeds.content.dowjones.io/public/rss/RSSUSnews",
+            "tier": 1,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "Politico",
+            "url": "https://rss.politico.com/politics-news.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "The Hill",
+            "url": "https://thehill.com/news/feed",
+            "tier": 3,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "Axios",
+            "url": "https://api.axios.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "Fox News",
+            "url": "https://moxie.foxnews.com/google-publisher/us.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "us"
+        },
+        {
+            "name": "France 24",
+            "url": "https://www.france24.com/en/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "France 24",
+            "url": "https://www.france24.com/es/rss",
+            "tier": 2,
+            "lang": "es",
+            "category": "europe"
+        },
+        {
+            "name": "France 24",
+            "url": "https://www.france24.com/ar/rss",
+            "tier": 2,
+            "lang": "ar",
+            "category": "europe"
+        },
+        {
+            "name": "EuroNews",
+            "url": "https://www.euronews.com/rss?format=xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "EuroNews",
+            "url": "https://fr.euronews.com/rss?format=xml",
+            "tier": 2,
+            "lang": "fr",
+            "category": "europe"
+        },
+        {
+            "name": "EuroNews",
+            "url": "https://de.euronews.com/rss?format=xml",
+            "tier": 2,
+            "lang": "de",
+            "category": "europe"
+        },
+        {
+            "name": "EuroNews",
+            "url": "https://it.euronews.com/rss?format=xml",
+            "tier": 2,
+            "lang": "it",
+            "category": "europe"
+        },
+        {
+            "name": "EuroNews",
+            "url": "https://es.euronews.com/rss?format=xml",
+            "tier": 2,
+            "lang": "es",
+            "category": "europe"
+        },
+        {
+            "name": "EuroNews",
+            "url": "https://pt.euronews.com/rss?format=xml",
+            "tier": 2,
+            "lang": "pt",
+            "category": "europe"
+        },
+        {
+            "name": "EuroNews",
+            "url": "https://ru.euronews.com/rss?format=xml",
+            "tier": 2,
+            "lang": "ru",
+            "category": "europe"
+        },
+        {
+            "name": "Le Monde",
+            "url": "https://www.lemonde.fr/en/rss/une.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "DW News",
+            "url": "https://rss.dw.com/xml/rss-en-all",
+            "tier": 2,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "DW News",
+            "url": "https://rss.dw.com/xml/rss-de-all",
+            "tier": 2,
+            "lang": "de",
+            "category": "europe"
+        },
+        {
+            "name": "DW News",
+            "url": "https://news.google.com/rss/search?q=site:dw.com/es&hl=es-419&gl=MX&ceid=MX:es-419",
+            "tier": 2,
+            "lang": "es",
+            "category": "europe"
+        },
+        {
+            "name": "El País",
+            "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",
+            "tier": 2,
+            "lang": "es",
+            "category": "europe"
+        },
+        {
+            "name": "El Mundo",
+            "url": "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml",
+            "tier": 2,
+            "lang": "es",
+            "category": "europe"
+        },
+        {
+            "name": "BBC Mundo",
+            "url": "https://www.bbc.com/mundo/index.xml",
+            "tier": 2,
+            "lang": "es",
+            "category": "europe"
+        },
+        {
+            "name": "Tagesschau",
+            "url": "https://www.tagesschau.de/xml/rss2/",
+            "tier": 1,
+            "lang": "de",
+            "category": "europe"
+        },
+        {
+            "name": "Bild",
+            "url": "https://www.bild.de/feed/alles.xml",
+            "tier": 4,
+            "lang": "de",
+            "category": "europe"
+        },
+        {
+            "name": "Der Spiegel",
+            "url": "https://www.spiegel.de/schlagzeilen/tops/index.rss",
+            "tier": 2,
+            "lang": "de",
+            "category": "europe"
+        },
+        {
+            "name": "Die Zeit",
+            "url": "https://newsfeed.zeit.de/index",
+            "tier": 2,
+            "lang": "de",
+            "category": "europe"
+        },
+        {
+            "name": "ANSA",
+            "url": "https://www.ansa.it/sito/notizie/topnews/topnews_rss.xml",
+            "tier": 1,
+            "lang": "it",
+            "category": "europe"
+        },
+        {
+            "name": "Corriere della Sera",
+            "url": "https://www.corriere.it/rss/homepage.xml",
+            "tier": 2,
+            "lang": "it",
+            "category": "europe"
+        },
+        {
+            "name": "Repubblica",
+            "url": "https://www.repubblica.it/rss/homepage/rss2.0.xml",
+            "tier": 2,
+            "lang": "it",
+            "category": "europe"
+        },
+        {
+            "name": "NOS Nieuws",
+            "url": "https://feeds.nos.nl/nosnieuwsalgemeen",
+            "tier": 1,
+            "lang": "nl",
+            "category": "europe"
+        },
+        {
+            "name": "NRC",
+            "url": "https://www.nrc.nl/rss/",
+            "tier": 2,
+            "lang": "nl",
+            "category": "europe"
+        },
+        {
+            "name": "De Telegraaf",
+            "url": "https://news.google.com/rss/search?q=site:telegraaf.nl+when:1d&hl=nl&gl=NL&ceid=NL:nl",
+            "tier": 2,
+            "lang": "nl",
+            "category": "europe"
+        },
+        {
+            "name": "SVT Nyheter",
+            "url": "https://www.svt.se/nyheter/rss.xml",
+            "tier": 1,
+            "lang": "sv",
+            "category": "europe"
+        },
+        {
+            "name": "Dagens Nyheter",
+            "url": "https://www.dn.se/rss/",
+            "tier": 2,
+            "lang": "sv",
+            "category": "europe"
+        },
+        {
+            "name": "Svenska Dagbladet",
+            "url": "https://www.svd.se/feed/articles.rss",
+            "tier": 2,
+            "lang": "sv",
+            "category": "europe"
+        },
+        {
+            "name": "BBC Turkce",
+            "url": "https://feeds.bbci.co.uk/turkce/rss.xml",
+            "tier": 2,
+            "lang": "tr",
+            "category": "europe"
+        },
+        {
+            "name": "DW Turkish",
+            "url": "https://rss.dw.com/xml/rss-tur-all",
+            "tier": 2,
+            "lang": "tr",
+            "category": "europe"
+        },
+        {
+            "name": "Hurriyet",
+            "url": "https://www.hurriyet.com.tr/rss/anasayfa",
+            "tier": 2,
+            "lang": "tr",
+            "category": "europe"
+        },
+        {
+            "name": "TVN24",
+            "url": "https://tvn24.pl/swiat.xml",
+            "tier": 2,
+            "lang": "pl",
+            "category": "europe"
+        },
+        {
+            "name": "Polsat News",
+            "url": "https://www.polsatnews.pl/rss/wszystkie.xml",
+            "tier": 2,
+            "lang": "pl",
+            "category": "europe"
+        },
+        {
+            "name": "Rzeczpospolita",
+            "url": "https://www.rp.pl/rss_main",
+            "tier": 2,
+            "lang": "pl",
+            "category": "europe"
+        },
+        {
+            "name": "Kathimerini",
+            "url": "https://news.google.com/rss/search?q=site:kathimerini.gr+when:2d&hl=el&gl=GR&ceid=GR:el",
+            "tier": 2,
+            "lang": "el",
+            "category": "europe"
+        },
+        {
+            "name": "Naftemporiki",
+            "url": "https://www.naftemporiki.gr/feed/",
+            "tier": 2,
+            "lang": "el",
+            "category": "europe"
+        },
+        {
+            "name": "in.gr",
+            "url": "https://www.in.gr/feed/",
+            "tier": 3,
+            "lang": "el",
+            "category": "europe"
+        },
+        {
+            "name": "iefimerida",
+            "url": "https://www.iefimerida.gr/rss.xml",
+            "tier": 3,
+            "lang": "el",
+            "category": "europe"
+        },
+        {
+            "name": "Proto Thema",
+            "url": "https://news.google.com/rss/search?q=site:protothema.gr+when:2d&hl=el&gl=GR&ceid=GR:el",
+            "tier": 3,
+            "lang": "el",
+            "category": "europe"
+        },
+        {
+            "name": "BBC Russian",
+            "url": "https://feeds.bbci.co.uk/russian/rss.xml",
+            "tier": 2,
+            "lang": "ru",
+            "category": "europe"
+        },
+        {
+            "name": "Meduza",
+            "url": "https://meduza.io/rss/all",
+            "tier": 2,
+            "lang": "ru",
+            "category": "europe"
+        },
+        {
+            "name": "Novaya Gazeta Europe",
+            "url": "https://novayagazeta.eu/feed/rss",
+            "tier": 2,
+            "lang": "ru",
+            "category": "europe"
+        },
+        {
+            "name": "TASS",
+            "url": "https://news.google.com/rss/search?q=site:tass.com+OR+TASS+Russia+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "RT",
+            "url": "https://www.rt.com/rss/",
+            "tier": 3,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "RT Russia",
+            "url": "https://www.rt.com/rss/russia/",
+            "tier": 3,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "Kyiv Independent",
+            "url": "https://news.google.com/rss/search?q=site:kyivindependent.com+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "Moscow Times",
+            "url": "https://www.themoscowtimes.com/rss/news",
+            "tier": 4,
+            "lang": "en",
+            "category": "europe"
+        },
+        {
+            "name": "BBC Middle East",
+            "url": "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Al Jazeera",
+            "url": "https://www.aljazeera.net/aljazeerarss/a7c186be-1adb-4b11-a982-4783e765316e/4e17ecdc-8fb9-40de-a5d6-d00f72384a51",
+            "tier": 2,
+            "lang": "ar",
+            "category": "middleeast"
+        },
+        {
+            "name": "Al Arabiya",
+            "url": "https://news.google.com/rss/search?q=site:english.alarabiya.net+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Al Arabiya",
+            "url": "https://www.alarabiya.net/tools/mrss/?cat=main",
+            "tier": 4,
+            "lang": "ar",
+            "category": "middleeast"
+        },
+        {
+            "name": "Guardian ME",
+            "url": "https://www.theguardian.com/world/middleeast/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "BBC Persian",
+            "url": "http://feeds.bbci.co.uk/persian/tv-and-radio-37434376/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Iran International",
+            "url": "https://news.google.com/rss/search?q=site:iranintl.com+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Fars News",
+            "url": "https://news.google.com/rss/search?q=site:farsnews.ir+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Haaretz",
+            "url": "https://news.google.com/rss/search?q=site:haaretz.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Arab News",
+            "url": "https://news.google.com/rss/search?q=site:arabnews.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "The National",
+            "url": "https://news.google.com/rss/search?q=site:thenationalnews.com+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Oman Observer",
+            "url": "https://www.omanobserver.om/rssFeed/1",
+            "tier": 4,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Asharq Business",
+            "url": "https://asharqbusiness.com/rss.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Asharq News",
+            "url": "https://asharq.com/snapchat/rss.xml",
+            "tier": 4,
+            "lang": "ar",
+            "category": "middleeast"
+        },
+        {
+            "name": "Rudaw",
+            "url": "https://news.google.com/rss/search?q=site:rudaw.net+when:7d&hl=en&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "middleeast"
+        },
+        {
+            "name": "Hacker News",
+            "url": "https://hnrss.org/frontpage",
+            "tier": 4,
+            "lang": "en",
+            "category": "tech"
+        },
+        {
+            "name": "Ars Technica",
+            "url": "https://feeds.arstechnica.com/arstechnica/technology-lab",
+            "tier": 3,
+            "lang": "en",
+            "category": "tech"
+        },
+        {
+            "name": "AI News",
+            "url": "https://news.google.com/rss/search?q=(OpenAI+OR+Anthropic+OR+Google+AI+OR+\"large+language+model\"+OR+ChatGPT)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "VentureBeat AI",
+            "url": "https://venturebeat.com/category/ai/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "The Verge AI",
+            "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "MIT Tech Review",
+            "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+            "tier": 3,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "ArXiv AI",
+            "url": "https://export.arxiv.org/rss/cs.AI",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "CNBC",
+            "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+            "tier": 2,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "MarketWatch",
+            "url": "https://news.google.com/rss/search?q=site:marketwatch.com+markets+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "Yahoo Finance",
+            "url": "https://finance.yahoo.com/news/rssindex",
+            "tier": 4,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "Financial Times",
+            "url": "https://www.ft.com/rss/home",
+            "tier": 2,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "Reuters Business",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+business+markets&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "White House",
+            "url": "https://news.google.com/rss/search?q=site:whitehouse.gov&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "State Dept",
+            "url": "https://news.google.com/rss/search?q=site:state.gov+OR+\"State+Department\"&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "Pentagon",
+            "url": "https://news.google.com/rss/search?q=site:defense.gov+OR+Pentagon&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "Treasury",
+            "url": "https://news.google.com/rss/search?q=site:treasury.gov+OR+\"Treasury+Department\"&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "DOJ",
+            "url": "https://news.google.com/rss/search?q=site:justice.gov+OR+\"Justice+Department\"+DOJ&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "Federal Reserve",
+            "url": "https://www.federalreserve.gov/feeds/press_all.xml",
+            "tier": 3,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "SEC",
+            "url": "https://www.sec.gov/news/pressreleases.rss",
+            "tier": 3,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "CDC",
+            "url": "https://news.google.com/rss/search?q=site:cdc.gov+OR+CDC+health&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "FEMA",
+            "url": "https://news.google.com/rss/search?q=site:fema.gov+OR+FEMA+emergency&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "DHS",
+            "url": "https://news.google.com/rss/search?q=site:dhs.gov+OR+\"Homeland+Security\"&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "UN News",
+            "url": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+            "tier": 1,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "CISA",
+            "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+            "tier": 1,
+            "lang": "en",
+            "category": "gov"
+        },
+        {
+            "name": "Layoffs.fyi",
+            "url": "https://news.google.com/rss/search?q=tech+company+layoffs+announced&hl=en&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "layoffs"
+        },
+        {
+            "name": "TechCrunch Layoffs",
+            "url": "https://techcrunch.com/tag/layoffs/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "layoffs"
+        },
+        {
+            "name": "Layoffs News",
+            "url": "https://news.google.com/rss/search?q=(layoffs+OR+\"job+cuts\"+OR+\"workforce+reduction\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "layoffs"
+        },
+        {
+            "name": "Foreign Policy",
+            "url": "https://foreignpolicy.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Atlantic Council",
+            "url": "https://www.atlanticcouncil.org/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Foreign Affairs",
+            "url": "https://www.foreignaffairs.com/rss.xml",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "CSIS",
+            "url": "https://news.google.com/rss/search?q=site:csis.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "RAND",
+            "url": "https://news.google.com/rss/search?q=site:rand.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Brookings",
+            "url": "https://news.google.com/rss/search?q=site:brookings.edu+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Carnegie",
+            "url": "https://news.google.com/rss/search?q=site:carnegieendowment.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "War on the Rocks",
+            "url": "https://warontherocks.com/feed",
+            "tier": 2,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "AEI",
+            "url": "https://www.aei.org/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Responsible Statecraft",
+            "url": "https://responsiblestatecraft.org/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "RUSI",
+            "url": "https://news.google.com/rss/search?q=site:rusi.org+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "FPRI",
+            "url": "https://www.fpri.org/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Jamestown",
+            "url": "https://jamestown.org/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "CrisisWatch",
+            "url": "https://www.crisisgroup.org/rss",
+            "tier": 3,
+            "lang": "en",
+            "category": "crisis"
+        },
+        {
+            "name": "IAEA",
+            "url": "https://www.iaea.org/feeds/topnews",
+            "tier": 1,
+            "lang": "en",
+            "category": "crisis"
+        },
+        {
+            "name": "WHO",
+            "url": "https://www.who.int/rss-feeds/news-english.xml",
+            "tier": 1,
+            "lang": "en",
+            "category": "crisis"
+        },
+        {
+            "name": "UNHCR",
+            "url": "https://news.google.com/rss/search?q=site:unhcr.org+OR+UNHCR+refugees+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "crisis"
+        },
+        {
+            "name": "Africa News",
+            "url": "https://news.google.com/rss/search?q=(Africa+OR+Nigeria+OR+Kenya+OR+\"South+Africa\"+OR+Ethiopia)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "Sahel Crisis",
+            "url": "https://news.google.com/rss/search?q=(Sahel+OR+Mali+OR+Niger+OR+\"Burkina+Faso\"+OR+Wagner)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "News24",
+            "url": "https://feeds.news24.com/articles/news24/TopStories/rss",
+            "tier": 4,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "BBC Africa",
+            "url": "https://feeds.bbci.co.uk/news/world/africa/rss.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "Jeune Afrique",
+            "url": "https://www.jeuneafrique.com/feed/",
+            "tier": 4,
+            "lang": "fr",
+            "category": "africa"
+        },
+        {
+            "name": "Africanews",
+            "url": "https://www.africanews.com/feed/rss",
+            "tier": 4,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "Africanews",
+            "url": "https://fr.africanews.com/feed/rss",
+            "tier": 4,
+            "lang": "fr",
+            "category": "africa"
+        },
+        {
+            "name": "BBC Afrique",
+            "url": "https://www.bbc.com/afrique/index.xml",
+            "tier": 4,
+            "lang": "fr",
+            "category": "africa"
+        },
+        {
+            "name": "Premium Times",
+            "url": "https://www.premiumtimesng.com/feed",
+            "tier": 2,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "Vanguard Nigeria",
+            "url": "https://www.vanguardngr.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "Channels TV",
+            "url": "https://www.channelstv.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "Daily Trust",
+            "url": "https://dailytrust.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "ThisDay",
+            "url": "https://www.thisdaylive.com/feed",
+            "tier": 2,
+            "lang": "en",
+            "category": "africa"
+        },
+        {
+            "name": "Latin America",
+            "url": "https://news.google.com/rss/search?q=(Brazil+OR+Mexico+OR+Argentina+OR+Venezuela+OR+Colombia)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "BBC Latin America",
+            "url": "https://feeds.bbci.co.uk/news/world/latin_america/rss.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "Reuters LatAm",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+(Brazil+OR+Mexico+OR+Argentina)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "Guardian Americas",
+            "url": "https://www.theguardian.com/world/americas/rss",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "Clarín",
+            "url": "https://www.clarin.com/rss/lo-ultimo/",
+            "tier": 4,
+            "lang": "es",
+            "category": "latam"
+        },
+        {
+            "name": "O Globo",
+            "url": "https://news.google.com/rss/search?q=site:oglobo.globo.com+when:1d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+            "tier": 4,
+            "lang": "pt",
+            "category": "latam"
+        },
+        {
+            "name": "Folha de S.Paulo",
+            "url": "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml",
+            "tier": 4,
+            "lang": "pt",
+            "category": "latam"
+        },
+        {
+            "name": "Brasil Paralelo",
+            "url": "https://www.brasilparalelo.com.br/noticias/rss.xml",
+            "tier": 2,
+            "lang": "pt",
+            "category": "latam"
+        },
+        {
+            "name": "El Tiempo",
+            "url": "https://www.eltiempo.com/rss/mundo_latinoamerica.xml",
+            "tier": 4,
+            "lang": "es",
+            "category": "latam"
+        },
+        {
+            "name": "La Silla Vacía",
+            "url": "https://www.lasillavacia.com/rss",
+            "tier": 3,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "Primicias",
+            "url": "https://www.primicias.ec/feed/",
+            "tier": 4,
+            "lang": "es",
+            "category": "latam"
+        },
+        {
+            "name": "Infobae Americas",
+            "url": "https://www.infobae.com/feeds/rss/",
+            "tier": 4,
+            "lang": "es",
+            "category": "latam"
+        },
+        {
+            "name": "El Universo",
+            "url": "https://www.eluniverso.com/arc/outboundfeeds/rss/category/noticias/?outputType=xml",
+            "tier": 4,
+            "lang": "es",
+            "category": "latam"
+        },
+        {
+            "name": "Mexico News Daily",
+            "url": "https://mexiconewsdaily.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "Mexico Security",
+            "url": "https://news.google.com/rss/search?q=(Mexico+cartel+OR+Mexico+violence+OR+Mexico+troops+OR+narco+Mexico)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "AP Mexico",
+            "url": "https://news.google.com/rss/search?q=site:apnews.com+Mexico+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "InSight Crime",
+            "url": "https://insightcrime.org/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "France 24 LatAm",
+            "url": "https://www.france24.com/en/americas/rss",
+            "tier": 4,
+            "lang": "en",
+            "category": "latam"
+        },
+        {
+            "name": "Asia News",
+            "url": "https://news.google.com/rss/search?q=(China+OR+Japan+OR+Korea+OR+India+OR+ASEAN)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "BBC Asia",
+            "url": "https://feeds.bbci.co.uk/news/world/asia/rss.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "The Diplomat",
+            "url": "https://thediplomat.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "South China Morning Post",
+            "url": "https://www.scmp.com/rss/91/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Reuters Asia",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+(China+OR+Japan+OR+Taiwan+OR+Korea)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Xinhua",
+            "url": "https://news.google.com/rss/search?q=site:xinhuanet.com+OR+Xinhua+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Japan Today",
+            "url": "https://japantoday.com/feed/atom",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Nikkei Asia",
+            "url": "https://news.google.com/rss/search?q=site:asia.nikkei.com+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Asahi Shimbun",
+            "url": "https://www.asahi.com/rss/asahi/newsheadlines.rdf",
+            "tier": 4,
+            "lang": "ja",
+            "category": "asia"
+        },
+        {
+            "name": "The Hindu",
+            "url": "https://www.thehindu.com/news/national/feeder/default.rss",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Indian Express",
+            "url": "https://indianexpress.com/section/india/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "NDTV",
+            "url": "https://feeds.feedburner.com/ndtvnews-top-stories",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "India News Network",
+            "url": "https://news.google.com/rss/search?q=India+diplomacy+foreign+policy+news&hl=en&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "CNA",
+            "url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "MIIT (China)",
+            "url": "https://news.google.com/rss/search?q=site:miit.gov.cn+when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+            "tier": 1,
+            "lang": "zh",
+            "category": "asia"
+        },
+        {
+            "name": "MOFCOM (China)",
+            "url": "https://news.google.com/rss/search?q=site:mofcom.gov.cn+when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+            "tier": 1,
+            "lang": "zh",
+            "category": "asia"
+        },
+        {
+            "name": "Bangkok Post",
+            "url": "https://news.google.com/rss/search?q=site:bangkokpost.com+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "th",
+            "category": "asia"
+        },
+        {
+            "name": "Thai PBS",
+            "url": "https://news.google.com/rss/search?q=Thai+PBS+World+news&hl=en&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "th",
+            "category": "asia"
+        },
+        {
+            "name": "VnExpress",
+            "url": "https://vnexpress.net/rss/tin-moi-nhat.rss",
+            "tier": 2,
+            "lang": "vi",
+            "category": "asia"
+        },
+        {
+            "name": "Tuoi Tre News",
+            "url": "https://tuoitrenews.vn/rss",
+            "tier": 2,
+            "lang": "vi",
+            "category": "asia"
+        },
+        {
+            "name": "Yonhap News",
+            "url": "https://www.yonhapnewstv.co.kr/browse/feed/",
+            "tier": 2,
+            "lang": "ko",
+            "category": "asia"
+        },
+        {
+            "name": "Chosun Ilbo",
+            "url": "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml",
+            "tier": 2,
+            "lang": "ko",
+            "category": "asia"
+        },
+        {
+            "name": "ABC News Australia",
+            "url": "https://www.abc.net.au/news/feed/2942460/rss.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Guardian Australia",
+            "url": "https://www.theguardian.com/australia-news/rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Island Times (Palau)",
+            "url": "https://islandtimes.org/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "asia"
+        },
+        {
+            "name": "Oil & Gas",
+            "url": "https://news.google.com/rss/search?q=(oil+price+OR+OPEC+OR+\"natural+gas\"+OR+pipeline+OR+LNG)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Nuclear Energy",
+            "url": "https://news.google.com/rss/search?q=(\"nuclear+energy\"+OR+\"nuclear+power\"+OR+uranium+OR+IAEA)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Reuters Energy",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+(oil+OR+gas+OR+energy+OR+OPEC)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Mining & Resources",
+            "url": "https://news.google.com/rss/search?q=(lithium+OR+\"rare+earth\"+OR+cobalt+OR+mining)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "TechMeme",
+            "url": "https://www.techmeme.com/feed.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "tech"
+        },
+        {
+            "name": "Fast Company",
+            "url": "https://feeds.feedburner.com/fastcompany/headlines",
+            "tier": 4,
+            "lang": "en",
+            "category": "tech"
+        },
+        {
+            "name": "AI News",
+            "url": "https://news.google.com/rss/search?q=(OpenAI+OR+Anthropic+OR+Google+AI+OR+\"large+language+model\"+OR+ChatGPT+OR+Claude+OR+\"AI+model\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "MIT Research",
+            "url": "https://news.mit.edu/rss/research",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "ArXiv ML",
+            "url": "https://export.arxiv.org/rss/cs.LG",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "AI Weekly",
+            "url": "https://news.google.com/rss/search?q=\"artificial+intelligence\"+OR+\"machine+learning\"+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "Anthropic News",
+            "url": "https://news.google.com/rss/search?q=Anthropic+Claude+AI+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "OpenAI News",
+            "url": "https://news.google.com/rss/search?q=OpenAI+ChatGPT+GPT-4+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "ai"
+        },
+        {
+            "name": "TechCrunch Startups",
+            "url": "https://techcrunch.com/category/startups/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "Crunchbase News",
+            "url": "https://news.crunchbase.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "SaaStr",
+            "url": "https://www.saastr.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "AngelList News",
+            "url": "https://news.google.com/rss/search?q=site:angellist.com+OR+\"AngelList\"+funding+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "TechCrunch Venture",
+            "url": "https://techcrunch.com/category/venture/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "The Information",
+            "url": "https://news.google.com/rss/search?q=site:theinformation.com+startup+OR+funding+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "Fortune Term Sheet",
+            "url": "https://news.google.com/rss/search?q=\"Term+Sheet\"+venture+capital+OR+startup+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "PitchBook News",
+            "url": "https://news.google.com/rss/search?q=site:pitchbook.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "CB Insights",
+            "url": "https://www.cbinsights.com/research/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "startups"
+        },
+        {
+            "name": "Y Combinator Blog",
+            "url": "https://www.ycombinator.com/blog/rss/",
+            "tier": 2,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "a16z Blog",
+            "url": "https://news.google.com/rss/search?q=site:a16z.com+OR+\"Andreessen+Horowitz\"+blog+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "Sequoia Blog",
+            "url": "https://news.google.com/rss/search?q=site:sequoiacap.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "Paul Graham Essays",
+            "url": "https://news.google.com/rss/search?q=\"Paul+Graham\"+essay+OR+blog+when:30d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "VC Insights",
+            "url": "https://news.google.com/rss/search?q=(\"venture+capital\"+insights+OR+\"VC+trends\"+OR+\"startup+advice\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "Lenny\\'s Newsletter",
+            "url": "https://www.lennysnewsletter.com/feed",
+            "tier": 4,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "Stratechery",
+            "url": "https://stratechery.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "FwdStart Newsletter",
+            "url": "'/api/fwdstart'",
+            "tier": 4,
+            "lang": "en",
+            "category": "vcblogs"
+        },
+        {
+            "name": "EU Startups",
+            "url": "https://news.google.com/rss/search?q=site:eu-startups.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Tech.eu",
+            "url": "https://tech.eu/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Sifted (Europe)",
+            "url": "https://sifted.eu/feed",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "The Next Web",
+            "url": "https://news.google.com/rss/search?q=site:thenextweb.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Tech in Asia",
+            "url": "https://news.google.com/rss/search?q=site:techinasia.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "KrASIA",
+            "url": "https://news.google.com/rss/search?q=site:kr-asia.com+OR+KrASIA+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "SEA Startups",
+            "url": "https://news.google.com/rss/search?q=(Singapore+OR+Indonesia+OR+Vietnam+OR+Thailand+OR+Malaysia)+startup+funding+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Asia VC News",
+            "url": "https://news.google.com/rss/search?q=(\"Southeast+Asia\"+OR+ASEAN)+venture+capital+OR+funding+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "China Startups",
+            "url": "https://news.google.com/rss/search?q=China+startup+funding+OR+\"Chinese+startup\"+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "36Kr English",
+            "url": "https://news.google.com/rss/search?q=site:36kr.com+OR+\"36Kr\"+startup+china+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "China Tech Giants",
+            "url": "https://news.google.com/rss/search?q=(Alibaba+OR+Tencent+OR+ByteDance+OR+Baidu+OR+JD.com+OR+Xiaomi+OR+Huawei)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Japan Startups",
+            "url": "https://news.google.com/rss/search?q=Japan+startup+funding+OR+\"Japanese+startup\"+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Japan Tech News",
+            "url": "https://news.google.com/rss/search?q=(Japan+startup+OR+Japan+tech+OR+SoftBank+OR+Rakuten+OR+Sony)+funding+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Nikkei Tech",
+            "url": "https://news.google.com/rss/search?q=site:asia.nikkei.com+technology+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Korea Tech News",
+            "url": "https://news.google.com/rss/search?q=(Korea+startup+OR+Korean+tech+OR+Samsung+OR+Kakao+OR+Naver+OR+Coupang)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Korea Startups",
+            "url": "https://news.google.com/rss/search?q=Korea+startup+funding+OR+\"Korean+unicorn\"+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Inc42 (India)",
+            "url": "https://inc42.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "YourStory",
+            "url": "https://yourstory.com/feed",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "India Startups",
+            "url": "https://news.google.com/rss/search?q=India+startup+funding+OR+\"Indian+startup\"+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "India Tech News",
+            "url": "https://news.google.com/rss/search?q=(Flipkart+OR+Razorpay+OR+Zerodha+OR+Zomato+OR+Paytm+OR+PhonePe)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "SEA Tech News",
+            "url": "https://news.google.com/rss/search?q=(Grab+OR+GoTo+OR+Sea+Limited+OR+Shopee+OR+Tokopedia)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Vietnam Tech",
+            "url": "https://news.google.com/rss/search?q=Vietnam+startup+OR+Vietnam+tech+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Indonesia Tech",
+            "url": "https://news.google.com/rss/search?q=Indonesia+startup+OR+Indonesia+tech+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Taiwan Tech",
+            "url": "https://news.google.com/rss/search?q=(Taiwan+startup+OR+TSMC+OR+MediaTek+OR+Foxconn)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "LAVCA (LATAM)",
+            "url": "https://news.google.com/rss/search?q=site:lavca.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "LATAM Startups",
+            "url": "https://news.google.com/rss/search?q=(\"Latin+America\"+startup+OR+LATAM+funding)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Startups LATAM",
+            "url": "https://news.google.com/rss/search?q=(startup+Brazil+OR+startup+Mexico+OR+startup+Argentina+OR+startup+Colombia+OR+startup+Chile)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Brazil Tech",
+            "url": "https://news.google.com/rss/search?q=(Nubank+OR+iFood+OR+Mercado+Libre+OR+Rappi+OR+VTEX)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "FinTech LATAM",
+            "url": "https://news.google.com/rss/search?q=fintech+(Brazil+OR+Mexico+OR+Argentina+OR+\"Latin+America\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "TechCabal (Africa)",
+            "url": "https://techcabal.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Africa Startups",
+            "url": "https://news.google.com/rss/search?q=Africa+startup+funding+OR+\"African+startup\"+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "Africa Tech News",
+            "url": "https://news.google.com/rss/search?q=(Flutterwave+OR+Paystack+OR+Jumia+OR+Andela+OR+\"Africa+startup\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "MENA Startups",
+            "url": "https://news.google.com/rss/search?q=(MENA+startup+OR+\"Middle+East\"+funding+OR+Gulf+startup)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "MENA Tech News",
+            "url": "https://news.google.com/rss/search?q=(UAE+startup+OR+Saudi+tech+OR+Dubai+startup+OR+NEOM+tech)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regionalStartups"
+        },
+        {
+            "name": "GitHub Blog",
+            "url": "https://github.blog/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "github"
+        },
+        {
+            "name": "GitHub Trending",
+            "url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "github"
+        },
+        {
+            "name": "Show HN",
+            "url": "https://hnrss.org/show",
+            "tier": 4,
+            "lang": "en",
+            "category": "github"
+        },
+        {
+            "name": "YC Launches",
+            "url": "https://news.google.com/rss/search?q=(\"Y+Combinator\"+OR+\"YC+launch\"+OR+\"YC+W25\"+OR+\"YC+S25\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "github"
+        },
+        {
+            "name": "Dev Events",
+            "url": "https://news.google.com/rss/search?q=(\"developer+conference\"+OR+\"tech+summit\"+OR+\"devcon\"+OR+\"developer+event\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "github"
+        },
+        {
+            "name": "Open Source News",
+            "url": "https://news.google.com/rss/search?q=\"open+source\"+project+release+OR+launch+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "github"
+        },
+        {
+            "name": "IPO News",
+            "url": "https://news.google.com/rss/search?q=(IPO+OR+\"initial+public+offering\"+OR+SPAC)+tech+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ipo"
+        },
+        {
+            "name": "Renaissance IPO",
+            "url": "https://news.google.com/rss/search?q=site:renaissancecapital.com+IPO+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ipo"
+        },
+        {
+            "name": "Tech IPO News",
+            "url": "https://news.google.com/rss/search?q=tech+IPO+OR+\"tech+company\"+IPO+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ipo"
+        },
+        {
+            "name": "SEC Filings",
+            "url": "https://news.google.com/rss/search?q=(S-1+OR+\"IPO+filing\"+OR+\"SEC+filing\")+startup+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "funding"
+        },
+        {
+            "name": "VC News",
+            "url": "https://news.google.com/rss/search?q=(\"Series+A\"+OR+\"Series+B\"+OR+\"Series+C\"+OR+\"funding+round\"+OR+\"venture+capital\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "funding"
+        },
+        {
+            "name": "Seed & Pre-Seed",
+            "url": "https://news.google.com/rss/search?q=(\"seed+round\"+OR+\"pre-seed\"+OR+\"angel+round\"+OR+\"seed+funding\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "funding"
+        },
+        {
+            "name": "Startup Funding",
+            "url": "https://news.google.com/rss/search?q=(\"startup+funding\"+OR+\"raised+funding\"+OR+\"raised+$\"+OR+\"funding+announced\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "funding"
+        },
+        {
+            "name": "Product Hunt",
+            "url": "https://www.producthunt.com/feed",
+            "tier": 4,
+            "lang": "en",
+            "category": "producthunt"
+        },
+        {
+            "name": "AWS Status",
+            "url": "https://news.google.com/rss/search?q=AWS+outage+OR+\"Amazon+Web+Services\"+down+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "outages"
+        },
+        {
+            "name": "Cloud Outages",
+            "url": "https://news.google.com/rss/search?q=(Azure+OR+GCP+OR+Cloudflare+OR+Slack+OR+GitHub)+outage+OR+down+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "outages"
+        },
+        {
+            "name": "Krebs Security",
+            "url": "https://krebsonsecurity.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "security"
+        },
+        {
+            "name": "The Hacker News",
+            "url": "https://feeds.feedburner.com/TheHackersNews",
+            "tier": 4,
+            "lang": "en",
+            "category": "security"
+        },
+        {
+            "name": "Dark Reading",
+            "url": "https://www.darkreading.com/rss.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "security"
+        },
+        {
+            "name": "Schneier",
+            "url": "https://www.schneier.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "security"
+        },
+        {
+            "name": "Politico Tech",
+            "url": "https://rss.politico.com/technology.xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "AI Regulation",
+            "url": "https://news.google.com/rss/search?q=AI+regulation+OR+\"artificial+intelligence\"+law+OR+policy+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "Tech Antitrust",
+            "url": "https://news.google.com/rss/search?q=tech+antitrust+OR+FTC+Google+OR+FTC+Apple+OR+FTC+Amazon+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "EFF News",
+            "url": "https://news.google.com/rss/search?q=site:eff.org+OR+\"Electronic+Frontier+Foundation\"+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "EU Digital Policy",
+            "url": "https://news.google.com/rss/search?q=(\"Digital+Services+Act\"+OR+\"Digital+Markets+Act\"+OR+\"EU+AI+Act\"+OR+\"GDPR\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "Euractiv Digital",
+            "url": "https://news.google.com/rss/search?q=site:euractiv.com+digital+OR+tech+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "EU Commission Digital",
+            "url": "https://news.google.com/rss/search?q=site:ec.europa.eu+digital+OR+technology+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "China Tech Policy",
+            "url": "https://news.google.com/rss/search?q=(China+tech+regulation+OR+China+AI+policy+OR+MIIT+technology)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "UK Tech Policy",
+            "url": "https://news.google.com/rss/search?q=(UK+AI+safety+OR+\"Online+Safety+Bill\"+OR+UK+tech+regulation)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "India Tech Policy",
+            "url": "https://news.google.com/rss/search?q=(India+tech+regulation+OR+India+data+protection+OR+India+AI+policy)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "policy"
+        },
+        {
+            "name": "Brookings Tech",
+            "url": "https://news.google.com/rss/search?q=site:brookings.edu+technology+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "CSIS Tech",
+            "url": "https://news.google.com/rss/search?q=site:csis.org+technology+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "MIT Tech Policy",
+            "url": "https://news.google.com/rss/search?q=%22Tech+Policy+Press%22&hl=en&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Stanford HAI",
+            "url": "https://news.google.com/rss/search?q=site:hai.stanford.edu+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "AI Now Institute",
+            "url": "https://news.google.com/rss/search?q=%22AI+Now+Institute%22&hl=en&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "OECD Digital",
+            "url": "https://news.google.com/rss/search?q=site:oecd.org+digital+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "EU Tech Policy",
+            "url": "https://news.google.com/rss/search?q=(\"EU+tech+policy\"+OR+\"European+digital\"+OR+Bruegel+tech)+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Chatham House Tech",
+            "url": "https://news.google.com/rss/search?q=site:chathamhouse.org+technology+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "ISEAS (Singapore)",
+            "url": "https://news.google.com/rss/search?q=site:iseas.edu.sg+technology+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "ORF Tech (India)",
+            "url": "https://news.google.com/rss/search?q=(India+tech+policy+OR+ORF+technology+OR+\"Observer+Research+Foundation\"+tech)+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "RIETI (Japan)",
+            "url": "https://news.google.com/rss/search?q=site:rieti.go.jp+technology+when:30d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "Asia Pacific Tech",
+            "url": "https://news.google.com/rss/search?q=(\"Asia+Pacific\"+tech+policy+OR+\"Lowy+Institute\"+technology)+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "China Tech Analysis",
+            "url": "https://news.google.com/rss/search?q=(\"China+tech+strategy\"+OR+\"Chinese+AI\"+OR+\"China+semiconductor\")+analysis+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "DigiChina",
+            "url": "https://news.google.com/rss/search?q=DigiChina+Stanford+China+technology&hl=en&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "thinktanks"
+        },
+        {
+            "name": "CNBC Tech",
+            "url": "https://www.cnbc.com/id/19854910/device/rss/rss.html",
+            "tier": 4,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "MarketWatch Tech",
+            "url": "https://news.google.com/rss/search?q=site:marketwatch.com+technology+markets+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "Yahoo Finance",
+            "url": "https://finance.yahoo.com/rss/topstories",
+            "tier": 4,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "Seeking Alpha Tech",
+            "url": "https://seekingalpha.com/market_currents.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "finance"
+        },
+        {
+            "name": "Tom's Hardware",
+            "url": "https://www.tomshardware.com/feeds/all",
+            "tier": 4,
+            "lang": "en",
+            "category": "hardware"
+        },
+        {
+            "name": "SemiAnalysis",
+            "url": "https://news.google.com/rss/search?q=site:semianalysis.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "hardware"
+        },
+        {
+            "name": "Semiconductor News",
+            "url": "https://news.google.com/rss/search?q=semiconductor+OR+chip+OR+TSMC+OR+NVIDIA+OR+Intel+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "hardware"
+        },
+        {
+            "name": "InfoQ",
+            "url": "https://feed.infoq.com/",
+            "tier": 4,
+            "lang": "en",
+            "category": "cloud"
+        },
+        {
+            "name": "The New Stack",
+            "url": "https://thenewstack.io/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "cloud"
+        },
+        {
+            "name": "DevOps.com",
+            "url": "https://devops.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "cloud"
+        },
+        {
+            "name": "Dev.to",
+            "url": "https://dev.to/feed",
+            "tier": 4,
+            "lang": "en",
+            "category": "dev"
+        },
+        {
+            "name": "Lobsters",
+            "url": "https://lobste.rs/rss",
+            "tier": 4,
+            "lang": "en",
+            "category": "dev"
+        },
+        {
+            "name": "Changelog",
+            "url": "https://changelog.com/feed",
+            "tier": 4,
+            "lang": "en",
+            "category": "dev"
+        },
+        {
+            "name": "Layoffs.fyi",
+            "url": "https://news.google.com/rss/search?q=tech+layoffs+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "layoffs"
+        },
+        {
+            "name": "Unicorn News",
+            "url": "https://news.google.com/rss/search?q=(\"unicorn+startup\"+OR+\"unicorn+valuation\"+OR+\"$1+billion+valuation\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "unicorns"
+        },
+        {
+            "name": "CB Insights Unicorn",
+            "url": "https://news.google.com/rss/search?q=site:cbinsights.com+unicorn+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "unicorns"
+        },
+        {
+            "name": "Decacorn News",
+            "url": "https://news.google.com/rss/search?q=(\"decacorn\"+OR+\"$10+billion+valuation\"+OR+\"$10B+valuation\")+startup+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "unicorns"
+        },
+        {
+            "name": "New Unicorns",
+            "url": "https://news.google.com/rss/search?q=(\"becomes+unicorn\"+OR+\"joins+unicorn\"+OR+\"reaches+unicorn\"+OR+\"achieved+unicorn\")+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "unicorns"
+        },
+        {
+            "name": "Techstars News",
+            "url": "https://news.google.com/rss/search?q=Techstars+accelerator+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "accelerators"
+        },
+        {
+            "name": "500 Global News",
+            "url": "https://news.google.com/rss/search?q=\"500+Global\"+OR+\"500+Startups\"+accelerator+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "accelerators"
+        },
+        {
+            "name": "Demo Day News",
+            "url": "https://news.google.com/rss/search?q=(\"demo+day\"+OR+\"YC+batch\"+OR+\"accelerator+batch\")+startup+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "accelerators"
+        },
+        {
+            "name": "Startup School",
+            "url": "https://news.google.com/rss/search?q=\"Startup+School\"+OR+\"YC+Startup+School\"+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "accelerators"
+        },
+        {
+            "name": "Acquired Episodes",
+            "url": "https://news.google.com/rss/search?q=\"Acquired+podcast\"+episode+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "All-In Podcast",
+            "url": "https://news.google.com/rss/search?q=\"All-In+podcast\"+(Chamath+OR+Sacks+OR+Friedberg)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "a16z Insights",
+            "url": "https://news.google.com/rss/search?q=(\"a16z\"+OR+\"Andreessen+Horowitz\")+podcast+OR+interview+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "TWIST Episodes",
+            "url": "https://news.google.com/rss/search?q=\"This+Week+in+Startups\"+Jason+Calacanis+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "20VC Episodes",
+            "url": "https://rss.libsyn.com/shows/61840/destinations/240976.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "Lex Fridman Tech",
+            "url": "https://news.google.com/rss/search?q=(\"Lex+Fridman\"+interview)+(AI+OR+tech+OR+startup+OR+CEO)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "Verge Shows",
+            "url": "https://news.google.com/rss/search?q=(\"Vergecast\"+OR+\"Decoder+podcast\"+Verge)+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "Hard Fork (NYT)",
+            "url": "https://news.google.com/rss/search?q=\"Hard+Fork\"+podcast+NYT+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "Pivot Podcast",
+            "url": "https://feeds.megaphone.fm/pivot",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "Tech Newsletters",
+            "url": "https://news.google.com/rss/search?q=(\"Benedict+Evans\"+OR+\"Pragmatic+Engineer\"+OR+Stratechery)+tech+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "AI Podcasts",
+            "url": "https://news.google.com/rss/search?q=(\"AI+podcast\"+OR+\"artificial+intelligence+podcast\")+episode+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "AI Interviews",
+            "url": "https://news.google.com/rss/search?q=(NVIDIA+OR+OpenAI+OR+Anthropic+OR+DeepMind)+interview+OR+podcast+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "How I Built This",
+            "url": "https://news.google.com/rss/search?q=\"How+I+Built+This\"+Guy+Raz+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "Masters of Scale",
+            "url": "https://rss.art19.com/masters-of-scale",
+            "tier": 2,
+            "lang": "en",
+            "category": "podcasts"
+        },
+        {
+            "name": "Reuters Markets",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+markets+stocks+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "markets"
+        },
+        {
+            "name": "Bloomberg Markets",
+            "url": "https://news.google.com/rss/search?q=site:bloomberg.com+markets+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "markets"
+        },
+        {
+            "name": "Investing.com News",
+            "url": "https://news.google.com/rss/search?q=site:investing.com+markets+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "markets"
+        },
+        {
+            "name": "Forex News",
+            "url": "https://news.google.com/rss/search?q=(\"forex\"+OR+\"currency\"+OR+\"FX+market\")+trading+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "forex"
+        },
+        {
+            "name": "Dollar Watch",
+            "url": "https://news.google.com/rss/search?q=(\"dollar+index\"+OR+DXY+OR+\"US+dollar\"+OR+\"euro+dollar\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "forex"
+        },
+        {
+            "name": "Central Bank Rates",
+            "url": "https://news.google.com/rss/search?q=(\"central+bank\"+OR+\"interest+rate\"+OR+\"rate+decision\"+OR+\"monetary+policy\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "forex"
+        },
+        {
+            "name": "Bond Market",
+            "url": "https://news.google.com/rss/search?q=(\"bond+market\"+OR+\"treasury+yields\"+OR+\"bond+yields\"+OR+\"fixed+income\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "bonds"
+        },
+        {
+            "name": "Treasury Watch",
+            "url": "https://news.google.com/rss/search?q=(\"US+Treasury\"+OR+\"Treasury+auction\"+OR+\"10-year+yield\"+OR+\"2-year+yield\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "bonds"
+        },
+        {
+            "name": "Corporate Bonds",
+            "url": "https://news.google.com/rss/search?q=(\"corporate+bond\"+OR+\"high+yield\"+OR+\"investment+grade\"+OR+\"credit+spread\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "bonds"
+        },
+        {
+            "name": "Oil & Gas",
+            "url": "https://news.google.com/rss/search?q=(oil+price+OR+OPEC+OR+\"natural+gas\"+OR+\"crude+oil\"+OR+WTI+OR+Brent)+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodities"
+        },
+        {
+            "name": "Gold & Metals",
+            "url": "https://news.google.com/rss/search?q=(gold+price+OR+silver+price+OR+copper+OR+platinum+OR+\"precious+metals\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodities"
+        },
+        {
+            "name": "Agriculture",
+            "url": "https://news.google.com/rss/search?q=(wheat+OR+corn+OR+soybeans+OR+coffee+OR+sugar)+price+OR+commodity+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodities"
+        },
+        {
+            "name": "Commodity Trading",
+            "url": "https://news.google.com/rss/search?q=(\"commodity+trading\"+OR+\"futures+market\"+OR+CME+OR+NYMEX+OR+COMEX)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodities"
+        },
+        {
+            "name": "The Block",
+            "url": "https://news.google.com/rss/search?q=site:theblock.co+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "crypto"
+        },
+        {
+            "name": "Crypto News",
+            "url": "https://news.google.com/rss/search?q=(bitcoin+OR+ethereum+OR+crypto+OR+\"digital+assets\")+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "crypto"
+        },
+        {
+            "name": "DeFi News",
+            "url": "https://news.google.com/rss/search?q=(DeFi+OR+\"decentralized+finance\"+OR+DEX+OR+\"yield+farming\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "crypto"
+        },
+        {
+            "name": "ECB Watch",
+            "url": "https://news.google.com/rss/search?q=(\"European+Central+Bank\"+OR+ECB+OR+Lagarde)+monetary+policy+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "centralbanks"
+        },
+        {
+            "name": "BoJ Watch",
+            "url": "https://news.google.com/rss/search?q=(\"Bank+of+Japan\"+OR+BoJ)+monetary+policy+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "centralbanks"
+        },
+        {
+            "name": "BoE Watch",
+            "url": "https://news.google.com/rss/search?q=(\"Bank+of+England\"+OR+BoE)+monetary+policy+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "centralbanks"
+        },
+        {
+            "name": "PBoC Watch",
+            "url": "https://news.google.com/rss/search?q=(\"People%27s+Bank+of+China\"+OR+PBoC+OR+PBOC)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "centralbanks"
+        },
+        {
+            "name": "Global Central Banks",
+            "url": "https://news.google.com/rss/search?q=(\"rate+hike\"+OR+\"rate+cut\"+OR+\"interest+rate+decision\")+central+bank+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "centralbanks"
+        },
+        {
+            "name": "Economic Data",
+            "url": "https://news.google.com/rss/search?q=(CPI+OR+inflation+OR+GDP+OR+\"jobs+report\"+OR+\"nonfarm+payrolls\"+OR+PMI)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "economic"
+        },
+        {
+            "name": "Trade & Tariffs",
+            "url": "https://news.google.com/rss/search?q=(tariff+OR+\"trade+war\"+OR+\"trade+deficit\"+OR+sanctions)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "economic"
+        },
+        {
+            "name": "Housing Market",
+            "url": "https://news.google.com/rss/search?q=(\"housing+market\"+OR+\"home+prices\"+OR+\"mortgage+rates\"+OR+REIT)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "economic"
+        },
+        {
+            "name": "IPO News",
+            "url": "https://news.google.com/rss/search?q=(IPO+OR+\"initial+public+offering\"+OR+SPAC+OR+\"direct+listing\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ipo"
+        },
+        {
+            "name": "Earnings Reports",
+            "url": "https://news.google.com/rss/search?q=(\"earnings+report\"+OR+\"quarterly+earnings\"+OR+\"revenue+beat\"+OR+\"earnings+miss\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ipo"
+        },
+        {
+            "name": "M&A News",
+            "url": "https://news.google.com/rss/search?q=(\"merger\"+OR+\"acquisition\"+OR+\"takeover+bid\"+OR+\"buyout\")+billion+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "ipo"
+        },
+        {
+            "name": "Options Market",
+            "url": "https://news.google.com/rss/search?q=(\"options+market\"+OR+\"options+trading\"+OR+\"put+call+ratio\"+OR+VIX)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "derivatives"
+        },
+        {
+            "name": "Futures Trading",
+            "url": "https://news.google.com/rss/search?q=(\"futures+trading\"+OR+\"S%26P+500+futures\"+OR+\"Nasdaq+futures\")+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "derivatives"
+        },
+        {
+            "name": "Fintech News",
+            "url": "https://news.google.com/rss/search?q=(fintech+OR+\"payment+technology\"+OR+\"neobank\"+OR+\"digital+banking\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "fintech"
+        },
+        {
+            "name": "Trading Tech",
+            "url": "https://news.google.com/rss/search?q=(\"algorithmic+trading\"+OR+\"trading+platform\"+OR+\"quantitative+finance\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "fintech"
+        },
+        {
+            "name": "Blockchain Finance",
+            "url": "https://news.google.com/rss/search?q=(\"blockchain+finance\"+OR+\"tokenization\"+OR+\"digital+securities\"+OR+CBDC)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "fintech"
+        },
+        {
+            "name": "Financial Regulation",
+            "url": "https://news.google.com/rss/search?q=(SEC+OR+CFTC+OR+FINRA+OR+FCA)+regulation+OR+enforcement+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regulation"
+        },
+        {
+            "name": "Banking Rules",
+            "url": "https://news.google.com/rss/search?q=(Basel+OR+\"capital+requirements\"+OR+\"banking+regulation\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regulation"
+        },
+        {
+            "name": "Crypto Regulation",
+            "url": "https://news.google.com/rss/search?q=(crypto+regulation+OR+\"digital+asset\"+regulation+OR+\"stablecoin\"+regulation)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "regulation"
+        },
+        {
+            "name": "Hedge Fund News",
+            "url": "https://news.google.com/rss/search?q=(\"hedge+fund\"+OR+\"Bridgewater\"+OR+\"Citadel\"+OR+\"Renaissance\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "institutional"
+        },
+        {
+            "name": "Private Equity",
+            "url": "https://news.google.com/rss/search?q=(\"private+equity\"+OR+Blackstone+OR+KKR+OR+Apollo+OR+Carlyle)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "institutional"
+        },
+        {
+            "name": "Sovereign Wealth",
+            "url": "https://news.google.com/rss/search?q=(\"sovereign+wealth+fund\"+OR+\"pension+fund\"+OR+\"institutional+investor\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "institutional"
+        },
+        {
+            "name": "Market Outlook",
+            "url": "https://news.google.com/rss/search?q=(\"market+outlook\"+OR+\"stock+market+forecast\"+OR+\"bull+market\"+OR+\"bear+market\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "analysis"
+        },
+        {
+            "name": "Risk & Volatility",
+            "url": "https://news.google.com/rss/search?q=(VIX+OR+\"market+volatility\"+OR+\"risk+off\"+OR+\"market+correction\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "analysis"
+        },
+        {
+            "name": "Bank Research",
+            "url": "https://news.google.com/rss/search?q=(\"Goldman+Sachs\"+OR+\"JPMorgan\"+OR+\"Morgan+Stanley\")+forecast+OR+outlook+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "analysis"
+        },
+        {
+            "name": "Arabian Business",
+            "url": "https://news.google.com/rss/search?q=site:arabianbusiness.com+(Saudi+Arabia+OR+UAE+OR+GCC)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gccNews"
+        },
+        {
+            "name": "The National",
+            "url": "https://news.google.com/rss/search?q=site:thenationalnews.com+(Abu+Dhabi+OR+UAE+OR+Saudi)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "gccNews"
+        },
+        {
+            "name": "Arab News",
+            "url": "https://news.google.com/rss/search?q=site:arabnews.com+(Saudi+Arabia+OR+investment+OR+infrastructure)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gccNews"
+        },
+        {
+            "name": "Gulf FDI",
+            "url": "https://news.google.com/rss/search?q=(PIF+OR+\"DP+World\"+OR+Mubadala+OR+ADNOC+OR+Masdar+OR+\"ACWA+Power\")+infrastructure+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gccNews"
+        },
+        {
+            "name": "Gulf Investments",
+            "url": "https://news.google.com/rss/search?q=(\"Saudi+Arabia\"+OR+\"UAE\"+OR+\"Abu+Dhabi\")+investment+infrastructure+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gccNews"
+        },
+        {
+            "name": "Vision 2030",
+            "url": "https://news.google.com/rss/search?q=\"Vision+2030\"+(project+OR+investment+OR+announced)+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gccNews"
+        },
+        {
+            "name": "Good News Network",
+            "url": "https://www.goodnewsnetwork.org/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "Positive.News",
+            "url": "https://www.positive.news/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "Reasons to be Cheerful",
+            "url": "https://reasonstobecheerful.world/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "Optimist Daily",
+            "url": "https://www.optimistdaily.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "Upworthy",
+            "url": "https://www.upworthy.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "DailyGood",
+            "url": "https://www.dailygood.org/feed",
+            "tier": 3,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "Good Good Good",
+            "url": "https://www.goodgoodgood.co/articles/rss.xml",
+            "tier": 3,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "GOOD Magazine",
+            "url": "https://www.good.is/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "Sunny Skyz",
+            "url": "https://www.sunnyskyz.com/rss_tebow.php",
+            "tier": 3,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "The Better India",
+            "url": "https://thebetterindia.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "My Modern Met",
+            "url": "https://mymodernmet.com/feed/",
+            "tier": 2,
+            "lang": "en",
+            "category": "positive"
+        },
+        {
+            "name": "GNN Science",
+            "url": "https://www.goodnewsnetwork.org/category/news/science/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "ScienceDaily",
+            "url": "https://www.sciencedaily.com/rss/all.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "Nature News",
+            "url": "https://feeds.nature.com/nature/rss/current",
+            "tier": 4,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "Live Science",
+            "url": "https://www.livescience.com/feeds.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "New Scientist",
+            "url": "https://www.newscientist.com/feed/home/",
+            "tier": 4,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "Singularity Hub",
+            "url": "https://singularityhub.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "Human Progress",
+            "url": "https://humanprogress.org/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "Greater Good (Berkeley)",
+            "url": "https://greatergood.berkeley.edu/site/rss/articles",
+            "tier": 4,
+            "lang": "en",
+            "category": "science"
+        },
+        {
+            "name": "GNN Animals",
+            "url": "https://www.goodnewsnetwork.org/category/news/animals/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "nature"
+        },
+        {
+            "name": "GNN Earth",
+            "url": "https://www.goodnewsnetwork.org/category/news/earth/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "nature"
+        },
+        {
+            "name": "Mongabay",
+            "url": "https://news.mongabay.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "nature"
+        },
+        {
+            "name": "Conservation Optimism",
+            "url": "https://conservationoptimism.org/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "nature"
+        },
+        {
+            "name": "GNN Health",
+            "url": "https://www.goodnewsnetwork.org/category/news/health/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "health"
+        },
+        {
+            "name": "GNN Heroes",
+            "url": "https://www.goodnewsnetwork.org/category/news/inspiring/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "inspiring"
+        },
+        {
+            "name": "GNN Heroes Spotlight",
+            "url": "https://www.goodnewsnetwork.org/category/news/heroes/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "inspiring"
+        },
+        {
+            "name": "Shareable",
+            "url": "https://www.shareable.net/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "community"
+        },
+        {
+            "name": "Yes! Magazine",
+            "url": "https://www.yesmagazine.org/feed",
+            "tier": 2,
+            "lang": "en",
+            "category": "community"
+        },
+        {
+            "name": "Kitco News",
+            "url": "https://www.kitco.com/rss/KitcoNews.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-news"
+        },
+        {
+            "name": "Mining.com",
+            "url": "https://www.mining.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-news"
+        },
+        {
+            "name": "Bloomberg Commodities",
+            "url": "https://news.google.com/rss/search?q=site:bloomberg.com+commodities+OR+metals+OR+mining+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-news"
+        },
+        {
+            "name": "Reuters Commodities",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+commodities+OR+metals+OR+mining+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-news"
+        },
+        {
+            "name": "S&P Global Commodity",
+            "url": "https://news.google.com/rss/search?q=site:spglobal.com+commodities+metals+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-news"
+        },
+        {
+            "name": "Commodity Trade Mantra",
+            "url": "https://www.commoditytrademantra.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-news"
+        },
+        {
+            "name": "CNBC Commodities",
+            "url": "https://news.google.com/rss/search?q=site:cnbc.com+(commodities+OR+metals+OR+gold+OR+copper)+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-news"
+        },
+        {
+            "name": "Kitco Gold",
+            "url": "https://www.kitco.com/rss/KitcoGold.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "gold-silver"
+        },
+        {
+            "name": "Gold Price News",
+            "url": "https://news.google.com/rss/search?q=(gold+price+OR+\"gold+market\"+OR+bullion+OR+LBMA)+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gold-silver"
+        },
+        {
+            "name": "Silver Price News",
+            "url": "https://news.google.com/rss/search?q=(silver+price+OR+\"silver+market\"+OR+\"silver+futures\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gold-silver"
+        },
+        {
+            "name": "Precious Metals",
+            "url": "https://news.google.com/rss/search?q=(\"precious+metals\"+OR+platinum+OR+palladium+OR+\"gold+ETF\"+OR+GLD+OR+SLV)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gold-silver"
+        },
+        {
+            "name": "World Gold Council",
+            "url": "https://news.google.com/rss/search?q=\"World+Gold+Council\"+OR+\"central+bank+gold\"+OR+\"gold+reserves\"+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "gold-silver"
+        },
+        {
+            "name": "GoldSeek",
+            "url": "https://news.goldseek.com/GoldSeek/rss.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "gold-silver"
+        },
+        {
+            "name": "SilverSeek",
+            "url": "https://news.silverseek.com/SilverSeek/rss.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "gold-silver"
+        },
+        {
+            "name": "OilPrice.com",
+            "url": "https://oilprice.com/rss/main",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Rigzone",
+            "url": "https://www.rigzone.com/news/rss/rigzone_latest.aspx",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "EIA Reports",
+            "url": "https://www.eia.gov/rss/press_room.xml",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "OPEC News",
+            "url": "https://news.google.com/rss/search?q=(OPEC+OR+\"oil+price\"+OR+\"crude+oil\"+OR+WTI+OR+Brent+OR+\"oil+production\")+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Natural Gas News",
+            "url": "https://news.google.com/rss/search?q=(\"natural+gas\"+OR+LNG+OR+\"gas+price\"+OR+\"Henry+Hub\")+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Energy Intel",
+            "url": "https://news.google.com/rss/search?q=(energy+commodities+OR+\"energy+market\"+OR+\"energy+prices\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Reuters Energy",
+            "url": "https://news.google.com/rss/search?q=site:reuters.com+(oil+OR+gas+OR+energy)+when:1d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "energy"
+        },
+        {
+            "name": "Mining Journal",
+            "url": "https://www.mining-journal.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-news"
+        },
+        {
+            "name": "Northern Miner",
+            "url": "https://www.northernminer.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-news"
+        },
+        {
+            "name": "Mining Weekly",
+            "url": "https://www.miningweekly.com/rss/",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-news"
+        },
+        {
+            "name": "Mining Technology",
+            "url": "https://www.mining-technology.com/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-news"
+        },
+        {
+            "name": "Australian Mining",
+            "url": "https://www.australianmining.com.au/feed/",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-news"
+        },
+        {
+            "name": "Mine Web (SNL)",
+            "url": "https://news.google.com/rss/search?q=(\"mining+company\"+OR+\"mine+production\"+OR+\"mining+operations\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-news"
+        },
+        {
+            "name": "Resource World",
+            "url": "https://news.google.com/rss/search?q=(\"mining+project\"+OR+\"mineral+exploration\"+OR+\"mine+development\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-news"
+        },
+        {
+            "name": "Benchmark Mineral",
+            "url": "https://news.google.com/rss/search?q=(\"critical+minerals\"+OR+\"battery+metals\"+OR+lithium+OR+cobalt+OR+\"rare+earths\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "critical-minerals"
+        },
+        {
+            "name": "Lithium Market",
+            "url": "https://news.google.com/rss/search?q=(lithium+price+OR+\"lithium+market\"+OR+\"lithium+supply\"+OR+spodumene+OR+LCE)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "critical-minerals"
+        },
+        {
+            "name": "Cobalt Market",
+            "url": "https://news.google.com/rss/search?q=(cobalt+price+OR+\"cobalt+market\"+OR+\"DRC+cobalt\"+OR+\"battery+cobalt\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "critical-minerals"
+        },
+        {
+            "name": "Rare Earths News",
+            "url": "https://news.google.com/rss/search?q=(\"rare+earth\"+OR+\"rare+earths\"+OR+\"REE\"+OR+neodymium+OR+praseodymium)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "critical-minerals"
+        },
+        {
+            "name": "EV Battery Supply",
+            "url": "https://news.google.com/rss/search?q=(\"EV+battery\"+OR+\"battery+supply+chain\"+OR+\"battery+materials\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "critical-minerals"
+        },
+        {
+            "name": "IEA Critical Minerals",
+            "url": "https://news.google.com/rss/search?q=site:iea.org+(minerals+OR+critical+OR+battery)+when:14d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "critical-minerals"
+        },
+        {
+            "name": "Uranium Market",
+            "url": "https://news.google.com/rss/search?q=(uranium+price+OR+\"uranium+market\"+OR+U3O8+OR+nuclear+fuel)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "critical-minerals"
+        },
+        {
+            "name": "LME Metals",
+            "url": "https://news.google.com/rss/search?q=(LME+OR+\"London+Metal+Exchange\")+copper+OR+aluminum+OR+zinc+OR+nickel+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "base-metals"
+        },
+        {
+            "name": "Copper Market",
+            "url": "https://news.google.com/rss/search?q=(copper+price+OR+\"copper+market\"+OR+\"copper+supply\"+OR+COMEX+copper)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "base-metals"
+        },
+        {
+            "name": "Nickel News",
+            "url": "https://news.google.com/rss/search?q=(nickel+price+OR+\"nickel+market\"+OR+\"nickel+supply\"+OR+Indonesia+nickel)+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "base-metals"
+        },
+        {
+            "name": "Aluminum & Zinc",
+            "url": "https://news.google.com/rss/search?q=(aluminum+price+OR+aluminium+OR+zinc+price+OR+\"base+metals\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "base-metals"
+        },
+        {
+            "name": "Iron Ore Market",
+            "url": "https://news.google.com/rss/search?q=(\"iron+ore\"+price+OR+\"iron+ore+market\"+OR+\"steel+raw+materials\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "base-metals"
+        },
+        {
+            "name": "Metals Bulletin",
+            "url": "https://news.google.com/rss/search?q=(\"metals+market\"+OR+\"base+metals\"+OR+SHFE+OR+\"Shanghai+Futures\")+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "base-metals"
+        },
+        {
+            "name": "BHP News",
+            "url": "https://news.google.com/rss/search?q=BHP+(mining+OR+production+OR+results+OR+copper+OR+\"iron+ore\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-companies"
+        },
+        {
+            "name": "Rio Tinto News",
+            "url": "https://news.google.com/rss/search?q=\"Rio+Tinto\"+(mining+OR+production+OR+results+OR+Pilbara)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-companies"
+        },
+        {
+            "name": "Glencore & Vale",
+            "url": "https://news.google.com/rss/search?q=(Glencore+OR+Vale)+(mining+OR+production+OR+cobalt+OR+\"iron+ore\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-companies"
+        },
+        {
+            "name": "Gold Majors",
+            "url": "https://news.google.com/rss/search?q=(Newmont+OR+Barrick+OR+AngloGold+OR+Agnico)+(gold+mine+OR+production+OR+results)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-companies"
+        },
+        {
+            "name": "Freeport & Copper Miners",
+            "url": "https://news.google.com/rss/search?q=(Freeport+McMoRan+OR+Southern+Copper+OR+Teck+OR+Antofagasta)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-companies"
+        },
+        {
+            "name": "Critical Mineral Companies",
+            "url": "https://news.google.com/rss/search?q=(Albemarle+OR+SQM+OR+\"MP+Materials\"+OR+Lynas+OR+Cameco)+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "mining-companies"
+        },
+        {
+            "name": "Shipping & Freight",
+            "url": "https://news.google.com/rss/search?q=(\"bulk+carrier\"+OR+\"dry+bulk\"+OR+\"commodity+shipping\"+OR+\"Port+Hedland\"+OR+\"Strait+of+Hormuz\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "supply-chain"
+        },
+        {
+            "name": "Trade Routes",
+            "url": "https://news.google.com/rss/search?q=(\"trade+route\"+OR+\"supply+chain\"+OR+\"commodity+export\"+OR+\"mineral+export\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "supply-chain"
+        },
+        {
+            "name": "China Commodity Imports",
+            "url": "https://news.google.com/rss/search?q=(China+imports+copper+OR+iron+ore+OR+lithium+OR+cobalt+OR+\"rare+earth\")+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "supply-chain"
+        },
+        {
+            "name": "Port & Logistics",
+            "url": "https://news.google.com/rss/search?q=(\"iron+ore+port\"+OR+\"copper+port\"+OR+\"commodity+port\"+OR+\"mineral+logistics\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "supply-chain"
+        },
+        {
+            "name": "Mining Regulation",
+            "url": "https://news.google.com/rss/search?q=(\"mining+regulation\"+OR+\"mining+policy\"+OR+\"mining+permit\"+OR+\"mining+ban\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-regulation"
+        },
+        {
+            "name": "ESG in Mining",
+            "url": "https://news.google.com/rss/search?q=(\"mining+ESG\"+OR+\"responsible+mining\"+OR+\"mine+closure\"+OR+\"tailings\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-regulation"
+        },
+        {
+            "name": "Trade & Tariffs",
+            "url": "https://news.google.com/rss/search?q=(\"mineral+tariff\"+OR+\"metals+tariff\"+OR+\"critical+mineral+policy\"+OR+\"mining+export+ban\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-regulation"
+        },
+        {
+            "name": "Indonesia Nickel Policy",
+            "url": "https://news.google.com/rss/search?q=(Indonesia+nickel+OR+\"nickel+export\"+OR+\"nickel+ban\"+OR+\"nickel+processing\")+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-regulation"
+        },
+        {
+            "name": "China Mineral Policy",
+            "url": "https://news.google.com/rss/search?q=(China+\"rare+earth\"+OR+\"mineral+export\"+OR+\"critical+mineral\")+policy+OR+restriction+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "commodity-regulation"
+        },
+        {
+            "name": "Seeking Alpha Metals",
+            "url": "https://news.google.com/rss/search?q=site:seekingalpha.com+(gold+OR+silver+OR+copper+OR+mining)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "markets"
+        },
+        {
+            "name": "Commodity Futures",
+            "url": "https://news.google.com/rss/search?q=(COMEX+OR+NYMEX+OR+\"commodity+futures\"+OR+CME+commodities)+when:2d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 4,
+            "lang": "en",
+            "category": "markets"
+        },
+        {
+            "name": "Defense One",
+            "url": "https://www.defenseone.com/rss/all/",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "Breaking Defense",
+            "url": "https://breakingdefense.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "The War Zone",
+            "url": "https://www.twz.com/feed",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "Defense News",
+            "url": "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "Janes",
+            "url": "https://news.google.com/rss/search?q=site:janes.com+when:3d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "Military Times",
+            "url": "https://www.militarytimes.com/arc/outboundfeeds/rss/?outputType=xml",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "Task & Purpose",
+            "url": "https://taskandpurpose.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "USNI News",
+            "url": "https://news.usni.org/feed",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "gCaptain",
+            "url": "https://gcaptain.com/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "Oryx OSINT",
+            "url": "https://www.oryxspioenkop.com/feeds/posts/default?alt=rss",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "UK MOD",
+            "url": "https://www.gov.uk/government/organisations/ministry-of-defence.atom",
+            "tier": 1,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "CSIS",
+            "url": "https://news.google.com/rss/search?q=site:csis.org&hl=en&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:defense"
+        },
+        {
+            "name": "Chatham House",
+            "url": "https://news.google.com/rss/search?q=site:chathamhouse.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "intel:intl"
+        },
+        {
+            "name": "ECFR",
+            "url": "https://news.google.com/rss/search?q=site:ecfr.eu+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "intel:intl"
+        },
+        {
+            "name": "Middle East Institute",
+            "url": "https://news.google.com/rss/search?q=site:mei.edu+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "intel:intl"
+        },
+        {
+            "name": "Brookings",
+            "url": "https://news.google.com/rss/search?q=site:brookings.edu&hl=en&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "Carnegie",
+            "url": "https://news.google.com/rss/search?q=site:carnegieendowment.org&hl=en&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "FAS",
+            "url": "https://news.google.com/rss/search?q=site:fas.org+nuclear+weapons+security&hl=en&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "NTI",
+            "url": "https://news.google.com/rss/search?q=site:nti.org+when:30d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 1,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "RUSI",
+            "url": "https://news.google.com/rss/search?q=site:rusi.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "Wilson Center",
+            "url": "https://news.google.com/rss/search?q=site:wilsoncenter.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "GMF",
+            "url": "https://news.google.com/rss/search?q=site:gmfus.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "Stimson Center",
+            "url": "https://www.stimson.org/feed/",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "CNAS",
+            "url": "https://news.google.com/rss/search?q=site:cnas.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "Lowy Institute",
+            "url": "https://news.google.com/rss/search?q=site:lowyinstitute.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:research"
+        },
+        {
+            "name": "Arms Control Assn",
+            "url": "https://news.google.com/rss/search?q=site:armscontrol.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:nuclear"
+        },
+        {
+            "name": "Bulletin of Atomic Scientists",
+            "url": "https://news.google.com/rss/search?q=site:thebulletin.org+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:nuclear"
+        },
+        {
+            "name": "Bellingcat",
+            "url": "https://news.google.com/rss/search?q=site:bellingcat.com+when:30d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:osint"
+        },
+        {
+            "name": "Ransomware.live",
+            "url": "https://www.ransomware.live/rss.xml",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:cyber"
+        },
+        {
+            "name": "FAO News",
+            "url": "https://www.fao.org/feeds/fao-newsroom-rss",
+            "tier": 1,
+            "lang": "en",
+            "category": "intel:economic"
+        },
+        {
+            "name": "FAO GIEWS",
+            "url": "https://news.google.com/rss/search?q=site:fao.org+GIEWS+food+security+when:30d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 2,
+            "lang": "en",
+            "category": "intel:economic"
+        },
+        {
+            "name": "EU ISS",
+            "url": "https://news.google.com/rss/search?q=site:iss.europa.eu+when:7d&hl=en-US&gl=US&ceid=US:en",
+            "tier": 3,
+            "lang": "en",
+            "category": "intel:intl"
+        }
+    ],
+    "total_count": 525
+}

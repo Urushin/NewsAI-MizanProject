@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Mizan.ai — Shared Schemas (Zod)
+ * NewsAI — Shared Schemas (Zod)
  * These schemas are used to validate data coming from the Backend
  * and provide full TypeScript safety.
  */

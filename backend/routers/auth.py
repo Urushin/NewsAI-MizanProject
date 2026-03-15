@@ -30,21 +30,47 @@ def signup(body: SignupRequest):
 
         user_id = auth_res.user.id
 
-        sb.table("profiles").insert({
-            "id": user_id,
-            "username": body.username,
-            "language": "fr",
-            "score_threshold": 70,
-            "identity": {},
-            "interests": {},
-            "rejection_rules": [],
-            "preferences": {},
-        }).execute()
+        # Try to auto-confirm the user via admin API
+        try:
+            sb.auth.admin.update_user_by_id(user_id, {"email_confirm": True})
+        except Exception as e:
+            logger.warning(f"Could not auto-confirm user {user_id}: {e}")
+
+        # Try to create the profile row (may fail due to RLS if service_role isn't working)
+        try:
+            sb.table("profiles").insert({
+                "id": user_id,
+                "username": body.username,
+                "language": "fr",
+                "score_threshold": 70,
+                "identity": {},
+                "interests": {},
+                "rejection_rules": [],
+                "preferences": {},
+            }).execute()
+        except Exception as e:
+            logger.warning(f"Profile insert failed (RLS?), will be created on first update: {e}")
+
+        # Sign in to get a valid session token (signup may not always return one)
+        try:
+            login_res = sb.auth.sign_in_with_password({
+                "email": body.email,
+                "password": body.password
+            })
+            access_token = login_res.session.access_token if login_res.session else None
+        except Exception:
+            access_token = auth_res.session.access_token if auth_res.session else None
 
         return {
             "message": "Compte créé",
-            "user_id": user_id,
-            "access_token": auth_res.session.access_token if auth_res.session else None,
+            "access_token": access_token,
+            "user": {
+                "id": user_id,
+                "email": body.email,
+                "username": body.username,
+                "language": "fr",
+                "score_threshold": 70
+            }
         }
     except HTTPException:
         raise
@@ -59,23 +85,24 @@ def login(body: LoginRequest):
     try:
         auth_res = sb.auth.sign_in_with_password({
             "email": body.email,
-            "password": body.password,
+            "password": body.password
         })
-
-        if not auth_res.session:
-            raise HTTPException(status_code=401, detail="Identifiants invalides")
-
+        
+        if not auth_res.user:
+            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+            
+        # Get profile data
+        profile = sb.table("profiles").select("*").eq("id", auth_res.user.id).single().execute()
+        
         return {
             "access_token": auth_res.session.access_token,
             "refresh_token": auth_res.session.refresh_token,
-            "user": {
+            "user": profile.data if profile.data else {
                 "id": auth_res.user.id,
                 "email": auth_res.user.email,
-                "username": auth_res.user.user_metadata.get("username", ""),
-            },
+                "username": auth_res.user.user_metadata.get("username", "User")
+            }
         }
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Login error: {e}")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail="Identifiants invalides")

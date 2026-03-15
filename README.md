@@ -1,165 +1,137 @@
-# 🏛️ Mizan.ai — Ton Filtre d'Actualité Intelligent par IA
+# 🏛️ NewsAI — Votre Filtre d'Actualité Intelligent par IA
 
-Mizan.ai est un agrégateur d'actualités SaaS de nouvelle génération qui utilise l'Intelligence Artificielle pour transformer un flux d'informations massif en un briefing quotidien ultra-personnalisé. 
+NewsAI est un agrégateur d'actualités de nouvelle génération qui utilise l'Intelligence Artificielle pour transformer un flux d'informations massif en un briefing quotidien ultra-personnalisé.
 
-Le projet repose sur une architecture "Lean" et performante, séparant le traitement lourd (Python/IA) de l'interface utilisateur (Next.js/Supabase).
+> [!NOTE]
+> Ce projet a été modernisé pour le TP avec une architecture **Microservices** et un déploiement orchestré par **Kubernetes**.
 
 ---
 
 ## 🚀 Vision du Projet
 
-Dans un monde saturé d'informations, Mizan.ai agit comme un curateur cognitif. Il ne se contente pas de regrouper des articles ; il les **filtre**, les **classe** et les **résume** en fonction de ton "Manifeste" personnel (ta vision du monde et tes intérêts réels).
+Dans un monde saturé d'informations, NewsAI agit comme un curateur cognitif. Il ne se contente pas de regrouper des articles ; il les **filtre**, les **classe** et les **résume** en fonction de votre "Manifeste" personnel (votre vision du monde et vos intérêts réels).
 
 ---
 
-## ✨ Fonctionnalités Clés
+## 🏗️ Architecture du Projet (v4.0 - Microservices)
 
-- **Filtrage Cognitif par IA** : Double passage de validation (Embeddings + LLM) avec un système de **Batched Processing** (5 articles par lot) pour une précision maximale et zéro erreur de dépassement de contexte.
-- **Optimisation de Contexte (Head-Tail Truncation)** : Algorithme intelligent qui conserve le *Chapô* (800 chars) et la *Conclusion* (400 chars) des articles longs, éliminant le superflu pour réduire les coûts et améliorer la synthèse.
-- **Classification par IA (8 Catégories)** : Rangement automatique parmi : *Impact, Passion, Tech, Politik, Business, World, Security, Trending*.
-- **Contrôle de Densité du Contenu** : Réglage dynamique (Puces -> Paragraphe). Le niveau 4 (Analyse Profonde) est techniquement prêt mais réservé aux profils Premium via un verrouillage UI.
-- **Robustesse Frontend** : Gestion d'erreurs proactive avec composants de maintenance visuels et Skeleton Loaders premium pour une expérience fluide même en cas d'interférence réseau.
-- **Scraping Quotidien Exhaustif** : Extraction complète basée sur la date du jour (via Firecrawl), sans limite arbitraire de quantité, pour ne rien rater du cycle de l'information.
-- **Feedback & Auto-Ajustement** : Système apprenant qui affine tes intérêts en fonction de tes feedbacks (clics, rejets) et met à jour ton Manifesto dynamiquement.
+Le projet est divisé en quatre composants principaux, chacun conteneurisé :
+
+1.  **Frontend (`web/`)** : Interface premium Next.js 14 optimisée pour la lecture.
+2.  **Backend (`backend/`)** : API Gateway (FastAPI) gérant l'intelligence, la synthèse et la logique métier.
+3.  **Scraper (`scraper/`)** : Microservice spécialisé dans le scraping intensif (Firecrawl/RSS), séparant la collecte de l'API.
+4.  **Database** : PostgreSQL avec persistance via Kubernetes PV/PVC.
+
+### 📁 Structure des dossiers
+```text
+PROJET_NEWSAI/
+├── backend/          # API Gateway (Service 1)
+├── web/              # Frontend UI (Service 2)
+├── scraper/          # Worker de collecte (Service 3)
+├── k8s/              # Manifestes Kubernetes (Déploiements, Services, Ingress)
+├── terraform/        # Infrastructure as Code (GKE)
+├── supabase/         # Scripts SQL & Config
+└── .env              # Configuration & Clés API
+```
 
 ---
 
 ## 🛠️ Stack Technique
 
-### Backend (Le Cerveau)
-- **Framework** : FastAPI (Python 3.9+)
-- **Scraping** : Firecrawl SDK & Feedparser (Asynchrone avec `httpx`)
-- **Intelligence Artificielle** : 
-    - LLM : Mistral AI (modèle `mistral-small-latest`) avec traitement par lots.
-    - Embeddings : Mistral Embed (`mistral-embed`) pour la vectorisation.
-- **Traitement** : Pipeline de filtrage cognitif asynchrone, Job Queue personnalisée.
-- **Optimisation Tokens** : Troncature intelligente Head-Tail et nettoyage Regex des URLs pour maximiser la fenêtre de contexte.
-- **Base de données Locale** : SQLite (`mizan.db`) pour la persistence des statuts de génération et du cache.
-- **Monitoring** : Middleware APM custom pour le tracking des percentiles (p50, p95, p99).
-- **Billing/SaaS** : Stripe SDK pour la gestion des abonnements et webhooks.
-- **Auto-Learning** : Profile Updater asynchrone basé sur les interactions utilisateur.
-
-### Frontend (L'Expérience)
-- **Framework** : Next.js 14 (App Router)
-- **Styling** : Tailwind CSS
-- **Animations** : Framer Motion
-- **Architecture** : React Server Components (RSC) pour la performance.
-- **Typographie** : Duo de polices premium (Playfair Display pour le style "Journal" et Inter pour la lisibilité).
-- **Icons** : Set d'icônes Lucide pour une navigation intuitive.
-
-### Infrastructure & Data
-- **Base de données** : Supabase (Postgres)
-- **Vecteurs** : pgvector pour la similarité sémantique.
-- **Auth** : Supabase Auth (JWT).
-- **Paiements** : Stripe.
+- **Orchestration** : Kubernetes (K8s)
+- **Conteneurisation** : Docker
+- **Backend/Scraper** : FastAPI (Python 3.11)
+- **Frontend** : Next.js 14 (App Router)
+- **IA** : Mistral AI (Large Language Models)
+- **Base de données** : PostgreSQL / Supabase
+- **Infrastructure** : Terraform (GCP/GKE)
 
 ---
 
-## 📈 Observabilité & Monitoring
+## ⚙️ Guide de Lancement (Mode TP - Kubernetes)
 
-Mizan.ai intègre une couche de monitoring robuste pour garantir une haute disponibilité :
-- **Metrics Endpoint** : `/api/metrics` expose l'uptime, le taux d'erreur et la latence moyenne.
-- **Performance Tracking** : Calcul en temps réel des percentiles (p50, p95, p99) par endpoint.
-- **Alerting** : Logging automatique des requêtes lentes (>2s) via Loguru.
+Pour lancer le projet dans un environnement local Kubernetes (comme Minikube ou Docker Desktop) :
 
+### 1. Préparer les images Docker
+Depuis la racine :
+```bash
+# Backend
+docker build -t newsai-backend:latest -f backend/Dockerfile .
+# Scraper
+docker build -t newsai-scraper:latest -f scraper/Dockerfile .
+# Frontend
+docker build -t newsai-frontend:latest -f web/Dockerfile ./web
+```
 
----
+### 2. Déployer sur Kubernetes
+Assurez-vous que votre cluster (Minikube) est lancé :
+```bash
+# Appliquer les configurations
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/postgres.yaml
+kubectl apply -f k8s/scraper-deployment.yaml
+kubectl apply -f k8s/backend-deployment.yaml
+kubectl apply -f k8s/frontend-deployment.yaml
+kubectl apply -f k8s/ingress.yaml
+```
 
-## 🎨 Design System (v3.0 - Premium Dark)
-
-Mizan.ai a évolué vers une esthétique "Glassmorphic High-End" pour offrir une expérience de lecture apaisante et luxueuse :
-- **Thème Sombre Profond** : Palette de couleurs basée sur des gris bleutés (`#0b0f15`) et des accents ambre/or.
-- **Hiérarchie Visuelle** : Focus massif sur le "Daily Briefing" avec une date élégante et discrète.
-- **Micro-Interactions** : Animations fluides via Framer Motion lors de l'expansion des cartes et de l'apparition du digest.
-- **Cartes de Contenu** : Design en relief avec bordures subtiles et ombres portées pour une séparation nette des informations.
-- **Evolution Notion-Like (v3.2)** : Vers une esthétique encore plus épurée, avec un focus sur le centrage du contenu, l'utilisation de typographies sans-serif (Inter/System) et une clarté maximale inspirée des outils de productivité modernes.
-
----
-
-## 📁 Structure du Projet
-
+### 3. Accéder à l'application
+Ajoutez les hôtes locaux à votre fichier `/etc/hosts` :
 ```text
-PROJET_NEWSAI/
-├── backend/          # API FastAPI, Logic IA & Scraping
-├── web/              # Interface Next.js (Frontend)
-├── supabase/         # Scripts SQL, Migrations & RLS
-├── scripts/          # Utilitaires (Seed, Reset, Tests)
-├── docs/             # Documentation & Notes de tâches
-├── logs/             # Fichiers de log (debug)
-├── .env              # Configuration & Clés API
-└── requirements.txt  # Dépendances Python
+127.0.0.1 newsai.local api.newsai.local
 ```
+L'application sera accessible sur `http://newsai.local`.
 
 ---
 
-## ⚙️ Installation & Lancement Manuel
+## 🧪 Mode Test / Évaluation
 
-### 1. Préparation de l'environnement (Une seule fois)
-À la racine du projet, créez un environnement virtuel unique et installez les dépendances :
+Pour tester l'application et les correctifs :
+
+1.  **Identifiants** :
+    *   **Email** : `retry_auth_fix@mizan.ai`
+    *   **Mot de passe** : `SuccessPassword123!`
+
+2.  **Parcours recommandé** :
+    *   Connectez-vous avec les identifiants ci-dessus.
+    *   Rendez-vous sur la page **Profil** (ou l'Assistant de configuration).
+    *   Configurez vos préférences de lecture/sources.
+    *   Générez une **Nouvelle Édition** pour charger les actualités fraîchement condensées.
+    *   *Note : Réactualisez la page après quelques secondes si le contenu n'apparaît pas instantanément.*
+
+---
+
+## ⚙️ Installation & Lancement Manuel (Développement)
+
+Si vous ne possédez pas Kubernetes, vous pouvez lancer les services manuellement :
+
+### 1. Backend & Scraper
 ```bash
-python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+# Service 1: API
+uvicorn backend.app:app --host 0.0.0.0 --port 8000
+# Service 2: Scraper App
+uvicorn scraper.app:app --host 0.0.0.0 --port 8001
 ```
-*Assurez-vous d'avoir configuré votre fichier `.env` à la racine.*
 
-### 2. Lancement du Backend (API)
-Dans un premier terminal, depuis la racine :
-```bash
-source .venv/bin/activate
-# On exclut le dossier web pour éviter que le reloader ne sature à cause des node_modules
-uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload --reload-exclude "web/*"
-```
-*L'API sera accessible sur `http://localhost:8000`.*
-
-### 3. Lancement du Worker (Traitement IA)
-Dans un deuxième terminal, depuis la racine :
-```bash
-source .venv/bin/activate
-python3 backend/job_queue.py
-```
-*Ce service gère le scraping et les appels Mistral AI en arrière-plan.*
-
-### 4. Lancement du Frontend (Next.js)
-Dans un troisième terminal, allez dans le dossier `web/` :
+### 2. Frontend
 ```bash
 cd web
-npm install  # Si nécessaire
+npm install
 npm run dev
 ```
-> [!TIP]
-> **Pourquoi `--reload-exclude "web/*"` ?**
-> Par défaut, Uvicorn tente de surveiller tous les fichiers du projet pour redémarrer en cas de modification. Comme le dossier `web/node_modules` contient des dizaines de milliers de fichiers, cela peut saturer le système et provoquer des erreurs `FileNotFoundError`. Cette option permet de garder un reloader fluide sur le code Backend uniquement.
 
 ---
 
-## 🛡️ Sécurité & Scalabilité (DX Mode)
+## ✨ Fonctionnalités Clés
 
-Le projet intègre un mode **DX (Developer Experience)** piloté par la variable `DEV_MODE=true` dans le `.env`.
-- En **Développement** : Authentification simplifiée et Rate Limiting désactivé pour itérer plus vite.
-- En **Production** : Toutes les sécurités (JWT strict, RLS, Rate Limiting IP) sont activées par défaut.
-
----
-
-## 💰 Niveaux d'Abonnement & Quotas
-
-| Plan | Limit Briefs/J | Articles/Brief | Historique | Deep Scrape |
-| :--- | :--- | :--- | :--- | :--- |
-| **Free** | 1 | 10 | 7 jours | ❌ |
-| **Pro** | 5 | 30 | 90 jours | ✅ |
-| **Enterprise** | Illimité | 100 | 365 jours | ✅ |
-
+- **Filtrage Cognitif par IA** : Double passage de validation (Embeddings + LLM).
+- **Service-to-Service Communication** : Le backend délègue la collecte au microservice Scraper.
+- **Persistence des données** : PostgreSQL orchestré avec stockage persistant.
+- **Routage Unifié** : Ingress Controller pour gérer les sous-domaines (api/www).
+- **IA Seal of Trust** : Score de confiance et résumé AI pour chaque article.
 
 ---
 
-## 🗺️ Roadmap Prochaine Étape
-1.  **Synthèse Multi-Source Réelle** : Fusionner plusieurs articles traitant du même sujet en un seul "super-article" synthétique.
-2.  **Moteur de Recommandation V2** : Amélioration de la pondération des vecteurs basée sur le scoring de similarité (Cosine Similarity).
-3.  **Abonnement Premium Actif** : Déverrouillage des analyses de niveau 4 et stockage longue durée.
-4.  **Multi-Langue Temps Réel** : Support natif et traduction impérative FR/EN/JA.
-5.  **Mode Podcast** : Intégration prévue d'un résumé audio quotidien via TTS (Text-to-Speech).
-
----
-
-*Développé pour ceux qui veulent comprendre le monde sans y perdre leur temps.* 🚀
-
+*Développé pour NewsAI — L'information, sans le bruit.* 🚀

@@ -1,5 +1,5 @@
 """
-Mizan.ai — Monitoring & APM Middleware
+NewsAI — Monitoring & APM Middleware
 
 Features:
   ✅ Request duration tracking per endpoint

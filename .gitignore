@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════
-# Mizan.ai — .gitignore
+# NewsAI — .gitignore
 # ═══════════════════════════════════════
 
 # Secrets
@@ -28,7 +28,7 @@ out/
 .venv/
 tmp/
 # Data (local dev only, DB is in Supabase now)
-data/mizan.db
+data/newsai.db
 data/brief_*.json
 data/briefs/
 data/feedback/

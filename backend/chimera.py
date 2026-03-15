@@ -1,5 +1,5 @@
 """
-Mizan.ai — Chimera Cognitive Engine
+NewsAI — Chimera Cognitive Engine
 3-Stage Multi-Source Fusion Pipeline:
   🔬 Stage 1: The Surgeon  (Local extraction via difflib)
   📋 Stage 2: The Secretary (LLM data point extraction)
@@ -62,7 +62,32 @@ def _extract_source_domain(url: str) -> str:
 
 
 def _sentence_similarity(a: str, b: str) -> float:
-    """Compute similarity ratio between two sentences using difflib."""
+    """
+    Compute similarity between two sentences.
+    Uses a fast Jaccard word-overlap gate before falling back to difflib.
+    """
+    if a == b:
+        return 1.0
+
+    # Fast gate: word-level Jaccard overlap
+    words_a = set(a.lower().split())
+    words_b = set(b.lower().split())
+
+    if not words_a or not words_b:
+        return 0.0
+
+    intersection = len(words_a & words_b)
+    union = len(words_a | words_b)
+    jaccard = intersection / union
+
+    # Definitely different — skip expensive difflib
+    if jaccard < 0.2:
+        return 0.0
+    # Definitely the same — skip expensive difflib
+    if jaccard > 0.8:
+        return jaccard
+
+    # Uncertain middle range — use precise SequenceMatcher
     return difflib.SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 

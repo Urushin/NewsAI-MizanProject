@@ -1,5 +1,5 @@
 """
-Mizan.ai — Pipeline (Real LLM Calls)
+NewsAI — Pipeline (Real LLM Calls)
 Two-pass cognitive filtering + global digest.
 """
 import json
@@ -377,10 +377,9 @@ def _parse_verdicts(raw_text: str, urls: List[str], titles: List[str]) -> List[A
     
     for i, item in enumerate(data):
         try:
-            # Ensure link is present (fallback to original article)
-            if not item.get("link") and i < len(urls):
+            # ALWAYS enforce correct link and title to prevent matching failures later
+            if i < len(urls):
                 item["link"] = urls[i]
-            # Ensure required fields
             if "localized_title" not in item:
                 item["localized_title"] = titles[i] if i < len(titles) else "Unknown"
 
@@ -451,13 +450,22 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
         # Build user-specific interest sources from profile
         user_interests = _build_user_interest_sources(profile)
         
-        raw = await collect_articles(
-            exclude_urls=exclude_urls,
-            progress_callback=lambda msg, pct: _status(username, msg, pct),
-            quick_mode=is_test,
-            skip_scraping=is_test,
-            user_interests=user_interests if user_interests else None,
-        )
+        # Microservice integration: call remote scraper if URL is provided
+        if os.getenv("SCRAPER_SERVICE_URL"):
+            from scraper_client import collect_articles_remote
+            raw = await collect_articles_remote(
+                user_interests=user_interests if user_interests else [],
+                max_per_topic=5,
+                quick_mode=is_test
+            )
+        else:
+            raw = await collect_articles(
+                exclude_urls=exclude_urls,
+                progress_callback=lambda msg, pct: _status(username, msg, pct),
+                quick_mode=is_test,
+                skip_scraping=is_test,
+                user_interests=user_interests if user_interests else None,
+            )
         logger.info(f"📡 [{username}] {len(raw)} articles")
 
         if not raw:
@@ -504,7 +512,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                     store_article_embeddings(db_articles)
                     
                     _status(username, "Semantic Search...", 40)
-                    top_matches = match_articles(user_vector, match_count=15)
+                    top_matches = match_articles(user_vector, match_count=50)
                     logger.info(f"   🎯 Found {len(top_matches)} matches via Vector Search")
                     
                     if top_matches:
@@ -512,7 +520,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                         # Filter similarity
                         good_matches = [m for m in top_matches if m.get("similarity", 0) > 0.1]
                         if not good_matches:
-                            good_matches = top_matches[:5]
+                            good_matches = top_matches[:15]
                             
                         # Instead of evaluating locally, we filter the clusters to keep the full context of Chimera
                         good_urls = {m.get("url") for m in good_matches}
@@ -531,71 +539,75 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
         
         logger.info(f"   🧬 {len(multi_clusters)} multi-source clusters → Chimera | {len(single_clusters)} single-article → Batch")
         
-        # ── Process Multi-Article Clusters via Chimera ──
-        chimera_verdicts = []
-        for cluster in multi_clusters[:10]:  # Cap at 10 clusters to control token spend
-            cluster_dicts = [
-                {
-                    "title": a.title,
-                    "url": a.link,
-                    "content": a.content or "",
-                    "source_interest": a.source_interest,
-                }
-                for a in cluster
-            ]
-            try:
-                _status(username, f"Chimera: Fusing {len(cluster)} sources...", 55)
-                verdict_data = await synthesize_cluster(
-                    cluster_dicts, profile, language, _call_llm
-                )
-                
-                # ── Normalize LLM output for Pydantic ──
-                # LLM might return "title" instead of "localized_title"
-                if "title" in verdict_data and "localized_title" not in verdict_data:
-                    verdict_data["localized_title"] = verdict_data.pop("title")
-                # Ensure link is present
-                if not verdict_data.get("link"):
-                    verdict_data["link"] = cluster[0].link
-                # Ensure score is int
-                if "score" in verdict_data:
-                    try:
-                        verdict_data["score"] = int(verdict_data["score"])
-                    except (ValueError, TypeError):
-                        verdict_data["score"] = 70
-                
-                # Parse into ArticleVerdict
-                from pydantic import ValidationError
+        # ── Process Multi-Article Clusters via Chimera (PARALLEL) ──
+        import asyncio as _asyncio
+
+        _LLM_SEM = _asyncio.Semaphore(3)  # Limit concurrent LLM calls to avoid rate limits
+
+        async def _fuse_cluster(cluster):
+            """Process a single cluster through Chimera — isolated for parallel execution."""
+            async with _LLM_SEM:
+                cluster_dicts = [
+                    {
+                        "title": a.title,
+                        "url": a.link,
+                        "content": a.content or "",
+                        "source_interest": a.source_interest,
+                    }
+                    for a in cluster
+                ]
                 try:
-                    v = ArticleVerdict(**verdict_data)
-                    v.source_names = [getattr(a, "source_name", "") or a.link for a in cluster]
-                    if v.keep:
-                        v.image_url = cluster[0].image_url
-                        chimera_verdicts.append(v)
-                        logger.info(f"   ✅ Chimera OK: \"{v.localized_title[:50]}...\"")
-                except ValidationError as e:
-                    logger.warning(f"   ⚠️ Chimera verdict validation failed: {e}")
-                    # Last resort: build a valid verdict from raw data
-                    chimera_verdicts.append(ArticleVerdict(
-                        localized_title=verdict_data.get("localized_title", verdict_data.get("title", cluster[0].title)),
-                        summary=verdict_data.get("summary", ["Synthèse en cours de reconstruction."]),
-                        score=verdict_data.get("score", 70),
-                        keep=True,
-                        category=verdict_data.get("category", "Passion"),
-                        reason=verdict_data.get("reason", "Article fusionné par Chimera"),
-                        credibility_score=min(10, max(0, int(verdict_data.get("credibility_score", 5)))),
-                        link=verdict_data.get("link", cluster[0].link),
-                        sources_count=verdict_data.get("sources_count", len(cluster)),
-                        source_urls=verdict_data.get("source_urls", [a.link for a in cluster]),
-                        source_names=[getattr(a, "source_name", "") or a.link for a in cluster],
-                    ))
+                    verdict_data = await synthesize_cluster(
+                        cluster_dicts, profile, language, _call_llm
+                    )
+                # ── Normalize LLM output for Pydantic ──
+                    if "title" in verdict_data and "localized_title" not in verdict_data:
+                        verdict_data["localized_title"] = verdict_data.pop("title")
+                    if not verdict_data.get("link"):
+                        verdict_data["link"] = cluster[0].link
+                    if "score" in verdict_data:
+                        try:
+                            verdict_data["score"] = int(verdict_data["score"])
+                        except (ValueError, TypeError):
+                            verdict_data["score"] = 70
                     
-            except Exception as e:
-                logger.error(f"   ❌ Chimera cluster failed: {e}")
+                    from pydantic import ValidationError
+                    try:
+                        v = ArticleVerdict(**verdict_data)
+                        v.source_names = [getattr(a, "source_name", "") or a.link for a in cluster]
+                        if v.keep:
+                            v.image_url = cluster[0].image_url
+                            logger.info(f"   ✅ Chimera OK: \"{v.localized_title[:50]}...\"")
+                            return v
+                    except ValidationError as e:
+                        logger.warning(f"   ⚠️ Chimera verdict validation failed: {e}")
+                        return ArticleVerdict(
+                            localized_title=verdict_data.get("localized_title", verdict_data.get("title", cluster[0].title)),
+                            summary=verdict_data.get("summary", ["Synthèse en cours de reconstruction."]),
+                            score=verdict_data.get("score", 70),
+                            keep=True,
+                            category=verdict_data.get("category", "Passion"),
+                            reason=verdict_data.get("reason", "Article fusionné par Chimera"),
+                            credibility_score=min(10, max(0, int(verdict_data.get("credibility_score", 5)))),
+                            link=verdict_data.get("link", cluster[0].link),
+                            sources_count=verdict_data.get("sources_count", len(cluster)),
+                            source_urls=verdict_data.get("source_urls", [a.link for a in cluster]),
+                            source_names=[getattr(a, "source_name", "") or a.link for a in cluster],
+                        )
+                except Exception as e:
+                    logger.error(f"   ❌ Chimera cluster failed: {e}")
+                return None
+
+        _status(username, "Chimera: Fusion multi-sources...", 55)
+        fusion_tasks = [_fuse_cluster(c) for c in multi_clusters[:15]]
+        fusion_results = await _asyncio.gather(*fusion_tasks)
+        chimera_verdicts = [v for v in fusion_results if v is not None]
+
         
         logger.info(f"   🧬 Chimera produced {len(chimera_verdicts)} fused articles")
         
         # ── Process Single-Article Clusters via Batch ──
-        single_articles = [c[0] for c in single_clusters][:15]
+        single_articles = [c[0] for c in single_clusters][:25]
         batch_dicts = [
             {
                 "title": a.title,

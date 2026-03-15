@@ -1,5 +1,5 @@
 -- ══════════════════════════════════════════════
--- Mizan.ai — SaaS Migration
+-- NewsAI — SaaS Migration
 -- Run this in Supabase SQL Editor
 -- ══════════════════════════════════════════════
 

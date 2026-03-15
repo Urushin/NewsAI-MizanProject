@@ -15,8 +15,7 @@ export interface NewsItem {
     sources_count?: number;
     source_urls?: string[];
     image_url?: string;
-    isFused?: boolean;
-    is_fused?: boolean;
+    is_fused?: boolean; // Preferred snake_case matching backend
     fused_count?: number;
     source_icons?: string[];
 }

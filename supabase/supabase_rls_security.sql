@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════
--- Mizan.ai — Supabase Security: RLS + Index + Contraintes
+-- NewsAI — Supabase Security: RLS + Index + Contraintes
 -- Exécuter dans Supabase > SQL Editor
 -- ═══════════════════════════════════════════════════════════
 

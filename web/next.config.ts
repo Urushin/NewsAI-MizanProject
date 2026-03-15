@@ -1,11 +1,23 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
       { protocol: "http", hostname: "**" },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://backend:8000/api/:path*",
+      },
+    ];
   },
   // Security headers for production
   async headers() {
@@ -44,8 +56,8 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https:",
-              "connect-src 'self' http://localhost:8000 http://192.168.1.66:8000 https://*.supabase.co",
+              "img-src 'self' data: https: http:",
+              "connect-src 'self' http: https:",
             ].join("; "),
           },
         ],
