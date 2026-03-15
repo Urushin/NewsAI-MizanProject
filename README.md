@@ -102,7 +102,63 @@ PROJET_NEWSAI/
 
 ---
 
-## ⚙️ Installation & Lancement Manuel
+## ☸️ Lancement Kubernetes (Orchestration)
+
+Pour déployer le projet dans un environnement Kubernetes (ex: Minikube) :
+
+### 1. Préparer les images Docker
+Depuis la racine du projet, configurez l'environnement Docker de Minikube :
+```bash
+eval $(minikube docker-env)
+
+# Backend / API Gateway
+docker build -t newsai-backend:latest -f backend/Dockerfile .
+
+# Scraper (Collecte)
+docker build -t newsai-scraper:latest -f scraper/Dockerfile .
+
+# Frontend (Next.js)
+docker build -t newsai-frontend:latest -f web/Dockerfile ./web
+```
+
+### 2. Déployer les Manifestes
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/postgres.yaml
+kubectl apply -f k8s/scraper-deployment.yaml
+kubectl apply -f k8s/backend-deployment.yaml
+kubectl apply -f k8s/frontend-deployment.yaml
+kubectl apply -f k8s/ingress.yaml
+```
+
+### 3. Accès à l'application
+Ajoutez les hôtes locaux à votre fichier `/etc/hosts` :
+```text
+127.0.0.1 newsai.local api.newsai.local
+```
+L'application sera accessible sur `http://newsai.local`.
+
+---
+
+## 🧪 Mode Test / Évaluation
+
+Pour tester l'application et les correctifs d'authentification :
+
+1.  **Identifiants** :
+    *   **Email** : `retry_auth_fix@mizan.ai`
+    *   **Mot de passe** : `SuccessPassword123!`
+
+2.  **Parcours recommandé** :
+    *   Connectez-vous avec les identifiants ci-dessus.
+    *   Rendez-vous sur la page **Profil** (ou l'Assistant).
+    *   Configurez vos préférences.
+    *   Générez une **Nouvelle Édition** pour charger l'actualités.
+    *   *Note : Réactualisez la page après quelques secondes si le contenu n'apparaît pas instantanément.*
+
+---
+
+## ⚙️ Lancement Manuel (Développement)
 
 ### 1. Préparation de l'environnement (Une seule fois)
 À la racine du projet, créez un environnement virtuel unique et installez les dépendances :
