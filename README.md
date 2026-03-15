@@ -8,7 +8,7 @@ Le projet repose sur une architecture "Lean" et performante, séparant le traite
 
 ## 🚀 Vision du Projet
 
-Dans un monde saturé d'informations, Mizan.ai agit comme un curateur cognitif. Il ne se contente pas de regrouper des articles ; il les **filtre**, les **classe** et les **résume** en fonction de ton "Manifeste" personnel (ta vision du monde et tes intérêts réels).
+Dans un monde saturé d'informations, News.ai agit comme un curateur cognitif. Il ne se contente pas de regrouper des articles ; il les **filtre**, les **classe** et les **résume** en fonction de ton "Manifeste" personnel (ta vision du monde et tes intérêts réels).
 
 ---
 
@@ -67,7 +67,7 @@ Dans un monde saturé d'informations, Mizan.ai agit comme un curateur cognitif. 
 
 ## 📈 Observabilité & Monitoring
 
-Mizan.ai intègre une couche de monitoring robuste pour garantir une haute disponibilité :
+News.ai intègre une couche de monitoring robuste pour garantir une haute disponibilité :
 - **Metrics Endpoint** : `/api/metrics` expose l'uptime, le taux d'erreur et la latence moyenne.
 - **Performance Tracking** : Calcul en temps réel des percentiles (p50, p95, p99) par endpoint.
 - **Alerting** : Logging automatique des requêtes lentes (>2s) via Loguru.
@@ -77,7 +77,7 @@ Mizan.ai intègre une couche de monitoring robuste pour garantir une haute dispo
 
 ## 🎨 Design System (v3.0 - Premium Dark)
 
-Mizan.ai a évolué vers une esthétique "Glassmorphic High-End" pour offrir une expérience de lecture apaisante et luxueuse :
+News.ai a évolué vers une esthétique "Glassmorphic High-End" pour offrir une expérience de lecture apaisante et luxueuse :
 - **Thème Sombre Profond** : Palette de couleurs basée sur des gris bleutés (`#0b0f15`) et des accents ambre/or.
 - **Hiérarchie Visuelle** : Focus massif sur le "Daily Briefing" avec une date élégante et discrète.
 - **Micro-Interactions** : Animations fluides via Framer Motion lors de l'expansion des cartes et de l'apparition du digest.
