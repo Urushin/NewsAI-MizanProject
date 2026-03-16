@@ -187,12 +187,6 @@ export default function ProfilePopup({ onPreview, customTrigger, className }: Pr
                                   Assistant Configuration
                                 </button>
                               </div>
-                              <textarea 
-                                className="w-full bg-zinc-50/50 border border-zinc-200 p-6 text-sm leading-[1.8] text-zinc-700 focus:border-zinc-900 focus:outline-none custom-scrollbar min-h-[160px] resize-y font-serif italic"
-                                value={manifesto} 
-                                onChange={(e) => setManifesto(e.target.value)}
-                                placeholder="Définissez les intérêts et sujets sur lesquels l'IA doit concentrer ses recherches."
-                              />
                             </div>
 
                             {/* Security */}

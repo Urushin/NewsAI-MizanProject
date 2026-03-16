@@ -14,3 +14,7 @@ langfuse
 uvicorn
 fastapi
 stripe
+
+# 🧠 Intelligence Sémantique Locale (Clustering)
+sentence-transformers
+scikit-learn

@@ -210,8 +210,8 @@ def _article_similarity(a: 'RawArticle', b: 'RawArticle') -> float:
 CLUSTER_THRESHOLD = 0.45   # Higher = stricter (was 0.38)
 MAX_CLUSTER_SIZE = 4       # Cap: no cluster bigger than 4 articles
 
-def cluster_articles(articles: List[RawArticle]) -> List[List[RawArticle]]:
-    """Group articles about the SAME event (strict clustering)."""
+def _cluster_articles_fallback(articles: List[RawArticle]) -> List[List[RawArticle]]:
+    """Group near-duplicate articles by keywords / string overlap (fallback)."""
     clusters: List[List[RawArticle]] = []
     
     for article in articles:
@@ -239,6 +239,51 @@ def cluster_articles(articles: List[RawArticle]) -> List[List[RawArticle]]:
         logger.info(f"   🔗 Clustering: {len(multi)} multi-source clusters detected (largest: {max(len(c) for c in multi)} articles)")
     
     return clusters
+
+
+def cluster_articles(articles: List[RawArticle]) -> List[List[RawArticle]]:
+    """Group near-duplicate articles by semantic similarity using a local model."""
+    if not articles:
+        return []
+
+    # 1. Lazy Loading / Fallback for safe deployment
+    try:
+        from sentence_transformers import SentenceTransformer
+        from sklearn.cluster import DBSCAN
+    except ImportError:
+        logger.warning("⚠️ sentence-transformers ou scikit-learn absent. Repli sur le clustering simple.")
+        return _cluster_articles_fallback(articles)
+
+    try:
+        # 2. Cache Model Initialization on memory
+        global _embed_model
+        if '_embed_model' not in globals() or _embed_model is None:
+            logger.info("🧠 Chargement du modèle sémantique de clustering...")
+            _embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+        # 3. Vectorize titles
+        titles = [a.title for a in articles]
+        embeddings = _embed_model.encode(titles, show_progress_bar=False)
+
+        # 4. Clusterizing via DBSCAN
+        # ep=0.25 on Cosine Metric requires ~75%+ similar words to merge
+        db = DBSCAN(eps=0.25, min_samples=1, metric='cosine').fit(embeddings)
+        labels = db.labels_
+
+        # 5. Pack aggregates
+        clusters_dict = {}
+        for i, label in enumerate(labels):
+            if label not in clusters_dict:
+                clusters_dict[label] = []
+            clusters_dict[label].append(articles[i])
+
+        merged_list = list(clusters_dict.values())
+        logger.debug(f"   🧩 Semantic Clustering: {len(articles)} -> {len(merged_list)} clusters")
+        return merged_list
+
+    except Exception as e:
+        logger.error(f"❌ Échec du clustering sémantique: {e}. Repli sur le clustering simple.")
+        return _cluster_articles_fallback(articles)
 
 
 # ── LLM Calls (Real) ──
@@ -466,7 +511,15 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                 skip_scraping=is_test,
                 user_interests=user_interests if user_interests else None,
             )
-        logger.info(f"📡 [{username}] {len(raw)} articles")
+        logger.info(f"📡 [{username}] {len(raw)} articles collectés")
+
+        # ── 🧹 Filtre Sanitaire (Option 2) ──
+        if raw:
+            initial_count = len(raw)
+            # Ne garder que les articles avec un vrai contenu (min 200 caractères)
+            raw = [a for a in raw if a.content and len(a.content.strip()) >= 200]
+            if len(raw) < initial_count:
+                logger.info(f"   🧹 Filtre Sanitaire : {initial_count} -> {len(raw)} articles conservés (Exclusion des articles trop courts)")
 
         if not raw:
             _status(username, "Aucun article trouvé aujourd'hui", 100)

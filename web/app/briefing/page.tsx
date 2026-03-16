@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import useSWR from "swr";
 import { useAuth } from "../context/AuthContext";
@@ -122,6 +123,9 @@ export default function BriefingPage() {
 
       {/* Sidebar Tools */}
       <div className="fixed top-8 left-8 z-40 hidden sm:flex flex-col gap-3">
+        <Link href="/profile" className="profile-avatar" style={{ textDecoration: "none" }}>
+          {user?.username.slice(0, 2).toUpperCase() || "??"}
+        </Link>
         <HistoryPanel onSelectDate={(d) => setSelectedDate(d)} selectedDate={selectedDate} lang={lang} />
       </div>
 
