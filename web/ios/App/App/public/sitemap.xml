@@ -2,19 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
 <loc>https://newsai.local</loc>
-<lastmod>2026-03-09T21:42:24.821Z</lastmod>
+<lastmod>2026-05-28T10:56:14.095Z</lastmod>
 <changefreq>daily</changefreq>
 <priority>1</priority>
 </url>
 <url>
 <loc>https://newsai.local/login</loc>
-<lastmod>2026-03-09T21:42:24.822Z</lastmod>
+<lastmod>2026-05-28T10:56:14.096Z</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
 </url>
 <url>
 <loc>https://newsai.local/signup</loc>
-<lastmod>2026-03-09T21:42:24.822Z</lastmod>
+<lastmod>2026-05-28T10:56:14.096Z</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
 </url>

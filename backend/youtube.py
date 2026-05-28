@@ -183,3 +183,84 @@ async def fetch_youtube_videos(channels_list: list) -> list:
 
     logger.info(f"✅ Filtered to {len(final_videos)} videos within the 24h window.")
     return final_videos
+
+import json
+
+async def search_youtube_channels(q: str):
+    """Scrape youtube search results for channel items with thumbnails and IDs."""
+    if not q:
+        return []
+        
+    search_url = f"https://www.youtube.com/results?search_query={q.replace(' ', '+')}&sp=EgIQAg%253D%253D"
+    cookies = {"CONSENT": "YES+cb.20210328-17-p0.en+FX+434"}
+    headers = {
+        "User-Agent": random.choice(_USER_AGENTS),
+        "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+    
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=TIMEOUT_SEC, cookies=cookies) as client:
+            resp = await client.get(search_url, headers=headers)
+            html = resp.text
+            
+            # Find the JSON blob
+            m = re.search(r'ytInitialData\s*=\s*({.*?});', html, re.DOTALL)
+            if not m:
+                # Fallback for alternative declaration
+                m = re.search(r'var\s+ytInitialData\s*=\s*({.*?});', html, re.DOTALL)
+                
+            if not m:
+                logger.warning("🔍 [YT] Could not find ytInitialData blob on search page.")
+                return []
+                
+            data = json.loads(m.group(1))
+            
+            # Navigate structure safely
+            contents = []
+            try:
+                root_contents = data.get("contents", {})
+                results_view = root_contents.get("twoColumnSearchResultsRenderer") or root_contents.get("twoColumnSearchResultsViewModel")
+                if results_view:
+                    contents = results_view.get("primaryContents", {}).get("sectionListRenderer", {}).get("contents", [{}])[0].get("itemSectionRenderer", {}).get("contents", [])
+            except (AttributeError, IndexError):
+                pass
+                
+            results = []
+            for item in contents:
+                cr = item.get("channelRenderer")
+                if cr:
+                    title = cr.get("title", {}).get("simpleText", "")
+                    if not title:
+                         runs = cr.get("title", {}).get("runs", [])
+                         title = runs[0].get("text", "") if runs else ""
+                         
+                    cid = cr.get("channelId", "")
+                    
+                    # Thumbnails
+                    thumbs = cr.get("thumbnail", {}).get("thumbnails", [])
+                    thumbnail = thumbs[0].get("url", "") if thumbs else ""
+                    if thumbnail.startswith("//"):
+                        thumbnail = "https:" + thumbnail
+                        
+                    handle_text = ""
+                    # Navigation / Handle
+                    nav = cr.get("navigationEndpoint", {}).get("browseEndpoint", {})
+                    handle = nav.get("canonicalBaseUrl", "") # e.g. "/@Chaine"
+                    if handle:
+                         handle_text = handle.lstrip('/')
+                    else:
+                         sub_text = cr.get("subscriberCountText", {}).get("simpleText", "")
+                         if sub_text: handle_text = sub_text
+
+                    results.append({
+                        "id": cid,
+                        "title": title,
+                        "thumbnail": thumbnail,
+                        "handle": handle_text
+                    })
+                    
+            return results[:6]
+            
+    except Exception as e:
+        logger.error(f"❌ Failed to scrape YouTube channels for '{q}': {e}")
+        return []

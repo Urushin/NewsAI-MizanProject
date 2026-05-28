@@ -1,0 +1,28 @@
+# .cursorrules — Instructions Automatiques pour l'IA
+
+Ces règles sont automatiquement ingérées par l'assistant IA (Cursor, etc.) à chaque prompt.
+Elles complètent le fichier `AGENTS.md` qui contient la charte complète.
+
+## 📌 Règle d'or
+👉 **LIRE EN PRIORITÉ `AGENTS.md`** à la racine pour comprendre la vision **News.ai** (Premium Journal, Lean Design).
+
+---
+
+## 🎨 Design & UI (Rappel Critique)
+- **Palette** : Strictement Zinc / Monochrome + Fond `#FDFCF8`. AUCUNE couleur "Tech" (bleu/violet).
+- **Style** : Serif pour les titres (accents italiques), Sans-serif pour la métadonnée.
+- **Espacement** : Lean Design (White-space > Bordures).
+
+---
+
+## 🛠️ Stack & Composants
+- **Frontend** : Next.js 14, Tailwind, Framer Motion (animations lentes/physiques).
+- **Backend** : FastAPI, Supabase.
+- **Vérification** : Toujours vérifier si un composant (`SafeImage`, `NewsCard`) existe déjà avant de coder.
+
+---
+
+## 📐 Comportements UI récents
+- **Modals** : Sobres, "Museum-like".
+- **BottomNavbar** : Masquer au scroll descendant, afficher au scroll ascendant.
+- **Flux** : Pas de séparateurs de catégorie lourds, flux continu de journal.

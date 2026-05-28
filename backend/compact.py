@@ -63,7 +63,7 @@ class ArticleVerdict(BaseModel):
     category: StrictStr = Field(default="Passion", max_length=100)
     sub_category: StrictStr = Field(default="Général", max_length=50)
     reason: StrictStr = Field(default="", max_length=500)
-    credibility_score: Annotated[int, Field(ge=0, le=10)] = 5
+    credibility_score: Annotated[int, Field(ge=0, le=100)] = 50
     link: StrictStr = Field(default="", max_length=1500)
     source_name: StrictStr = Field(default="")
     image_url: Optional[str] = Field(default=None)

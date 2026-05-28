@@ -25,7 +25,27 @@ export const profileLabels: Record<string, Record<string, string>> = {
         official: "Générer mon Brief Officiel",
         genInit: "Initialisation...",
         genDone: "Terminé !",
-        genErrorMsg: "Erreur de génération"
+        genErrorMsg: "Erreur de génération",
+        profileTitle: "Réglages",
+        planPro: "🔒 PLAN PRO",
+        readingSection: "Lecture",
+        summaryFormat: "Format du résumé",
+        formatBullets: "Puces",
+        formatSentences: "Phrases",
+        formatDetailed: "Détaillé",
+        wizardBtn: "Configurateur AI Assistant",
+        appearanceSection: "Apparence",
+        langSelect: "Langue",
+        themeSelect: "Thème de l’interface",
+        themeLight: "☀️ Clair",
+        themeDark: "🌙 Sombre",
+        visualStyleSelect: "Gabarit Visuel",
+        styleModern: "Journal Moderne",
+        styleLegacy: "Grille Classique",
+        securitySection: "Sécurité",
+        saveBtn: "Enregistrer",
+        logoutBtn: "Déconnexion",
+        generateBtn: "Générer Nouvelle Édition"
     },
     en: {
         language: "Language",
@@ -53,7 +73,27 @@ export const profileLabels: Record<string, Record<string, string>> = {
         official: "Generate my Official Brief",
         genInit: "Initializing...",
         genDone: "Done!",
-        genErrorMsg: "Generation error"
+        genErrorMsg: "Generation error",
+        profileTitle: "Settings",
+        planPro: "🔒 PRO PLAN",
+        readingSection: "Reading",
+        summaryFormat: "Summary format",
+        formatBullets: "Bullets",
+        formatSentences: "Sentences",
+        formatDetailed: "Detailed",
+        wizardBtn: "AI Assistant Configurator",
+        appearanceSection: "Appearance",
+        langSelect: "Language",
+        themeSelect: "Interface Theme",
+        themeLight: "☀️ Light",
+        themeDark: "🌙 Dark",
+        visualStyleSelect: "Visual Layout",
+        styleModern: "Modern Journal",
+        styleLegacy: "Classic Grid",
+        securitySection: "Security",
+        saveBtn: "Save",
+        logoutBtn: "Log out",
+        generateBtn: "Generate New Edition"
     }
 };
 
@@ -371,6 +411,18 @@ export const authLabels: Record<string, Record<string, string>> = {
     btnCreating: "Création…",
     alreadyAccount: "Déjà un compte ?",
     loginLink: "Se connecter",
+    loginTitle: "Accès Lecteur",
+    loginSub: "Authentification sécurisée",
+    emailLabel: "Email de l'abonné",
+    passwordLabel: "Clef d'accès",
+    btnLogin: "Se connecter",
+    btnChecking: "Vérification...",
+    noAccountYet: "Pas encore membre ?",
+    signupLink: "Créer un compte",
+    signupTitle: "Souscription",
+    signupSub: "Rejoindre l'expérience NewsAI",
+    signingUp: "Impression du contrat...",
+    identityLabel: "Identité Lecteur"
   },
   en: {
     createAccount: "Create an account",
@@ -385,5 +437,45 @@ export const authLabels: Record<string, Record<string, string>> = {
     btnCreating: "Creating…",
     alreadyAccount: "Already have an account?",
     loginLink: "Log in",
+    loginTitle: "Reader Access",
+    loginSub: "Secure authentication",
+    emailLabel: "Subscriber email",
+    passwordLabel: "Access key",
+    btnLogin: "Log in",
+    btnChecking: "Verifying...",
+    noAccountYet: "Not a member yet?",
+    signupLink: "Create an account",
+    signupTitle: "Subscription",
+    signupSub: "Join the NewsAI experience",
+    signingUp: "Printing contract...",
+    identityLabel: "Reader Identity"
   }
 };
+
+export const mapLabels: Record<string, Record<string, string>> = {
+  fr: {
+    title: "World Monitor",
+    subtitle: "Veille Géo-temporelle",
+    back: "Retour",
+    recentDispatches: "Dépêches Récentes",
+    activeNews: "Actus",
+    openFullStream: "Ouvrir le Flux Complet",
+    geopoliticalTensions: "Tensions géopolitiques croissantes",
+    historicTradeAgreement: "Accord commercial historique signé",
+    newClimateSummit: "Nouveau sommet sur le climat annoncé",
+    mockSourceAI: "Intelligence AI"
+  },
+  en: {
+    title: "World Monitor",
+    subtitle: "Geo-temporal Intelligence Feed",
+    back: "Back",
+    recentDispatches: "Recent Dispatches",
+    activeNews: "News",
+    openFullStream: "Open Full Feed",
+    geopoliticalTensions: "Rising geopolitical tensions",
+    historicTradeAgreement: "Historic trade agreement signed",
+    newClimateSummit: "New climate summit announced",
+    mockSourceAI: "AI Intelligence"
+  }
+};
+

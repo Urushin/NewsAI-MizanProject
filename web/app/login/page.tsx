@@ -5,10 +5,23 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
+import Link from "next/link";
+import { authLabels } from "../config/translations";
 
 export default function LoginPage() {
     const { login, user } = useAuth();
     const router = useRouter();
+
+    const [language, setLanguage] = useState("fr");
+
+    useEffect(() => {
+        if (typeof navigator !== "undefined") {
+            const browserLang = navigator.language.split("-")[0];
+            if (authLabels[browserLang]) setLanguage(browserLang);
+        }
+    }, []);
+
+    const t = authLabels[language] || authLabels.en;
 
     useEffect(() => {
         if (user) {
@@ -53,8 +66,8 @@ export default function LoginPage() {
                 >
                     <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 sm:p-12 border border-zinc-200">
                         <div className="text-center mb-10">
-                            <h2 className="text-3xl font-[900] text-zinc-900 font-serif italic lowercase tracking-tight">Accès Lecteur</h2>
-                            <p className="text-[12px] text-zinc-400 font-medium mt-2">Authentification sécurisée</p>
+                            <h2 className="text-3xl font-[900] text-zinc-900 font-serif italic lowercase tracking-tight">{t.loginTitle}</h2>
+                            <p className="text-[12px] text-zinc-400 font-medium mt-2">{t.loginSub}</p>
                         </div>
 
                         {error && (
@@ -65,13 +78,13 @@ export default function LoginPage() {
 
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="email">Email de l'abonné</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="email">{t.emailLabel}</label>
                                 <input
                                     id="email"
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="nom.prenom@newsai.local"
+                                    placeholder={t.emailPlaceholder}
                                     className="w-full bg-transparent border-b border-zinc-200 py-3 text-[15px] focus:outline-none focus:border-zinc-900 transition-colors font-serif placeholder:italic placeholder:text-zinc-300"
                                     autoFocus
                                     required
@@ -79,13 +92,13 @@ export default function LoginPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="password">Clef d'accès</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="password">{t.passwordLabel}</label>
                                 <input
                                     id="password"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••••••"
+                                    placeholder={t.passwordPlaceholder}
                                     className="w-full bg-transparent border-b border-zinc-200 py-3 text-[15px] focus:outline-none focus:border-zinc-900 transition-colors font-serif placeholder:italic placeholder:text-zinc-300"
                                     required
                                 />
@@ -97,13 +110,13 @@ export default function LoginPage() {
                             className="w-full bg-zinc-900 text-white py-4 text-[13px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black active:scale-[0.98] transition-all disabled:opacity-50"
                             disabled={loading}
                         >
-                            {loading ? "Vérification..." : "Se connecter"}
+                            {loading ? t.btnChecking : t.btnLogin}
                         </button>
 
                         <div className="text-center pt-4">
                             <p className="text-[12px] text-zinc-400 font-medium">
-                                Pas encore membre ?{" "}
-                                <a href="/signup" className="text-zinc-900 font-black underline decoration-zinc-200 underline-offset-4 hover:decoration-zinc-900 transition-all">Créer un compte</a>
+                                {t.noAccountYet}{" "}
+                                <Link href="/signup" className="text-zinc-900 font-black underline decoration-zinc-200 underline-offset-4 hover:decoration-zinc-900 transition-all">{t.signupLink}</Link>
                             </p>
                         </div>
                     </form>

@@ -222,7 +222,7 @@ Output ONLY valid JSON with these exact fields:
 - "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
 - "sub_category": string (CRITICAL: Be extremely specific. DO NOT use generic terms like 'Général', 'News' or 'Actualité'. Use thematic clusters like 'Entrepreneuriat Féminin', 'Marché Immobilier', 'Tensions au Moyen-Orient', 'IA Géopolitique', etc.)
 - "reason": string (1 very direct sentence explaining the core consequence or impact of this news. Do NOT use introductory phrases like 'Ce sujet est pertinent pour...' or 'Cette information montre que...'. Go straight to the point.)
-- "credibility_score": int 0-10 (average source reliability)
+- "credibility_score": int 0-100 (average source reliability)
 
 Output ONLY the JSON object. No markdown, no explanation."""
 
@@ -339,7 +339,7 @@ async def synthesize_cluster(
                     "keep": True,
                     "category": "Passion",
                     "reason": "Synthèse récupérée à partir d'une réponse partielle de l'IA.",
-                    "credibility_score": 6
+                    "credibility_score": 60
                 }
             else:
                 # If the LLM returned a list of dicts, take the first one

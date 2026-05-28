@@ -18,6 +18,8 @@ import {
 import { useApi } from "../utils/api";
 import { sourcesLabels, commonLabels } from "../config/translations";
 import BottomNavbar from "../components/BottomNavbar";
+import { usePlatform } from "../../hooks/usePlatform";
+
 
 interface ScannedSource {
     title: string;
@@ -26,6 +28,7 @@ interface ScannedSource {
 
 export default function SourcesPage() {
     const { user, token, loading: authLoading } = useAuth();
+    const { isNative } = usePlatform();
     const api = useApi();
     const router = useRouter();
     const [rawSources, setRawSources] = useState<ScannedSource[]>([]);
@@ -73,6 +76,131 @@ export default function SourcesPage() {
         );
     }
 
+  if (isNative) {
+    return (
+        <main className="min-h-screen bg-[#FDFCF8] text-zinc-900 flex flex-col items-center w-full pb-36 safe-top safe-bottom select-none">
+            
+            {/* Header */}
+            <div className="w-full px-8 pt-8 pb-4 flex justify-between items-center bg-[#FDFCF8]">
+                <h1 className="text-2xl font-bold tracking-tight text-zinc-900 font-sans">
+                  Sources
+                </h1>
+                <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100 border border-zinc-200">
+                    <Database size={10} className="text-zinc-600" />
+                    <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Index</span>
+                </div>
+            </div>
+
+            <div className="w-full px-8 mt-6">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                    
+                    {/* Search Bar Capsule */}
+                    <div className="relative w-full mb-6 flex items-center bg-white border border-zinc-100 rounded-full px-4 py-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] focus-within:border-zinc-300 transition-colors">
+                        <Search className="text-zinc-400 mr-3" size={16} />
+                        <input
+                            type="text"
+                            placeholder={s.searchPlaceholder}
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full bg-transparent text-[14px] font-bold text-zinc-900 focus:outline-none placeholder:text-zinc-400 placeholder:font-sans"
+                        />
+                    </div>
+
+                    {/* Filter Tabs Capsule */}
+                    <div className="flex bg-zinc-50 border border-zinc-200/60 p-0.5 rounded-full w-full h-11 mb-6">
+                        <button
+                            onClick={() => setActiveTab("used")}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-full py-1 text-[10px] font-black uppercase tracking-widest transition-all ${
+                                activeTab === "used" ? "bg-white text-zinc-950 shadow-sm font-black" : "text-zinc-400 hover:text-zinc-600"
+                            }`}
+                        >
+                            <CheckCircle size={14} />
+                            {s.tabUsed} ({usedSources.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("raw")}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-full py-1 text-[10px] font-black uppercase tracking-widest transition-all ${
+                                activeTab === "raw" ? "bg-white text-zinc-950 shadow-sm font-black" : "text-zinc-400 hover:text-zinc-600"
+                            }`}
+                        >
+                            <History size={14} />
+                            {s.tabGlobal} ({rawSources.length})
+                        </button>
+                    </div>
+
+                    {/* Sources List */}
+                    <AnimatePresence mode="wait">
+                      <motion.div 
+                        key={activeTab + search}
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        className="space-y-3"
+                      >
+                          {filtered.length > 0 ? (
+                              filtered.map((item, idx) => {
+                                  let hostname = "";
+                                  try {
+                                      hostname = new URL(item.link).hostname;
+                                  } catch (e) {}
+
+                                  return (
+                                      <motion.div 
+                                        key={idx} 
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: Math.min(idx * 0.01, 0.2) }}
+                                        className="bg-white border border-zinc-100 p-4 rounded-[20px] flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.015)]"
+                                      >
+                                          {/* Logo and texts */}
+                                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                                              {hostname && (
+                                                  <div className="relative w-9 h-9 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0">
+                                                      <img 
+                                                          src={`https://www.google.com/s2/favicons?sz=64&domain=${hostname}`} 
+                                                          className="w-5 h-5 object-contain" 
+                                                          alt="source favicon" 
+                                                      />
+                                                  </div>
+                                              )}
+                                              <div className="min-w-0">
+                                                  <h3 className="text-[14px] font-bold text-zinc-900 truncate font-sans">
+                                                      {item.title ? item.title.replace(/^Source\s*\(Synthèse\)\s*:\s*/i, "") : "Donnée Anonyme"}
+                                                  </h3>
+                                                  <p className="text-[10px] font-bold text-zinc-400 truncate mt-0.5 tracking-tight uppercase font-mono">
+                                                      {hostname}
+                                                  </p>
+                                              </div>
+                                          </div>
+                                          
+                                          {/* Immersive external link button */}
+                                          <a
+                                              href={item.link}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="w-9 h-9 rounded-full bg-zinc-50 hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-zinc-900 transition-colors shrink-0 ml-4 active:scale-90"
+                                          >
+                                              <ExternalLink size={14} />
+                                          </a>
+                                      </motion.div>
+                                  );
+                              })
+                          ) : (
+                              <div className="py-20 text-center">
+                                  <Search size={24} className="mx-auto text-zinc-300 mb-6" />
+                                  <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">{s.noResults}</p>
+                              </div>
+                          )}
+                      </motion.div>
+                    </AnimatePresence>
+                </motion.div>
+            </div>
+            
+            {/* Navigation Menu */}
+            <BottomNavbar />
+        </main>
+    );
+  }
+
     return (
         <main className="min-h-screen bg-[#FDFCF8] text-zinc-900 flex flex-col items-center w-full pb-32">
             
@@ -115,7 +243,7 @@ export default function SourcesPage() {
                             </button>
                             <button
                                 onClick={() => setActiveTab("raw")}
-                                className={`flex items-center gap-2 px-5 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === "raw" ? "bg-zinc-900 text-white shadow-sm" : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200"}`}
+                                className={`flex-center gap-2 px-5 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === "raw" ? "bg-zinc-900 text-white shadow-sm" : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200"}`}
                             >
                                 <History size={14} />
                                 {s.tabGlobal} ({rawSources.length})

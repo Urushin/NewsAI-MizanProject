@@ -1,12 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Newsreader } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
+import { PlatformProvider } from "../components/PlatformProvider";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://newsai.local";
@@ -94,11 +101,14 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F9F9F9" },
+    { media: "(prefers-color-scheme: light)", color: "#FDFCF8" },
     { media: "(prefers-color-scheme: dark)", color: "#171717" }
   ],
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 // JSON-LD structured data for the website
@@ -138,10 +148,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${inter.variable} ${inter.className} antialiased selection:bg-indigo-100`}>
+      <body className={`${inter.variable} ${newsreader.variable} ${inter.className} antialiased selection:bg-zinc-200/60 selection:text-zinc-900`}>
         <WebsiteJsonLd />
         <AuthProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <PlatformProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </PlatformProvider>
         </AuthProvider>
       </body>
     </html>

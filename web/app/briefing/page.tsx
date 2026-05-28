@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
+
 import useSWR from "swr";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -14,6 +13,7 @@ import BottomNavbar from "../components/BottomNavbar";
 import GenerationLoader from "../components/GenerationLoader";
 import ShareMenu from "../components/ShareMenu";
 import ErrorEmptyState from "../components/ErrorEmptyState";
+import ProfilePopup from "../components/ProfilePopup";
 import {
   Sparkles,
   ChevronRight,
@@ -28,10 +28,14 @@ import { useApi } from "../utils/api";
 import { briefLabels, commonLabels } from "../config/translations";
 import { getCategoryMeta } from "../config/categories";
 import { groupByCategory, formatDateTitle } from "../utils/briefUtils";
+import { usePlatform } from "../../hooks/usePlatform";
+import MobileFeed from "../components/MobileFeed";
 
 export default function BriefingPage() {
   const { user, token, loading: authLoading, genStatus, setGenStatus, triggerRefresh } = useAuth();
+  const { isNative } = usePlatform();
   const router = useRouter();
+
   const api = useApi();
   const toast = useToast();
 
@@ -118,14 +122,23 @@ export default function BriefingPage() {
 
   if (genStatus.active) return <GenerationLoader step={genStatus.step} percent={genStatus.percent} isDone={genStatus.isDone} />;
 
+  if (isNative && data?.content) {
+    return (
+      <MobileFeed 
+        items={data.content} 
+        lang={lang} 
+        date={data.date} 
+        globalDigest={data.global_digest}
+        onProfilePreview={handlePreviewData}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FDFCF8] text-zinc-900 flex flex-col items-center w-full selection:bg-zinc-200">
 
       {/* Sidebar Tools */}
       <div className="fixed top-8 left-8 z-40 hidden sm:flex flex-col gap-3">
-        <Link href="/profile" className="profile-avatar" style={{ textDecoration: "none" }}>
-          {user?.username.slice(0, 2).toUpperCase() || "??"}
-        </Link>
         <HistoryPanel onSelectDate={(d) => setSelectedDate(d)} selectedDate={selectedDate} lang={lang} />
       </div>
 
@@ -264,7 +277,7 @@ export default function BriefingPage() {
                                         {data.youtube_videos.map((vid, i) => (
                                             <a key={i} href={vid.link} target="_blank" rel="noopener noreferrer" className="group flex flex-col gap-3">
                                                 <div className="relative w-full aspect-video bg-zinc-100 overflow-hidden">
-                                                    <Image src={vid.thumbnail} fill className="object-cover transition-transform duration-700 group-hover:scale-105" alt={vid.title} sizes="(max-width: 768px) 100vw, 300px" />
+                                                    <img src={vid.thumbnail} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={vid.title} loading="lazy" />
                                                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
                                                         <div className="w-10 h-10 bg-white/90 backdrop-blur flex items-center justify-center rounded-full shadow-lg">
                                                             <Play size={16} fill="black" className="text-black ml-1" />

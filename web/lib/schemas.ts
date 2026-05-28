@@ -13,7 +13,7 @@ export const ArticleVerdictSchema = z.object({
     keep: z.boolean().default(true),
     category: z.enum(["Impact", "Passion"]).default("Passion"),
     reason: z.string().optional().default(""),
-    credibility_score: z.number().min(0).max(10).default(5),
+    credibility_score: z.number().min(0).max(100).default(50),
     link: z.string().url(),
     gate_passed: z.enum(["impact", "interest"]).optional(),
 });

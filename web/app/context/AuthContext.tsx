@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 
 interface User {
     id: string;
@@ -28,7 +30,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 // Use environment variable for API URL, allow empty string for relative paths
-const API = process.env.NEXT_PUBLIC_API_URL ?? "";
+let API = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isCapacitor = window.hasOwnProperty('Capacitor') || hostname === 'localhost';
+
+    if (isCapacitor && process.env.NODE_ENV === 'development') {
+        // Force l'IP locale du serveur de dev du Mac pour l'iPhone
+        API = `http://192.168.1.199:8000`;
+    } else if (hostname !== 'localhost' && hostname !== '127.0.0.1' && /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        API = `http://${hostname}:8000`;
+    }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -54,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         }
         setLoading(false);
+
+        // Configure iOS Native Status Bar
+        if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+            // Style.Light = dark text (for light backgrounds like #FDFCF8)
+            StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+            // Don't overlay the WebView — let safe-area CSS handle spacing
+            StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+            // Note: setBackgroundColor is Android-only, skipped on iOS
+            if (Capacitor.getPlatform() === 'android') {
+                StatusBar.setBackgroundColor({ color: '#FDFCF8' }).catch(() => {});
+            }
+        }
     }, []);
 
     const triggerRefresh = useCallback(() => {

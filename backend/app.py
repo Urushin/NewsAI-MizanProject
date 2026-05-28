@@ -56,7 +56,12 @@ _allowed_origins = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
     "http://127.0.0.1:3005",
-    "http://192.168.1.66:3000", # Access from local network
+    "http://192.168.1.153:3000", # Access from local network
+    "http://192.168.1.199:3000",
+    "http://192.168.1.199:3001",
+    "http://192.168.1.199:3005",
+    "capacitor://localhost",      # Capacitor iOS
+    "http://localhost",           # Capacitor Android
 ]
 _frontend_url = os.getenv("FRONTEND_URL", "")
 if _frontend_url:
@@ -65,8 +70,8 @@ if _frontend_url:
 # In development/TP, allowing all origins to avoid tunnel issues
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if os.getenv("APP_STAGE") == "development" else _allowed_origins,
-    allow_credentials=False if os.getenv("APP_STAGE") == "development" else True,
+    allow_origins=_allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -314,7 +314,7 @@ For each article, return a JSON object with these exact fields:
 - "category": "Impact" or "Passion" or "Tech" or "Politik" or "Business" or "World" or "Security" or "Trending"
 - "sub_category": string (CRITICAL: Be extremely specific. DO NOT use generic terms like 'Général', 'News' or 'Actualité'. Use thematic clusters like 'Entrepreneuriat Féminin', 'Marché Immobilier', 'Tensions au Moyen-Orient', 'IA Géopolitique', etc.)
 - "reason": string (1 very direct sentence explaining the core consequence or impact of this news. Do NOT use introductory phrases like 'Ce sujet est pertinent pour...' or 'Cette information montre que...'. Go straight to the point.)
-- "credibility_score": int 0-10 (source reliability)
+- "credibility_score": int 0-100 (source reliability)
 - "link": string (the article URL, unchanged)
 Return a JSON array of objects."""
 
@@ -641,7 +641,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                             keep=True,
                             category=verdict_data.get("category", "Passion"),
                             reason=verdict_data.get("reason", "Article fusionné par Chimera"),
-                            credibility_score=min(10, max(0, int(verdict_data.get("credibility_score", 5)))),
+                            credibility_score=min(100, max(0, int(verdict_data.get("credibility_score", 50)))),
                             link=verdict_data.get("link", cluster[0].link),
                             sources_count=verdict_data.get("sources_count", len(cluster)),
                             source_urls=verdict_data.get("source_urls", [a.link for a in cluster]),
@@ -700,7 +700,7 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
                     keep=True,
                     category="Passion",
                     reason="Article collecté automatiquement",
-                    credibility_score=5,
+                    credibility_score=50,
                     link=a.link,
                     source_name=getattr(a, "source_name", "")
                 ))
@@ -816,6 +816,14 @@ async def _run_pipeline_for_user_async(username: str, language: str = "fr", scor
 
         from database import store_daily_brief
         store_daily_brief(user_id, brief)
+
+        # 👑 Background Pre-warm Deep Audits for valid articles (Option A)
+        try:
+            from routers.briefs import pre_warm_deep_audit_task
+            import asyncio
+            asyncio.create_task(pre_warm_deep_audit_task(kept, language))
+        except Exception as e:
+            logger.warning(f"Failed to start pre-warm audit background_task: {e}")
 
         if not is_test:
             _status(username, "Saving to Supabase...", 95)

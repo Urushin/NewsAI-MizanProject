@@ -1,15 +1,20 @@
 {
 	"appId": "ai.newsai.app",
-	"appName": "NewsAI",
+	"appName": "Insight",
 	"webDir": "out",
 	"server": {
+		"iosScheme": "capacitor",
 		"androidScheme": "https",
 		"cleartext": true,
 		"allowNavigation": [
 			"localhost:8000",
-			"192.168.1.66:8000",
+			"192.168.1.199:8000",
+			"192.168.1.199:3000",
 			"*.supabase.co"
 		]
 	},
-	"packageClassList": []
+	"packageClassList": [
+		"HapticsPlugin",
+		"StatusBarPlugin"
+	]
 }

@@ -42,10 +42,10 @@ For each article, return a JSON object with these exact fields:
 - "category": "Impact" | "Passion" | "Tech" | "Politik" | "Business" | "World" | "Security" | "Trending"
 - "sub_category": string
 - "reason": string
-- "credibility_score": int 0-10
+- "credibility_score": int 0-100 (source reliability / relevance to general news)(100 = neutre/factuel, <60 = orienté, <40 = manipulateur)
 - "neutrality_score": int 0-100 (100 = neutre/factuel, <60 = orienté, <40 = manipulateur)
 - "detected_biases": array of strings (ex: ["Pente Glissante", "Faux Dilemme", "Cadrage Idéologique"])
-- "bias_details": array of objects [{"label": "Nom du biais", "reason": "Exemple concret dans l'article"}]
+- "bias_details": array of objects [{{"label": "Nom du biais", "reason": "Exemple concret dans l'article"}}]
 - "primary_evidence": string | null (Ex: "Confirmé par Reuters 14:30")
 
 COGNITIVE BIAS CODEX:

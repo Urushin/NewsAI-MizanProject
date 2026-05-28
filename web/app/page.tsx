@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { landingLabels } from "./config/translations";
+import { usePlatform } from "../hooks/usePlatform";
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -15,7 +16,9 @@ import {
 
 export default function LandingPage() {
   const router = useRouter();
+  const { isNative } = usePlatform();
   const [lang, setLang] = useState("fr");
+
 
   useEffect(() => {
     if (typeof navigator !== "undefined") {
@@ -68,6 +71,45 @@ export default function LandingPage() {
       active: false
     }
   ];
+
+  if (isNative) {
+    return (
+      <div className="min-h-screen bg-[#FDFCF8] text-zinc-900 font-sans flex flex-col justify-between p-8 safe-top safe-bottom">
+        <div className="flex-1 flex flex-col justify-center items-center text-center max-w-sm mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <span className="font-[900] tracking-tighter font-serif block mb-8 text-6xl">N.</span>
+            
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-zinc-100 border border-zinc-200 mb-10">
+              <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">NewsAI</span>
+            </div>
+
+            <p className="text-zinc-500 text-lg leading-[1.7] font-serif italic mb-16">
+              "L’information n’est plus une question de quantité, mais de discernement."
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="w-full max-w-sm mx-auto flex flex-col gap-4">
+          <button 
+            onClick={() => router.push("/signup")}
+            className="w-full bg-zinc-900 text-white py-5 text-[11px] font-black uppercase tracking-[0.2em] transition-all hover:bg-black active:scale-95 text-center block"
+          >
+            Subscription
+          </button>
+          <button 
+            onClick={() => router.push("/login")}
+            className="w-full bg-transparent text-zinc-950 border border-zinc-200 py-5 text-[11px] font-black uppercase tracking-[0.2em] transition-all hover:bg-zinc-50 active:scale-95 text-center block"
+          >
+            Accès Lecteur
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FDFCF8] text-zinc-900 font-sans selection:bg-zinc-200 overflow-x-hidden">

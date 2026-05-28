@@ -64,7 +64,8 @@ def check_brief_quota(user_id: str, supabase_client) -> dict:
         logger.error(f"Quota check error: {e}")
         used = 0
 
-    allowed = used < max_briefs
+    import os
+    allowed = used < max_briefs or os.getenv("APP_STAGE") == "development"
 
     if not allowed:
         raise QuotaExceeded(tier.value, "briefs_per_day", used, max_briefs)

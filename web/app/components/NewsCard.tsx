@@ -2,13 +2,15 @@
 
 import { motion } from "framer-motion";
 import { useState, useCallback, useEffect, useMemo } from "react";
-import Image from "next/image";
+
 import { NewsItem } from "../types/news";
 import { parseTitleAndSource, digestToBullets } from "../utils/newsUtils";
 import { useApi } from "../utils/api";
 import NewsDetailModal from "./NewsDetailModal";
 import SafeImage from "./SafeImage";
 import { TIER_KEYS } from "../config/categories";
+import { ImpactStyle } from "@capacitor/haptics";
+import { triggerHaptic as triggerHapticUtil } from "../utils/haptics";
 
 const TIER_VALUES = Object.values(TIER_KEYS);
 
@@ -30,19 +32,59 @@ export default function NewsCard({
     const [isExpanded, setIsExpanded] = useState(false);
     const [isDismissed, setIsDismissed] = useState(false);
     const [detailedAnalysis, setDetailedAnalysis] = useState<string | null>(null);
+    const [highlights, setHighlights] = useState<string[]>([]);
+    const [citations, setCitations] = useState<Record<string, string>>({});
     const [isPremium, setIsPremium] = useState<boolean | null>(null);
+    const [auditScores, setAuditScores] = useState<Record<string, { score: number; reason: string }>>({});
+    const [auditReasons, setAuditReasons] = useState<string[]>([]);
+    const [reliabilityVerdict, setReliabilityVerdict] = useState<Record<string, unknown> | null>(null);
+
+    const triggerHaptic = async (style = ImpactStyle.Light) => {
+        if (style === ImpactStyle.Heavy) {
+            await triggerHapticUtil.success();
+        } else if (style === ImpactStyle.Medium) {
+            await triggerHapticUtil.medium();
+        } else {
+            await triggerHapticUtil.light();
+        }
+    };
 
     // Fetch deep analysis when expanded
     useEffect(() => {
         if (isExpanded && !detailedAnalysis) {
             const controller = new AbortController();
+            
+            // Recompute bullets safely for the prompt
+            const bullets = item.summary ? (Array.isArray(item.summary) ? item.summary : [item.summary]) : [];
+            
             api.post("/api/brief/analyze",
-                { link: item.link, title: item.title, language: "fr" },
+                { 
+                    link: item.link, 
+                    title: item.title, 
+                    summary: bullets, 
+                    language: "fr" 
+                },
                 { signal: controller.signal }
             )
                 .then(data => {
                     setIsPremium(data.status === "success");
+                    
                     setDetailedAnalysis(data.analysis);
+                    if (data.highlights) {
+                        setHighlights(data.highlights);
+                    }
+                    if (data.citations) {
+                        setCitations(data.citations);
+                    }
+                    if (data.audit_scores) {
+                        setAuditScores(data.audit_scores);
+                    }
+                    if (data.audit_reasons) {
+                        setAuditReasons(data.audit_reasons);
+                    }
+                    if (data.reliability_verdict) {
+                        setReliabilityVerdict(data.reliability_verdict);
+                    }
                 })
                 .catch(err => {
                     if (err.name !== 'AbortError') console.error("Analyze error:", err);
@@ -70,6 +112,7 @@ export default function NewsCard({
 
     const handleReject = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
+        triggerHaptic(ImpactStyle.Medium);
         setIsDismissed(true);
         handleAction("rejected");
         onDismiss(item.title);
@@ -88,6 +131,7 @@ export default function NewsCard({
         <>
             <motion.article
                 onClick={() => {
+                    triggerHaptic(ImpactStyle.Light);
                     handleAction("read");
                     setIsExpanded(true);
                 }}
@@ -168,15 +212,11 @@ export default function NewsCard({
                                     const domain = new URL(url).hostname;
                                     return (
                                         <div key={i} className="relative w-5 h-5 rounded-full bg-white border border-zinc-200 shadow-sm overflow-hidden flex items-center justify-center shrink-0 z-10 transition-transform hover:z-20 hover:scale-125">
-                                            <div className="relative w-3 h-3">
-                                                <Image 
-                                                    src={`https://www.google.com/s2/favicons?sz=32&domain=${domain}`} 
-                                                    fill 
-                                                    className="object-contain" 
-                                                    alt="source" 
-                                                    unoptimized 
-                                                />
-                                            </div>
+                                            <img 
+                                                src={`https://www.google.com/s2/favicons?sz=32&domain=${domain}`} 
+                                                className="w-3 h-3 object-contain" 
+                                                alt="source" 
+                                            />
                                         </div>
                                     );
                                 })}
@@ -184,9 +224,9 @@ export default function NewsCard({
                             
                             {/* Score indicator discreet */}
                             <div className="ml-3 flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${(item.credibility_score || 5) >= 7 ? "bg-emerald-500" : "bg-orange-500"}`} />
+                                <div className={`w-1.5 h-1.5 rounded-full ${(item.credibility_score || 50) >= 70 ? "bg-emerald-500" : "bg-orange-500"}`} />
                                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                                   NEWSAI {(item.credibility_score || 5)}/10
+                                   NEWSAI {(item.credibility_score || 50)}/100
                                 </span>
                             </div>
                         </div>
@@ -222,6 +262,11 @@ export default function NewsCard({
                 sourceDomain={sourceDomain}
                 isImpact={isImpact}
                 detailedAnalysis={detailedAnalysis}
+                detailedHighlights={highlights}
+                detailedCitations={citations}
+                detailedAuditScores={auditScores}
+                detailedAuditReasons={auditReasons}
+                reliabilityVerdict={reliabilityVerdict}
                 isPremium={isPremium}
                 handleReject={handleReject}
             />

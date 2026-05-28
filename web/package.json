@@ -6,17 +6,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:ios": "next build && npx cap sync ios",
+    "open:ios": "npx cap open ios"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
     "@capacitor/core": "^6.0.0",
+    "@capacitor/haptics": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.3",
+    "@supabase/supabase-js": "^2.45.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.0",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-globe.gl": "^2.37.0",
     "swr": "^2.4.1",
     "tailwind-merge": "^3.4.1",
     "zod": "^3.23.8"

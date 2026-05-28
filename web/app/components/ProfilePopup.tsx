@@ -21,20 +21,40 @@ import {
   Shield,
   X
 } from "lucide-react";
+import { usePlatform } from "../../hooks/usePlatform";
+import { ImpactStyle } from "@capacitor/haptics";
+import { triggerHaptic as triggerHapticUtil } from "../utils/haptics";
+
 
 interface ProfilePopupProps {
     onPreview?: (data: BriefData) => void;
     customTrigger?: React.ReactNode;
     className?: string;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
-export default function ProfilePopup({ onPreview, customTrigger, className }: ProfilePopupProps) {
+export default function ProfilePopup({ onPreview, customTrigger, className, isOpen, onClose }: ProfilePopupProps) {
     const { user, logout, updateProfile, triggerRefresh, genStatus, setGenStatus } = useAuth();
+    const { isNative } = usePlatform();
     const api = useApi();
     const router = useRouter();
     const toast = useToast();
 
-    const [open, setOpen] = useState(false);
+    const triggerHaptic = async (style = ImpactStyle.Light) => {
+        if (style === ImpactStyle.Heavy) {
+            await triggerHapticUtil.success();
+        } else if (style === ImpactStyle.Medium) {
+            await triggerHapticUtil.medium();
+        } else {
+            await triggerHapticUtil.light();
+        }
+    };
+
+    const [internalOpen, setInternalOpen] = useState(false);
+    const open = isOpen !== undefined ? isOpen : internalOpen;
+    const setOpen = onClose !== undefined ? (val: boolean) => { if(!val) onClose(); } : setInternalOpen;
+    
     const [mounted, setMounted] = useState(false);
     const [manifesto, setManifesto] = useState("");
     const [language, setLanguage] = useState(user?.language || "fr");
@@ -44,13 +64,33 @@ export default function ProfilePopup({ onPreview, customTrigger, className }: Pr
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState("");
     const [wizardOpen, setWizardOpen] = useState(false);
+    const [theme, setTheme] = useState<"light" | "dark">("light");
+    const [visualStyle, setVisualStyle] = useState<string>("modern");
 
     const ref = useRef<HTMLDivElement>(null);
     const t = profileLabels[user?.language || "fr"] || profileLabels.en;
 
     useEffect(() => {
         setMounted(true);
+        const savedTheme = localStorage.getItem("newsai_theme") === "dark" ? "dark" : "light";
+        setTheme(savedTheme);
+        if (savedTheme === "dark") document.documentElement.classList.add("dark");
+
+        const savedStyle = localStorage.getItem("newsai_visual_style") || "modern";
+        setVisualStyle(savedStyle);
     }, []);
+
+    const toggleTheme = (newTheme: "light" | "dark") => {
+        setTheme(newTheme);
+        localStorage.setItem("newsai_theme", newTheme);
+        if (newTheme === "dark") document.documentElement.classList.add("dark");
+        else document.documentElement.classList.remove("dark");
+    };
+
+    const toggleVisualStyle = (style: string) => {
+        setVisualStyle(style);
+        localStorage.setItem("newsai_visual_style", style);
+    };
 
     // Sync state
     useEffect(() => {
@@ -67,11 +107,17 @@ export default function ProfilePopup({ onPreview, customTrigger, className }: Pr
 
     // Outside click
     useEffect(() => {
+        if (!open) return;
         const handler = (e: MouseEvent) => {
-            if (open && ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
         };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
+        const timer = setTimeout(() => {
+            document.addEventListener("click", handler);
+        }, 50);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener("click", handler);
+        };
     }, [open]);
 
     const handleSave = async () => {
@@ -111,122 +157,225 @@ export default function ProfilePopup({ onPreview, customTrigger, className }: Pr
     const modalContent = (
         <AnimatePresence>
             {open && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/50 backdrop-blur-md p-6">
+                <div className="fixed inset-0 z-[200] bg-[#FDFCF8] overflow-hidden flex flex-col">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.98, y: 5 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.98, y: 5 }}
-                        transition={TRANSITIONS.spring}
-                        className="bg-[#FDFCF8] rounded-none sm:rounded-sm shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col relative border border-zinc-200"
-                        ref={ref}
+                        initial={isNative ? { y: "100%" } : { opacity: 0, scale: 0.98, y: 5 }}
+                        animate={isNative ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+                        exit={isNative ? { y: "100%" } : { opacity: 0, scale: 0.98, y: 5 }}
+                        transition={isNative ? { type: "spring", damping: 30, stiffness: 220 } : TRANSITIONS.spring}
+                        className={`bg-[#FDFCF8] overflow-hidden flex flex-col relative w-full h-full ${
+                            !isNative ? "max-w-lg max-h-[90vh] rounded-none shadow-2xl border border-zinc-200 self-center justify-self-center my-auto mx-auto" : "safe-top safe-bottom"
+                        }`}
+                        ref={isNative ? null : ref}
                     >
-                        {/* Close button */}
-                        <button 
-                            onClick={() => setOpen(false)}
-                            className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-zinc-900 transition-colors z-[210]"
-                        >
-                            <X size={24} strokeWidth={1.5} />
-                        </button>
-
-                        {/* Minimalist Header */}
-                        <div className="px-10 pt-12 pb-8 flex flex-col gap-6 border-b-2 border-zinc-900">
-                            <div className="w-16 h-16 rounded-full bg-zinc-900 text-white flex items-center justify-center text-2xl font-[900] shadow-sm font-serif">
-                                {getInitials(user.username)}
-                            </div>
-                            <div>
-                                <h3 className="text-4xl font-[900] text-zinc-900 leading-none mb-3 font-serif truncate">{user.username}</h3>
-                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Lecteur Abonné</p>
-                            </div>
+                        {/* Header */}
+                        <div className="px-8 pt-8 pb-4 flex justify-between items-center bg-[#FDFCF8]">
+                            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 font-sans">
+                              {t.profileTitle}
+                            </h2>
+                            <button 
+                                onClick={() => {
+                                    triggerHaptic();
+                                    setOpen(false);
+                                }}
+                                className="w-10 h-10 rounded-none bg-zinc-100/80 flex items-center justify-center text-zinc-900 active:scale-90 transition-transform"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
 
-                        {/* Scrollable Content */}
-                        <div className="flex-1 overflow-y-auto px-10 py-10 custom-scrollbar space-y-12">
+                        {/* Scrollable Settings Panel */}
+                        <div className="flex-1 overflow-y-auto px-8 py-4 custom-scrollbar space-y-6 pb-32">
                             
-                            {/* Section Preferences */}
-                            <div className="space-y-6">
-                              <div className="flex items-center gap-3 mb-2 pb-2 border-b border-zinc-200">
-                                <LayoutGrid size={16} className="text-zinc-400" />
-                                <span className="text-[11px] font-black uppercase tracking-[0.1em] text-zinc-900">Préférences de lecture</span>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div className="flex flex-col gap-3">
-                                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t.language}</label>
-                                  <select 
-                                    value={language} 
-                                    onChange={(e) => setLanguage(e.target.value)}
-                                    className="w-full bg-transparent border-b border-zinc-300 pb-2 text-sm font-medium text-zinc-900 focus:border-zinc-900 focus:outline-none appearance-none font-serif"
-                                  >
-                                    <option value="fr">Français (FR)</option>
-                                    <option value="en">English (EN)</option>
-                                  </select>
+                            {/* Profile Info block */}
+                            <div className="bg-white border border-zinc-100 p-6 rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.01)] flex flex-col items-center justify-center text-center space-y-3">
+                                <div className="w-16 h-16 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xl font-bold shadow-sm font-sans">
+                                    {getInitials(user.username)}
                                 </div>
-
-                                <div className="flex flex-col gap-3">
-                                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Exigence: {threshold}%</label>
-                                  <input 
-                                    type="range" min={0} max={100} value={threshold} 
-                                    onChange={(e) => setThreshold(parseInt(e.target.value))}
-                                    className="flex-1 mt-2 h-0.5 bg-zinc-200 appearance-none cursor-pointer accent-zinc-900"
-                                  />
+                                <div className="space-y-1">
+                                    <h3 className="text-lg font-bold text-zinc-900 font-sans leading-none">{user.username}</h3>
+                                    <p className="text-xs text-zinc-400 font-medium tracking-wide">{user.email}</p>
                                 </div>
-                              </div>
+                                <span className="inline-block bg-zinc-100 border border-zinc-200 px-3 py-1 rounded-none text-[9px] font-black text-zinc-500 uppercase tracking-wider">
+                                    {t.planPro}
+                                </span>
                             </div>
 
-                            {/* Ligne éditoriale (Manifesto) */}
-                            <div className="space-y-6">
-                              <div className="flex justify-between items-center pb-2 border-b border-zinc-200">
-                                <div className="flex items-center gap-3">
-                                  <BookMarked size={16} className="text-zinc-400" />
-                                  <span className="text-[11px] font-black uppercase tracking-[0.1em] text-zinc-900">Ligne Éditoriale IA</span>
+                            {/* Preferences card */}
+                            <div className="bg-white border border-zinc-100 p-6 rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.01)] space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                                    {t.readingSection}
+                                </h3>
+
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t.summaryFormat}</label>
+                                    <div className="flex bg-zinc-50 border border-zinc-200 p-0.5 rounded-none w-full h-11">
+                                        {[
+                                            { value: 1, label: t.formatBullets },
+                                            { value: 2, label: t.formatSentences },
+                                            { value: 3, label: t.formatDetailed }
+                                        ].map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => {
+                                                    triggerHaptic();
+                                                    setSummaryLength(opt.value);
+                                                }}
+                                                className={`flex-1 flex items-center justify-center rounded-none py-1 text-[11px] font-black uppercase tracking-widest transition-all ${
+                                                    summaryLength === opt.value
+                                                        ? "bg-zinc-900 text-white shadow-sm"
+                                                        : "text-zinc-400 hover:text-zinc-800"
+                                                }`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
+
                                 <button 
-                                  onClick={() => setWizardOpen(true)}
-                                  className="text-[10px] font-black text-zinc-500 hover:text-zinc-900 uppercase underline decoration-zinc-300 underline-offset-4"
+                                    onClick={() => {
+                                        triggerHaptic();
+                                        setWizardOpen(true);
+                                    }}
+                                    className="w-full py-4 bg-zinc-900 text-white rounded-none text-[11px] font-black hover:bg-black transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                                 >
-                                  Assistant Configuration
+                                    {t.wizardBtn}
                                 </button>
-                              </div>
                             </div>
 
-                            {/* Security */}
-                            <div className="space-y-6">
-                              <div className="flex items-center gap-3 pb-2 border-b border-zinc-200">
-                                <Shield size={16} className="text-zinc-400" />
-                                <span className="text-[11px] font-black uppercase tracking-[0.1em] text-zinc-900">{t.safety}</span>
-                              </div>
-                              <input 
-                                type="password" 
-                                placeholder={t.passwordPlaceholder}
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full bg-transparent border-b border-zinc-300 pb-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none font-serif placeholder:italic placeholder:font-sans"
-                              />
+                            {/* Appearance card */}
+                            <div className="bg-white border border-zinc-100 p-6 rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.01)] space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                                    {t.appearanceSection}
+                                </h3>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t.langSelect}</label>
+                                        <select 
+                                            value={language} 
+                                            onChange={(e) => setLanguage(e.target.value)}
+                                            className="w-full bg-transparent border-b border-zinc-200 pb-2 text-sm font-bold text-zinc-900 focus:border-zinc-900 focus:outline-none appearance-none font-sans cursor-pointer"
+                                        >
+                                            <option value="fr">Français (FR)</option>
+                                            <option value="en">English (EN)</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t.themeSelect}</label>
+                                         <div className="flex bg-zinc-50 border border-zinc-200 p-0.5 rounded-none w-full h-10">
+                                             <button 
+                                                 type="button" 
+                                                 onClick={() => {
+                                                     triggerHaptic();
+                                                     toggleTheme("light");
+                                                 }}
+                                                 className={`flex-1 flex items-center justify-center gap-1.5 rounded-none py-1 text-[10px] uppercase tracking-widest transition-all ${
+                                                     theme === "light" 
+                                                         ? "font-black bg-zinc-900 text-white shadow-sm" 
+                                                         : "font-bold text-zinc-400 hover:text-zinc-600"
+                                                 }`}
+                                             >
+                                                 {t.themeLight}
+                                             </button>
+                                             <button 
+                                                 type="button" 
+                                                 onClick={() => {
+                                                     triggerHaptic();
+                                                     toggleTheme("dark");
+                                                 }}
+                                                 className={`flex-1 flex items-center justify-center gap-1.5 rounded-none py-1 text-[10px] uppercase tracking-widest transition-all ${
+                                                     theme === "dark" 
+                                                         ? "font-black bg-zinc-900 text-white shadow-sm" 
+                                                         : "font-bold text-zinc-400 hover:text-zinc-600"
+                                                 }`}
+                                             >
+                                                 {t.themeDark}
+                                             </button>
+                                         </div>
+                                     </div>
+                                 </div>
+
+                                 <div className="flex flex-col gap-2">
+                                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t.visualStyleSelect}</label>
+                                     <div className="flex bg-zinc-50 border border-zinc-200 p-0.5 rounded-none w-full h-10">
+                                         {[
+                                             { id: "modern", label: t.styleModern },
+                                             { id: "legacy", label: t.styleLegacy }
+                                         ].map((style) => (
+                                             <button
+                                                 key={style.id}
+                                                 type="button"
+                                                 onClick={() => {
+                                                     triggerHaptic();
+                                                     toggleVisualStyle(style.id);
+                                                 }}
+                                                 className={`flex-1 flex items-center justify-center gap-1.5 rounded-none py-1 text-[10px] uppercase tracking-widest transition-all ${
+                                                     visualStyle === style.id 
+                                                         ? "font-black bg-zinc-900 text-white shadow-sm" 
+                                                         : "font-semibold text-zinc-400 hover:text-zinc-600"
+                                                 }`}
+                                             >
+                                                 {style.label}
+                                             </button>
+                                         ))}
+                                     </div>
+                                 </div>
+                            </div>
+
+                            {/* Security card */}
+                            <div className="bg-white border border-zinc-100 p-6 rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.01)] space-y-4">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                                    {t.securitySection}
+                                </h3>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t.newPassword}</label>
+                                    <input 
+                                        type="password" 
+                                        placeholder={t.passwordPlaceholder}
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="w-full bg-transparent border-b border-zinc-200 pb-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none font-sans placeholder:italic placeholder:font-sans placeholder:text-zinc-300"
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        {/* Footer Actions */}
-                        <div className="px-10 py-8 bg-zinc-50 border-t border-zinc-200 flex flex-col gap-4">
+                        {/* Sticky Action Panel */}
+                        <div className="p-8 bg-gradient-to-t from-[#FDFCF8] via-[#FDFCF8] to-[#FDFCF8]/0 sticky bottom-0 flex flex-col gap-4">
                             <div className="flex gap-4">
                               <button 
-                                className="flex-[4] bg-zinc-900 text-white py-4 text-[13px] font-black shadow-lg hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 tracking-widest uppercase font-sans"
-                                onClick={handleSave} 
+                                className="flex-[4] bg-zinc-900 text-white py-5 rounded-none text-[12px] font-black shadow-lg hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 tracking-widest uppercase font-sans"
+                                onClick={() => {
+                                    triggerHaptic(ImpactStyle.Heavy);
+                                    handleSave();
+                                }} 
                                 disabled={saving}
                               >
-                                {saving ? t.saving : msg || "Enregistrer Profil"}
+                                {saving ? t.saving : msg || t.saveBtn}
                               </button>
                               <button 
-                                className="flex-1 bg-transparent border border-zinc-300 text-zinc-400 py-4 flex items-center justify-center hover:bg-white hover:border-red-500 hover:text-red-500 transition-all"
-                                title="Déconnexion"
-                                onClick={() => { logout(); setOpen(false); }}
+                                className="w-14 h-14 bg-white border border-zinc-200 rounded-none text-zinc-400 flex items-center justify-center hover:bg-white hover:border-red-500 hover:text-red-500 transition-all active:scale-95 shrink-0"
+                                title={t.logoutBtn}
+                                onClick={() => {
+                                    triggerHaptic();
+                                    logout();
+                                    setOpen(false);
+                                }}
                               >
-                                <LogOut size={16} />
+                                <LogOut size={18} />
                               </button>
                             </div>
                             
                             <button 
-                              className="w-full bg-white border border-zinc-300 text-zinc-900 py-4 text-[11px] font-black flex items-center justify-center gap-3 hover:bg-zinc-100 transition-all disabled:opacity-50 uppercase tracking-[0.2em]"
-                              onClick={() => handleGenerate("prod")}
+                              className="w-full bg-white border border-zinc-200 text-zinc-900 py-4 rounded-none text-[11px] font-black flex items-center justify-center gap-3 hover:bg-zinc-50 transition-all disabled:opacity-50 uppercase tracking-[0.2em] active:scale-[0.98]"
+                              onClick={() => {
+                                  triggerHaptic(ImpactStyle.Heavy);
+                                  handleGenerate("prod");
+                              }}
                               disabled={genStatus.active}
                             >
                               {genStatus.active ? (
@@ -234,7 +383,7 @@ export default function ProfilePopup({ onPreview, customTrigger, className }: Pr
                               ) : (
                                 <>
                                   <Sparkles size={16} />
-                                  Générer Nouvelle Édition
+                                  {t.generateBtn}
                                 </>
                               )}
                             </button>

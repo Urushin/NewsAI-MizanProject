@@ -6,9 +6,9 @@
 
 @theme {
   --font-body: 'Inter', var(--font-inter), -apple-system, sans-serif;
-  --color-bg-base: #FAFAFA;
+  --font-serif: 'Newsreader', var(--font-serif), Georgia, serif;
+  --color-bg-base: #FDFCF8;
   --color-bg-surface: #FFFFFF;
-  --color-accent-indigo: #6366F1;
   --color-accent-red: #EF4444;
 }
 
@@ -22,14 +22,32 @@
 
   body {
     font-family: 'Inter', var(--font-inter), -apple-system, sans-serif;
-    background: #FAFAFA;
+    background: #FDFCF8;
     color: #111827;
     line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    /* iOS Capacitor WebView optimizations */
+    -webkit-touch-callout: none;
+    -webkit-overflow-scrolling: touch;
+    /* Safe area: push content below the notch / Dynamic Island */
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   ::selection {
-    background-color: #E0E7FF;
-    color: #312E81;
+    background-color: rgba(228, 228, 231, 0.6);
+    color: #18181b;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -72,3 +90,57 @@
 }
 
 /* Purged redundant component styles. Components now use local Tailwind utility classes. */
+
+/* ══════════════════════════════════════════════════════════
+   🌕 Dark Mode Styles (Dynamic Overrides for Hardcoded Classes)
+   ══════════════════════════════════════════════════════════ */
+
+.dark body {
+  background-color: #0C0C0B !important;
+  color: #F4F4F5 !important;
+}
+
+.dark .bg-\[\#FDFCF8\], 
+.dark .bg-white {
+  background-color: #0C0C0B !important;
+}
+
+.dark .bg-zinc-50 {
+  background-color: #121210 !important;
+}
+
+.dark .bg-zinc-100 {
+  background-color: #1A1A17 !important;
+}
+
+.dark .border-zinc-200, 
+.dark .border-black {
+  border-color: #262624 !important;
+}
+
+.dark .text-zinc-900, 
+.dark .text-black {
+  color: #F4F4F5 !important;
+}
+
+.dark .text-zinc-500, 
+.dark .text-zinc-400 {
+  color: #A1A1AA !important;
+}
+
+.dark nav.backdrop-blur-md,
+.dark .glass-card {
+  background-color: rgba(12, 12, 11, 0.9) !important;
+  border-color: #262624 !important;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

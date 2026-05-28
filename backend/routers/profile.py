@@ -26,6 +26,44 @@ def get_profile(request: Request):
     return user
 
 
+@router.get("/youtube/search")
+async def search_youtube_channels_endpoint(q: str):
+    from youtube import search_youtube_channels
+    return await search_youtube_channels(q)
+
+
+@router.get("/reddit/search")
+async def search_reddit_subreddits(q: str):
+    """Proxy searching Subreddits from Reddit Public JSON api with static structure."""
+    if not q: return []
+    import httpx
+    search_url = f"https://www.reddit.com/subreddits/search.json?q={q.replace(' ', '+')}&limit=8"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(search_url, headers=headers)
+            if resp.status_code != 200:
+                logger.warning(f"Reddit Search failed status: {resp.status_code}")
+                return []
+            data = resp.json()
+            children = data.get("data", {}).get("children", [])
+            results = []
+            for c in children:
+                sub = c.get("data", {})
+                icon = sub.get("icon_img") or sub.get("community_icon")
+                if icon and "?" in icon:
+                    icon = icon.split("?")[0] # clean resizing query
+                results.append({
+                    "id": sub.get("name"),
+                    "title": sub.get("display_name_prefixed"), # r/name
+                    "thumbnail": icon,
+                    "subscribers": sub.get("subscribers")
+                })
+            return results
+    except Exception as e:
+        logger.error(f"Reddit Search exception: {e}")
+        return []
+
 @router.put("/me/profile")
 def update_full_profile(request: Request, body: UpdateProfileRequest):
     payload = get_current_user(request)
@@ -166,6 +204,10 @@ class OnboardingRequest(BaseModel):
     occupation: str = ""
     exact_occupation: str = ""
     youtube_channels: str = ""
+    rss_feeds: str = ""
+    subreddits: str = ""
+    summary_format: str = ""
+    theme: str = ""
 
 @router.post("/onboarding/manifesto")
 async def generate_onboarding_manifesto(request: Request, body: OnboardingRequest):
@@ -237,12 +279,20 @@ async def generate_onboarding_manifesto(request: Request, body: OnboardingReques
             "exact_occupation": body.exact_occupation
         }
 
-    # Store youtube channels as preferences
+    # Store subscriptions as preferences
+    current_prefs = user.get("preferences") or {}
     if body.youtube_channels:
-        channels_list = [c.strip() for c in body.youtube_channels.split("\n") if c.strip()]
-        current_prefs = user.get("preferences") or {}
-        current_prefs["youtube_channels"] = channels_list
-        updates["preferences"] = current_prefs
+        current_prefs["youtube_channels"] = [c.strip() for c in body.youtube_channels.split("\n") if c.strip()]
+    if body.rss_feeds:
+        current_prefs["rss_feeds"] = [r.strip() for r in body.rss_feeds.split("\n") if r.strip()]
+    if body.subreddits:
+        current_prefs["subreddits"] = [s.strip() for s in body.subreddits.split("\n") if s.strip()]
+    if body.summary_format:
+        current_prefs["summary_format"] = body.summary_format
+    if body.theme:
+        current_prefs["theme"] = body.theme
+        
+    updates["preferences"] = current_prefs
 
     update_user_profile(payload["user_id"], updates)
 

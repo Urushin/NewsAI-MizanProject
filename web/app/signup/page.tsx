@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { authLabels } from "../config/translations";
+import Link from "next/link";
 
 export default function SignupPage() {
     const { signup } = useAuth();
@@ -51,8 +52,8 @@ export default function SignupPage() {
                 >
                     <form onSubmit={handleSubmit} className="bg-white p-8 sm:p-12 border border-zinc-200 shadow-sm space-y-8">
                         <div className="text-center mb-10">
-                            <h2 className="text-3xl font-[900] text-zinc-900 font-serif italic lowercase tracking-tight">Souscription</h2>
-                            <p className="text-[12px] text-zinc-400 font-medium mt-2">Rejoindre l'expérience NewsAI</p>
+                            <h2 className="text-3xl font-[900] text-zinc-900 font-serif italic lowercase tracking-tight">{t.signupTitle}</h2>
+                            <p className="text-[12px] text-zinc-400 font-medium mt-2">{t.signupSub}</p>
                         </div>
 
                         {error && (
@@ -63,39 +64,39 @@ export default function SignupPage() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="username">Identité Lecteur</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="username">{t.identityLabel}</label>
                                 <input
                                     id="username"
                                     type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    placeholder="Ex: Jean D."
+                                    placeholder={t.usernamePlaceholder}
                                     className="w-full bg-transparent border-b border-zinc-200 py-3 text-[15px] focus:outline-none focus:border-zinc-900 transition-colors font-serif placeholder:italic placeholder:text-zinc-300"
                                     required
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="email">Email de l'abonné</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="email">{t.emailLabel}</label>
                                 <input
                                     id="email"
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="nom.prenom@newsai.local"
+                                    placeholder={t.emailPlaceholder}
                                     className="w-full bg-transparent border-b border-zinc-200 py-3 text-[15px] focus:outline-none focus:border-zinc-900 transition-colors font-serif placeholder:italic placeholder:text-zinc-300"
                                     required
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="password">Clef de sécurité</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="password">{t.password}</label>
                                 <input
                                     id="password"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••••••"
+                                    placeholder={t.passwordPlaceholder}
                                     className="w-full bg-transparent border-b border-zinc-200 py-3 text-[15px] focus:outline-none focus:border-zinc-900 transition-colors font-serif placeholder:italic placeholder:text-zinc-300"
                                     minLength={6}
                                     required
@@ -103,7 +104,7 @@ export default function SignupPage() {
                             </div>
 
                              <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="language">Édition préférée</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400" htmlFor="language">{t.languageSelect}</label>
                                 <select
                                     id="language"
                                     value={language}
@@ -122,14 +123,14 @@ export default function SignupPage() {
                                 className="w-full bg-zinc-900 text-white py-4 text-[13px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black active:scale-[0.98] transition-all disabled:opacity-50"
                                 disabled={loading}
                             >
-                                {loading ? "Impression du contrat..." : "Créer mon compte"}
+                                {loading ? t.signingUp : t.btnCreate}
                             </button>
                         </div>
 
                         <div className="text-center pt-2">
                             <p className="text-[12px] text-zinc-400 font-medium">
-                                Déjà abonné au kiosque ?{" "}
-                                <a href="/login" className="text-zinc-900 font-black underline decoration-zinc-200 underline-offset-4 hover:decoration-zinc-900 transition-all">Se connecter</a>
+                                {t.alreadyAccount}{" "}
+                                <Link href="/login" className="text-zinc-900 font-black underline decoration-zinc-200 underline-offset-4 hover:decoration-zinc-900 transition-all">{t.loginLink}</Link>
                             </p>
                         </div>
                     </form>
